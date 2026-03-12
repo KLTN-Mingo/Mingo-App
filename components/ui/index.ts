@@ -8,7 +8,7 @@ export { Container } from './Container';
 export { Divider } from './Divider';
 export { Icon } from './Icon';
 export { Input } from './Input';
+export { Skeleton, SkeletonCircle, SkeletonText } from './Skeleton';
 export { Tab } from './Tab';
 export { Text } from './Text';
 export { TextArea } from './TextArea';
-

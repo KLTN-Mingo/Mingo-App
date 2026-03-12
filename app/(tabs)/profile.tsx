@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Modal,
@@ -16,6 +15,7 @@ import { PostCard } from '@/components/post/PostCard';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { ProfileInfo } from '@/components/profile/ProfileInfo';
 import { ProfileTabs } from '@/components/profile/ProfileTabs';
+import { ProfileSkeleton } from '@/components/skeleton';
 import { Icon, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { PostResponseDto, UserProfileDto } from '@/dtos';
@@ -181,14 +181,7 @@ export default function ProfileScreen() {
   };
 
   if (loading) {
-    return (
-      <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center">
-        <ActivityIndicator size="large" color="#768D85" />
-        <Text variant="muted" className="mt-4">
-          Loading...
-        </Text>
-      </SafeAreaView>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (!userProfile) {

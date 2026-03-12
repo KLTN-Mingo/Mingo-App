@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   RefreshControl,
   TouchableOpacity,
@@ -11,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CreatePostButton } from '@/components/post/CreatePostButton';
 import { PostCard } from '@/components/post/PostCard';
+import { HomeSkeleton } from '@/components/skeleton';
 import { Icon, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { PostResponseDto, UserMinimalDto } from '@/dtos';
@@ -88,14 +88,7 @@ export default function HomeScreen() {
 
   // Loading state
   if (loading) {
-    return (
-      <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center">
-        <ActivityIndicator size="large" color="#768D85" />
-        <Text variant="muted" className="mt-4">
-          Loading...
-        </Text>
-      </SafeAreaView>
-    );
+    return <HomeSkeleton />;
   }
 
   // Error state

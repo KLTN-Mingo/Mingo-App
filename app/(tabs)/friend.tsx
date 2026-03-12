@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   RefreshControl,
   ScrollView,
@@ -11,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FriendCard } from '@/components/friend/FriendCard';
 import { FriendRequestCard } from '@/components/friend/FriendRequestCard';
+import { FriendListSkeleton, FriendRequestListSkeleton } from '@/components/skeleton';
 import { Icon, Input, Tab, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -123,11 +123,10 @@ export default function FriendScreen() {
   // Render content based on active tab
   const renderContent = () => {
     if (loading && !refreshing) {
-      return (
-        <View className="flex-1 items-center justify-center py-20">
-          <ActivityIndicator size="large" color="#768D85" />
-        </View>
-      );
+      if (activeTab === 'requests') {
+        return <FriendRequestListSkeleton count={3} />;
+      }
+      return <FriendListSkeleton count={5} />;
     }
 
     switch (activeTab) {

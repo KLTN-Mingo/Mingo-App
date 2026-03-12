@@ -1,127 +1,291 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, Platform } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../styles/colors";
-import { getNotifications } from "@/lib/service/notification.service";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAuth } from "@/context/AuthContext";
-import Pusher from "pusher-js/react-native";
-import { NotificationResponseDTO } from "@/dtos/NotificationDTO";
-import NotificationCard from "@/components/card/notification/NotificationCard";
+import { router } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Alert,
+  FlatList,
+  RefreshControl,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const PUSHER_APP_KEY = process.env.EXPO_PUBLIC_NEXT_PUBLIC_PUSHER_APP_KEY;
+import { NotificationCard } from '@/components/notification';
+import { NotificationScreenSkeleton } from '@/components/skeleton';
+import { Icon, Tab, Text } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
+import {
+  NotificationCountDto,
+  NotificationResponseDto,
+  NotificationType,
+  PaginationDto,
+} from '@/dtos';
+import { notificationService } from '@/services/notification.service';
 
-const Notification = () => {
-  const { colorScheme } = useTheme();
+type FilterType = 'all' | 'unread' | 'follow' | 'like' | 'comment';
+
+const FILTERS: { key: FilterType; label: string }[] = [
+  { key: 'all', label: 'Tất cả' },
+  { key: 'unread', label: 'Chưa đọc' },
+  { key: 'follow', label: 'Theo dõi' },
+  { key: 'like', label: 'Lượt thích' },
+  { key: 'comment', label: 'Bình luận' },
+];
+
+export default function NotificationScreen() {
   const { profile } = useAuth();
-  const [notifications, setNotifications] = useState<NotificationResponseDTO[]>(
-    []
+  const [notifications, setNotifications] = useState<NotificationResponseDto[]>([]);
+  const [pagination, setPagination] = useState<PaginationDto | null>(null);
+  const [count, setCount] = useState<NotificationCountDto | null>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchNotifications = useCallback(
+    async (page: number = 1, append: boolean = false) => {
+      try {
+        let type: NotificationType | undefined;
+        let isRead: boolean | undefined;
+
+        switch (activeFilter) {
+          case 'unread':
+            isRead = false;
+            break;
+          case 'follow':
+            type = NotificationType.FOLLOW_NEW;
+            break;
+          case 'like':
+            type = NotificationType.POST_LIKE;
+            break;
+          case 'comment':
+            type = NotificationType.POST_COMMENT;
+            break;
+        }
+
+        const result = await notificationService.getNotifications(
+          page,
+          20,
+          type,
+          isRead
+        );
+
+        if (append) {
+          setNotifications((prev) => [...prev, ...result.notifications]);
+        } else {
+          setNotifications(result.notifications);
+        }
+        setPagination(result.pagination);
+
+        // Get count
+        const countData = await notificationService.getNotificationCount();
+        setCount(countData);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+        setLoadingMore(false);
+      }
+    },
+    [activeFilter]
   );
 
   useEffect(() => {
-    let isMounted = true;
+    setLoading(true);
+    fetchNotifications(1);
+  }, [fetchNotifications]);
 
-    const fetchNotifications = async () => {
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchNotifications(1);
+  };
+
+  const onLoadMore = () => {
+    if (loadingMore || !pagination?.hasMore) return;
+    setLoadingMore(true);
+    fetchNotifications(pagination.page + 1, true);
+  };
+
+  const handleNotificationPress = async (notification: NotificationResponseDto) => {
+    // Mark as read
+    if (!notification.isRead) {
       try {
-        const token = await AsyncStorage.getItem("token");
-        if (!token) {
-          console.error("User is not authenticated");
-          return;
+        await notificationService.markAsRead(notification.id);
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notification.id ? { ...n, isRead: true } : n
+          )
+        );
+        if (count) {
+          setCount({ ...count, unread: Math.max(0, count.unread - 1) });
         }
-
-        const res = await getNotifications(token);
-        if (isMounted && Array.isArray(res)) {
-          setNotifications(res);
-        }
-      } catch (err) {
-        console.error("Failed to fetch notifications:", err);
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
       }
-    };
+    }
 
-    fetchNotifications();
+    // Navigate based on notification type
+    const { notificationType, entityId, postId, mediaId, commentId, actor } = notification;
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    switch (notificationType) {
+      case NotificationType.POST_LIKE:
+      case NotificationType.POST_COMMENT:
+      case NotificationType.POST_SHARE:
+      case NotificationType.POST_MENTION:
+        if (postId) router.push(`/post/${postId}` as any);
+        break;
+      case NotificationType.FOLLOW_REQUEST:
+      case NotificationType.FOLLOW_ACCEPTED:
+      case NotificationType.FOLLOW_NEW:
+      case NotificationType.CLOSE_FRIEND_REQUEST:
+      case NotificationType.CLOSE_FRIEND_ACCEPTED:
+        if (actor?.id) router.push(`/profile/${actor.id}` as any);
+        break;
+      default:
+        break;
+    }
+  };
 
-  useEffect(() => {
-    if (!profile?._id) return;
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      if (count) {
+        setCount({ ...count, unread: 0 });
+      }
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
 
-    const pusher = new Pusher(PUSHER_APP_KEY!, {
-      cluster: "ap1",
-      forceTLS: true,
-    });
+  const handleDeleteAll = () => {
+    Alert.alert(
+      'Xóa tất cả thông báo',
+      'Bạn có chắc chắn muốn xóa tất cả thông báo?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await notificationService.deleteAll();
+              setNotifications([]);
+              setCount({ total: 0, unread: 0, unseen: 0 });
+            } catch (error) {
+              console.error('Error deleting all notifications:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
 
-    const channelName = `notifications-${profile._id}`;
-    const channel = pusher.subscribe(channelName);
-
-    const handleNewNotification = (data: any) => {
-      const newNotification = {
-        ...data.notification,
-        senderId: data.sender,
-      };
-
-      setNotifications((prev) => {
-        const exists = prev.some((n) => n._id === newNotification._id);
-        if (exists) return prev;
-        return [newNotification, ...prev];
-      });
-    };
-
-    const handleDeletedNotification = (data: any) => {
-      setNotifications((prev) =>
-        prev.filter((n) => n._id !== data.notificationId)
-      );
-    };
-
-    channel.bind("new-notification", handleNewNotification);
-    channel.bind("notification-deleted", handleDeletedNotification);
-
-    return () => {
-      channel.unbind("new-notification", handleNewNotification);
-      channel.unbind("notification-deleted", handleDeletedNotification);
-      pusher.unsubscribe(channelName);
-      pusher.disconnect();
-    };
-  }, [profile?._id]);
+  if (loading) {
+    return <NotificationScreenSkeleton />;
+  }
 
   return (
-    <View
-      className="w-full p-4 h-full space-y-6"
-      style={{
-        paddingTop: Platform.OS === "android" ? 14 : 52,
-        backgroundColor:
-          colorScheme === "dark" ? colors.dark[500] : colors.light[500], // Sử dụng giá trị màu từ file colors.js
-        flex: 1,
-      }}
+    <SafeAreaView
+      className="flex-1 bg-background-light dark:bg-background-dark"
+      edges={['top']}
     >
-      <View className="h-full w-fit">
-        <View className="flex flex-row justify-between items-center pb-4">
-          <View>
-            <Text
-              style={{
-                fontSize: 24,
-                color:
-                  colorScheme === "dark" ? colors.dark[100] : colors.light[100],
-              }}
-              className="font-msemibold"
-            ></Text>
-          </View>
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-4 py-3">
+        <View className="flex-row items-center gap-2">
+          <Text variant="title" className="text-xl">
+            Thông báo
+          </Text>
+          {count && count.unread > 0 && (
+            <View className="bg-primary-500 rounded-full px-2 py-0.5">
+              <Text className="text-white text-xs font-semibold">
+                {count.unread > 99 ? '99+' : count.unread}
+              </Text>
+            </View>
+          )}
         </View>
-        <ScrollView className="mb-20 space-y-2">
-          {notifications.map((notification: any) => (
-            <NotificationCard
-              key={notification._id}
-              notification={notification}
-              profile={profile}
-              setNotifications={setNotifications}
-            />
-          ))}
-        </ScrollView>
-      </View>
-    </View>
-  );
-};
 
-export default Notification;
+        <View className="flex-row gap-2">
+          <TouchableOpacity
+            onPress={handleMarkAllAsRead}
+            className="p-2"
+            disabled={!count || count.unread === 0}
+          >
+            <Icon
+              name="checkmark.circle"
+              size={24}
+              color={count && count.unread > 0 ? '#768D85' : '#9CA3AF'}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleDeleteAll} className="p-2">
+            <Icon name="trash" size={24} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Filter Tabs */}
+      <View className="px-4 pb-2">
+        <FlatList
+          data={FILTERS}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={{ gap: 8 }}
+          renderItem={({ item }) => (
+            <Tab
+              content={item.label}
+              isActive={activeFilter === item.key}
+              onClick={() => setActiveFilter(item.key)}
+              badge={
+                item.key === 'unread' && count?.unread
+                  ? count.unread
+                  : undefined
+              }
+            />
+          )}
+        />
+      </View>
+
+      {/* Notification List */}
+      <FlatList
+        data={notifications}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <NotificationCard
+            notification={item}
+            onPress={handleNotificationPress}
+          />
+        )}
+        ItemSeparatorComponent={() => (
+          <View className="h-px bg-border-light dark:bg-border-dark" />
+        )}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#768D85']}
+            tintColor="#768D85"
+          />
+        }
+        onEndReached={onLoadMore}
+        onEndReachedThreshold={0.5}
+        ListEmptyComponent={
+          <View className="flex-1 items-center justify-center py-20">
+            <Icon name="bell" size={64} color="#9CA3AF" />
+            <Text variant="muted" className="mt-4 text-center">
+              Không có thông báo nào
+            </Text>
+          </View>
+        }
+        ListFooterComponent={
+          loadingMore ? (
+            <View className="py-4 items-center">
+              <Text variant="muted">Đang tải thêm...</Text>
+            </View>
+          ) : null
+        }
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
+  );
+}
