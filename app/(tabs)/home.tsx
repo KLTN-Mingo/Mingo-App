@@ -47,8 +47,10 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    if (profile) {
+      fetchPosts();
+    }
+  }, [profile, fetchPosts]);
 
   const onRefresh = async () => {
     setRefreshing(true);
