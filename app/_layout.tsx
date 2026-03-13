@@ -1,29 +1,34 @@
-import '@/global.css';
+import "@/global.css";
 
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { useFonts } from "expo-font";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import "react-native-reanimated";
 
-import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { ThemeProvider as AppThemeProvider } from '@/context/ThemeContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { ThemeProvider as AppThemeProvider } from "@/context/ThemeContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 // Giữ splash hiển thị cho đến khi auth check xong
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  anchor: "(tabs)",
 };
 
-function HideSplashWhenReady() {
+function HideSplashWhenReady({ fontsLoaded }: { fontsLoaded: boolean }) {
   const { isLoading } = useAuth();
 
   useEffect(() => {
-    if (!isLoading) SplashScreen.hideAsync();
-  }, [isLoading]);
+    if (!isLoading && fontsLoaded) SplashScreen.hideAsync();
+  }, [isLoading, fontsLoaded]);
 
   // An toàn: luôn ẩn splash sau 2.5s để tránh kẹt nếu checkAuth lỗi/hang
   useEffect(() => {
@@ -37,16 +42,35 @@ function HideSplashWhenReady() {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
+  const [fontsLoaded] = useFonts({
+    "Montserrat-Thin": require("@/assets/font/Montserrat-Thin.ttf"),
+    "Montserrat-Light": require("@/assets/font/Montserrat-Light.ttf"),
+    "Montserrat-ExtraLight": require("@/assets/font/Montserrat-ExtraLight.ttf"),
+    "Montserrat-Regular": require("@/assets/font/Montserrat-Regular.ttf"),
+    "Montserrat-Medium": require("@/assets/font/Montserrat-Medium.ttf"),
+    "Montserrat-SemiBold": require("@/assets/font/Montserrat-SemiBold.ttf"),
+    "Montserrat-Bold": require("@/assets/font/Montserrat-Bold.ttf"),
+    "Montserrat-ExtraBold": require("@/assets/font/Montserrat-ExtraBold.ttf"),
+    "Montserrat-Black": require("@/assets/font/Montserrat-Black.ttf"),
+    "Montserrat-Italic": require("@/assets/font/Montserrat-Italic.ttf"),
+    "JosefinSans-SemiBold": require("@/assets/font/JosefinSans-SemiBold.ttf"),
+  });
+
   return (
     <AuthProvider>
       <>
-        <HideSplashWhenReady />
+        <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
         <AppThemeProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <ThemeProvider
+            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+          >
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+              <Stack.Screen
+                name="modal"
+                options={{ presentation: "modal", title: "Modal" }}
+              />
             </Stack>
             <StatusBar style="auto" />
           </ThemeProvider>

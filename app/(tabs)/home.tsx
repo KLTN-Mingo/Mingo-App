@@ -1,23 +1,18 @@
-import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
-import {
-  FlatList,
-  RefreshControl,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { FlatList, RefreshControl, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { CreatePostButton } from '@/components/post/CreatePostButton';
-import { PostCard } from '@/components/post/PostCard';
-import { HomeSkeleton } from '@/components/skeleton';
-import { Icon, Text } from '@/components/ui';
-import { useAuth } from '@/context/AuthContext';
-import { PostResponseDto, UserMinimalDto } from '@/dtos';
-import { postService } from '@/services/post.service';
+import { CreatePostButton } from "@/components/post/CreatePostButton";
+import { PostCard } from "@/components/post/PostCard";
+import { HomeSkeleton } from "@/components/skeleton";
+import { Icon, Text } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
+import { PostResponseDto, UserMinimalDto } from "@/dtos";
+import { postService } from "@/services/post.service";
 
 export default function HomeScreen() {
-  const { profile } = useAuth();
+  const { profile, logout, setProfile } = useAuth();
   const [posts, setPosts] = useState<PostResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,8 +34,8 @@ export default function HomeScreen() {
       const data = await postService.getAllPosts();
       setPosts(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load posts');
-      console.error('Error fetching posts:', err);
+      setError(err.message || "Failed to load posts");
+      console.error("Error fetching posts:", err);
     } finally {
       setLoading(false);
     }
@@ -74,18 +69,22 @@ export default function HomeScreen() {
 
   const handleCommentPress = (postId: string) => {
     router.push(`/post/${postId}` as any);
-  };  
+  };
 
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}` as any);
   };
 
   const handleCreatePost = () => {
-    router.push('/create-post' as any);
+    router.push("/create-post" as any);
   };
 
   const handleSearch = () => {
-    router.push('/search' as any);
+    router.push("/search" as any);
+  };
+
+  const handleMessages = () => {
+    router.push("/(tabs)/notification" as any);
   };
 
   // Loading state
@@ -93,72 +92,76 @@ export default function HomeScreen() {
     return <HomeSkeleton />;
   }
 
-  // Error state
+  // Error state -> đăng xuất rồi chuyển đến màn đăng nhập
   if (error) {
+    const handleTryAgain = async () => {
+      try {
+        await logout();
+      } catch {
+        setProfile(null);
+      }
+      router.replace("/(auth)/signin" as any);
+    };
+
     return (
       <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4">
         <Icon name="exclamationmark.triangle" size={48} color="#EF4444" />
         <Text className="mt-4 text-center">{error}</Text>
         <TouchableOpacity
-          onPress={fetchPosts}
+          onPress={handleTryAgain}
           className="mt-4 bg-primary-400 px-6 py-3 rounded-xl"
         >
-          <Text className="text-white font-semibold">Try Again</Text>
+          <Text className="text-white font-semibold">Đăng nhập lại</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-background-light dark:bg-background-dark"
-      edges={['top']}
-    >
+    <SafeAreaView className="flex-1 bg-[#F3F4F3]" edges={["top"]}>
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
-          <>
+          <View className="px-4 pt-2 pb-3">
             {/* Header */}
-            <View className="flex-row items-center justify-between px-4 py-3">
-              <Text className="text-2xl font-semibold">
+            <View className="flex-row items-center justify-between py-2">
+              <Text className="text-[33px] leading-[38px] font-medium text-[#1E2021]">
                 Min<Text className="text-primary-400 font-bold">gle</Text>
               </Text>
-              <View className="flex-row items-center gap-2">
+              <View className="flex-row items-center gap-1">
                 <TouchableOpacity onPress={handleSearch} className="p-2">
-                  <Icon name="magnifyingglass" size={24} color="#768D85" />
+                  <Icon name="magnifyingglass" size={23} color="#1E2021" />
                 </TouchableOpacity>
-                {/* <Link href="/(tabs)/message" asChild>
-                  <TouchableOpacity className="p-2">
-                    <Icon name="bubble.left.and.bubble.right" size={24} color="#768D85" />
-                  </TouchableOpacity>
-                </Link> */}
+                <TouchableOpacity onPress={handleMessages} className="p-2">
+                  <Icon
+                    name="bubble.left.and.bubble.right"
+                    size={22}
+                    color="#1E2021"
+                  />
+                </TouchableOpacity>
               </View>
             </View>
 
             {/* Create Post Button */}
             <CreatePostButton user={userMinimal} onPress={handleCreatePost} />
-
-            {/* Divider */}
-            <View className="h-2 bg-surface-light dark:bg-surface-dark" />
-          </>
+          </View>
         }
         renderItem={({ item }) => (
           <PostCard
             post={item}
+            currentUser={userMinimal}
             onLikeChange={handleLikeChange}
             onCommentPress={handleCommentPress}
             onUserPress={handleUserPress}
           />
         )}
-        ItemSeparatorComponent={() => (
-          <View className="h-2 bg-surface-light dark:bg-surface-dark" />
-        )}
+        ItemSeparatorComponent={() => <View className="h-0.5" />}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#768D85']}
+            colors={["#768D85"]}
             tintColor="#768D85"
           />
         }
@@ -170,6 +173,7 @@ export default function HomeScreen() {
             </Text>
           </View>
         }
+        contentContainerStyle={{ paddingBottom: 96 }}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>

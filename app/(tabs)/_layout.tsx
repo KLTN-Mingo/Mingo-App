@@ -1,10 +1,10 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { Dimensions, View } from "react-native";
+import { View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { useTheme } from "../../context/ThemeContext";
 // import { useTheme } from "../../context/ThemeContext";
-const SCREEN_WIDTH = Dimensions.get("window").width;
+
 const TabIcon = ({ SvgIcon, color, focused }: any) => {
   return (
     <View
@@ -12,7 +12,7 @@ const TabIcon = ({ SvgIcon, color, focused }: any) => {
         alignItems: "center",
         justifyContent: "center",
         width: 50,
-        height: 39,
+        height: 36,
       }}
     >
       <SvgIcon color={color} focused={focused} />
@@ -137,19 +137,17 @@ const TabsLayout = () => {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarActiveTintColor: "#768D85",
-        tabBarInactiveTintColor: colorScheme === "dark" ? "#CFBFAD" : "#1E2021",
+        tabBarInactiveTintColor: colorScheme === "dark" ? "#A7AAA9" : "#1E2021",
         tabBarStyle: {
-          backgroundColor: colorScheme === "dark" ? "#252525" : "#FFFFFF",
-          height: 60,
-          // marginBottom: 20,
+          backgroundColor: colorScheme === "dark" ? "#1E1F1F" : "#FFFFFF",
+          height: 68,
+          paddingTop: 6,
           paddingBottom: 20,
-          marginHorizontal: (SCREEN_WIDTH - 430) / 2, // căn giữa
-          width: 430,
-          borderRadius: 25,
-          position: "absolute",
-          shadowOpacity: 0.1,
-          shadowRadius: 6,
-          elevation: 8,
+          // marginBottom: 20,
+          borderTopWidth: 1,
+          borderTopColor: colorScheme === "dark" ? "#323433" : "#ECEFEE",
+          elevation: 0,
+          shadowOpacity: 0,
         },
       }}
     >

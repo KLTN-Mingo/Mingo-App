@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { router } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -7,49 +7,75 @@ import {
   RefreshControl,
   ScrollView,
   TouchableOpacity,
-  View
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { PostCard } from '@/components/post/PostCard';
-import { ProfileHeader } from '@/components/profile/ProfileHeader';
-import { ProfileInfo } from '@/components/profile/ProfileInfo';
-import { ProfileTabs } from '@/components/profile/ProfileTabs';
-import { ProfileSkeleton } from '@/components/skeleton';
-import { Icon, Text } from '@/components/ui';
-import { useAuth } from '@/context/AuthContext';
-import { PostResponseDto, UserProfileDto } from '@/dtos';
-import { postService } from '@/services/post.service';
-import { userService } from '@/services/user.service';
+import { PostCard } from "@/components/post/PostCard";
+import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { ProfileInfo } from "@/components/profile/ProfileInfo";
+import { ProfileTabs } from "@/components/profile/ProfileTabs";
+import { ProfileSkeleton } from "@/components/skeleton";
+import { Icon, Text } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
+import { PostResponseDto, UserProfileDto } from "@/dtos";
+import { postService } from "@/services/post.service";
+import { userService } from "@/services/user.service";
 
-type TabKey = 'posts' | 'photos' | 'videos';
+type TabKey = "posts" | "photos" | "videos";
 
 export default function ProfileScreen() {
   const { profile, setProfile, logout } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfileDto | null>(null);
   const [posts, setPosts] = useState<PostResponseDto[]>([]);
-  const [activeTab, setActiveTab] = useState<TabKey>('posts');
+  const [activeTab, setActiveTab] = useState<TabKey>("posts");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    setProfileError(null);
     try {
-      const [userData, postsData] = await Promise.all([
-        userService.getCurrentUser(),
-        postService.getAllPosts(), // TODO: Get only user's posts
-      ]);
-
+      const userData = await userService.getCurrentUser();
       setUserProfile(userData);
-      // Filter posts by current user
-      const userPosts = postsData.filter((p) => p.userId === userData.id);
-      setPosts(userPosts);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+
+      try {
+        const postsData = await postService.getAllPosts();
+        const userPosts = postsData.filter((p) => p.userId === userData.id);
+        setPosts(userPosts);
+      } catch (postError) {
+        console.warn("Cannot load posts on profile:", postError);
+      }
+    } catch (error: any) {
+      console.warn("Cannot load profile:", error);
+
+      setProfileError(error?.message || "Không tải được thông tin cá nhân");
+
+      // Fallback: dùng profile từ AuthContext để vẫn hiển thị được.
+      if (profile) {
+        setUserProfile({
+          id: profile.id,
+          phoneNumber: profile.phoneNumber,
+          name: profile.name,
+          avatar: profile.avatar,
+          role: profile.role as any,
+          verified: profile.verified,
+          twoFactorEnabled: false,
+          isActive: true,
+          isBlocked: false,
+          onlineStatus: false,
+          followersCount: 0,
+          followingCount: 0,
+          postsCount: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [profile]);
 
   useEffect(() => {
     fetchData();
@@ -62,11 +88,11 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', [
-      { text: 'Hủy', style: 'cancel' },
+    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
+      { text: "Hủy", style: "cancel" },
       {
-        text: 'Đăng xuất',
-        style: 'destructive',
+        text: "Đăng xuất",
+        style: "destructive",
         onPress: async () => {
           await logout();
         },
@@ -75,12 +101,12 @@ export default function ProfileScreen() {
   };
 
   const handleEditProfile = () => {
-    router.push('/edit-profile' as any);
+    router.push("/edit-profile" as any);
   };
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'posts':
+      case "posts":
         return posts.length > 0 ? (
           posts.map((post) => (
             <PostCard
@@ -93,7 +119,9 @@ export default function ProfileScreen() {
                       ? {
                           ...p,
                           isLiked,
-                          likesCount: isLiked ? p.likesCount + 1 : p.likesCount - 1,
+                          likesCount: isLiked
+                            ? p.likesCount + 1
+                            : p.likesCount - 1,
                         }
                       : p
                   )
@@ -110,17 +138,17 @@ export default function ProfileScreen() {
           </View>
         );
 
-      case 'photos':
+      case "photos":
         const photos = posts
           .flatMap((p) => p.media || [])
-          .filter((m) => m.mediaType === 'image');
+          .filter((m) => m.mediaType === "image");
 
         return photos.length > 0 ? (
           <View className="flex-row flex-wrap">
             {photos.map((photo, index) => (
               <TouchableOpacity
                 key={photo.id || index}
-                style={{ width: '33.33%', aspectRatio: 1 }}
+                style={{ width: "33.33%", aspectRatio: 1 }}
                 className="p-0.5"
               >
                 <Image
@@ -140,17 +168,17 @@ export default function ProfileScreen() {
           </View>
         );
 
-      case 'videos':
+      case "videos":
         const videos = posts
           .flatMap((p) => p.media || [])
-          .filter((m) => m.mediaType === 'video');
+          .filter((m) => m.mediaType === "video");
 
         return videos.length > 0 ? (
           <View className="flex-row flex-wrap">
             {videos.map((video, index) => (
               <TouchableOpacity
                 key={video.id || index}
-                style={{ width: '33.33%', aspectRatio: 1 }}
+                style={{ width: "33.33%", aspectRatio: 1 }}
                 className="p-0.5 relative"
               >
                 <Image
@@ -185,33 +213,78 @@ export default function ProfileScreen() {
   }
 
   if (!userProfile) {
+    const handleRetry = () => {
+      setLoading(true);
+      fetchData();
+    };
+    const handleGoToLogin = async () => {
+      try {
+        await logout();
+      } catch {
+        setProfile(null);
+      }
+      router.replace("/(auth)/signin" as any);
+    };
+
     return (
-      <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center">
-        <Text>Failed to load profile</Text>
+      <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4">
+        <Icon name="exclamationmark.triangle" size={48} color="#EF4444" />
+        <Text className="mt-4 text-center">
+          {profileError || "Không tải được thông tin cá nhân"}
+        </Text>
+        <TouchableOpacity
+          onPress={handleRetry}
+          className="mt-4 bg-primary-400 px-6 py-3 rounded-xl w-48 items-center"
+        >
+          <Text className="text-white font-semibold">Thử lại</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleGoToLogin}
+          className="mt-3 px-6 py-3"
+        >
+          <Text className="text-primary-400 font-semibold">Đăng nhập lại</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
+  const handleRetryFromBanner = () => {
+    setProfileError(null);
+    setLoading(true);
+    fetchData();
+  };
+
   return (
     <SafeAreaView
       className="flex-1 bg-background-light dark:bg-background-dark"
-      edges={['top']}
+      edges={["top"]}
     >
       <ScrollView
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#768D85']}
+            colors={["#768D85"]}
             tintColor="#768D85"
           />
         }
         showsVerticalScrollIndicator={false}
       >
+        {profileError && (
+          <TouchableOpacity
+            onPress={handleRetryFromBanner}
+            className="mx-4 mt-2 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex-row items-center justify-between"
+          >
+            <Text className="flex-1 text-amber-800 dark:text-amber-200 text-sm">
+              Không tải được thông tin mới nhất. Nhấn để thử lại.
+            </Text>
+            <Text className="text-primary-400 font-semibold text-sm">Thử lại</Text>
+          </TouchableOpacity>
+        )}
         {/* Header with name and settings */}
         <View className="flex-row items-center justify-between px-4 py-3">
           <Text variant="title" className="text-xl">
-            {userProfile.name || 'Profile'}
+            {userProfile.name || "Profile"}
           </Text>
           <TouchableOpacity
             onPress={() => setSettingsVisible(true)}
@@ -224,14 +297,14 @@ export default function ProfileScreen() {
         {/* Profile Header (Background + Avatar) */}
         <ProfileHeader
           user={userProfile}
-          onEditBackground={() => console.log('Edit background')}
-          onEditAvatar={() => console.log('Edit avatar')}
+          onEditBackground={() => console.log("Edit background")}
+          onEditAvatar={() => console.log("Edit avatar")}
         />
 
         {/* Profile Info */}
         <ProfileInfo
           user={userProfile}
-          onEditBio={() => console.log('Edit bio')}
+          onEditBio={() => console.log("Edit bio")}
         />
 
         {/* Edit Profile Button */}
@@ -297,7 +370,11 @@ export default function ProfileScreen() {
               }}
               className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
             >
-              <Icon name="rectangle.portrait.and.arrow.right" size={22} color="#EF4444" />
+              <Icon
+                name="rectangle.portrait.and.arrow.right"
+                size={22}
+                color="#EF4444"
+              />
               <Text className="ml-3 text-red-500">Logout</Text>
             </TouchableOpacity>
 

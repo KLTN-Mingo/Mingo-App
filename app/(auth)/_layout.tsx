@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-import { SplashScreen, Stack } from "expo-router";
 import { useFonts } from "expo-font";
+import { SplashScreen, Stack } from "expo-router";
+import { useEffect } from "react";
 
 const AuthLayout = () => {
   const [fontsLoaded, error] = useFonts({

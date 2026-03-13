@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {
   ApiResponse,
@@ -9,10 +9,11 @@ import {
   PaginatedFollowingDto,
   PaginatedFollowRequestsDto,
   PaginatedFriendsDto,
-} from '@/dtos';
+} from "@/dtos";
+import { authService } from "@/services/auth.service";
 
 export const API_URL =
-  process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+  process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
 
 const BASE_URL = `${API_URL}/follow`;
 
@@ -20,12 +21,12 @@ async function fetchWithAuth<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = await AsyncStorage.getItem('accessToken');
+  const token = await AsyncStorage.getItem("accessToken");
 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
       ...options.headers,
     },
@@ -34,7 +35,8 @@ async function fetchWithAuth<T>(
   const json: ApiResponse<T> = await response.json();
 
   if (!response.ok) {
-    throw new Error(json.message || 'Something went wrong');
+    await authService.handleUnauthorizedResponse(response, json.message);
+    throw new Error(json.message || "Something went wrong");
   }
 
   return json.data;
@@ -56,7 +58,7 @@ export const FollowApi = {
   // Respond to follow request
   respondToRequest: (requestId: string, accept: boolean) =>
     fetchWithAuth<FollowResponseDto>(`/requests/${requestId}/respond`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ accept }),
     }),
 
@@ -90,23 +92,23 @@ export const FollowApi = {
 
   // Send follow request
   sendFollowRequest: (userId: string) =>
-    fetchWithAuth<FollowResponseDto>('/request', {
-      method: 'POST',
+    fetchWithAuth<FollowResponseDto>("/request", {
+      method: "POST",
       body: JSON.stringify({ userId }),
     }),
 
   // Unfollow
   unfollow: (userId: string) =>
-    fetchWithAuth<void>(`/unfollow/${userId}`, { method: 'DELETE' }),
+    fetchWithAuth<void>(`/unfollow/${userId}`, { method: "DELETE" }),
 
   // Send close friend request
   sendCloseFriendRequest: (userId: string) =>
-    fetchWithAuth<FollowResponseDto>('/close-friend/request', {
-      method: 'POST',
+    fetchWithAuth<FollowResponseDto>("/close-friend/request", {
+      method: "POST",
       body: JSON.stringify({ userId }),
     }),
 
   // Remove close friend
   removeCloseFriend: (userId: string) =>
-    fetchWithAuth<void>(`/close-friend/${userId}`, { method: 'DELETE' }),
+    fetchWithAuth<void>(`/close-friend/${userId}`, { method: "DELETE" }),
 };
