@@ -1,8 +1,9 @@
 import React from 'react';
 import { Dimensions, Image, TouchableOpacity, View } from 'react-native';
 
-import { Avatar, Icon } from '@/components/ui';
+import { Avatar } from '@/components/ui';
 import { UserProfileDto } from '@/dtos';
+import { CameraIcon } from '@/components/shared/icons/Icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BACKGROUND_HEIGHT = 180;
@@ -41,7 +42,7 @@ export function ProfileHeader({
         )}
         {isOwnProfile && (
           <View className="absolute bottom-2 right-2 bg-black/50 rounded-full p-2">
-            <Icon name="camera.fill" size={16} color="#fff" />
+            <CameraIcon size={18} color="#fff" />
           </View>
         )}
       </TouchableOpacity>
@@ -62,7 +63,7 @@ export function ProfileHeader({
           </View>
           {isOwnProfile && (
             <View className="absolute bottom-0 right-0 bg-primary-400 rounded-full p-1.5">
-              <Icon name="camera.fill" size={14} color="#fff" />
+              <CameraIcon size={16} color="#fff" />
             </View>
           )}
         </TouchableOpacity>

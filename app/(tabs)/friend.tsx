@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FriendCard } from '@/components/friend/FriendCard';
 import { FriendRequestCard } from '@/components/friend/FriendRequestCard';
 import { FriendListSkeleton, FriendRequestListSkeleton } from '@/components/skeleton';
-import { Icon, Input, Tab, Text } from '@/components/ui';
+import { Input, Tab, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import {
   CloseFriendDto,
@@ -21,6 +21,11 @@ import {
   FollowStatsDto,
   FriendDto,
 } from '@/dtos';
+import {
+  AddIcon,
+  FriendIcon,
+  SearchIcon,
+} from '@/components/shared/icons/Icons';
 import { FollowApi } from '@/services/follow.service';
 
 type TabType = 'requests' | 'friends' | 'bestfriends' | 'followers' | 'following';
@@ -267,7 +272,7 @@ export default function FriendScreen() {
 
   const renderEmptyState = (message: string) => (
     <View className="flex-1 items-center justify-center py-20">
-      <Icon name="person.2" size={48} color="#9CA3AF" />
+      <FriendIcon size={48} color="#9CA3AF" />
       <Text variant="muted" className="mt-4">{message}</Text>
     </View>
   );
@@ -285,10 +290,10 @@ export default function FriendScreen() {
               onPress={() => setIsSearchVisible(!isSearchVisible)}
               className="p-2"
             >
-              <Icon name="magnifyingglass" size={24} color="#768D85" />
+              <SearchIcon size={24} color="#768D85" />
             </TouchableOpacity>
             <TouchableOpacity className="p-2">
-              <Icon name="plus" size={24} color="#768D85" />
+              <AddIcon size={24} color="#768D85" />
             </TouchableOpacity>
           </View>
         </View>

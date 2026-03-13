@@ -1,8 +1,9 @@
 import React from "react";
 import { TouchableOpacity, View } from "react-native";
 
-import { Avatar, Icon, Text } from "@/components/ui";
+import { Avatar, Text } from "@/components/ui";
 import { UserMinimalDto } from "@/dtos";
+import { ImageIcon, MusicIcon, VideoIcon } from "@/components/shared/icons/Icons";
 
 interface CreatePostButtonProps {
   user?: UserMinimalDto | null;
@@ -35,13 +36,13 @@ export function CreatePostButton({ user, onPress }: CreatePostButtonProps) {
         <Text className="text-[15px] text-[#515A57]">Add to your post</Text>
         <View className="flex-row items-center gap-3">
           <TouchableOpacity className="p-0.5">
-            <Icon name="music.note" size={20} color="#2C3432" />
+            <MusicIcon size={20} color="#2C3432" />
           </TouchableOpacity>
           <TouchableOpacity className="p-0.5">
-            <Icon name="video" size={20} color="#2C3432" />
+            <VideoIcon size={20} color="#2C3432" />
           </TouchableOpacity>
           <TouchableOpacity className="p-0.5">
-            <Icon name="photo" size={20} color="#2C3432" />
+            <ImageIcon size={20} color="#2C3432" />
           </TouchableOpacity>
         </View>
       </View>

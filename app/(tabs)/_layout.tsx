@@ -143,7 +143,7 @@ const TabsLayout = () => {
           height: 68,
           paddingTop: 6,
           paddingBottom: 20,
-          // marginBottom: 20,
+          marginBottom: 20,
           borderTopWidth: 1,
           borderTopColor: colorScheme === "dark" ? "#323433" : "#ECEFEE",
           elevation: 0,

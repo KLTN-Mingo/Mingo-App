@@ -3,13 +3,20 @@ import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, RefreshControl, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { CommentModal } from "@/components/post/CommentModal";
 import { CreatePostButton } from "@/components/post/CreatePostButton";
 import { PostCard } from "@/components/post/PostCard";
 import { HomeSkeleton } from "@/components/skeleton";
-import { Icon, Text } from "@/components/ui";
+import { Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { PostResponseDto, UserMinimalDto } from "@/dtos";
 import { postService } from "@/services/post.service";
+import {
+  MessageIcon,
+  PostIcon,
+  ReportIcon,
+  SearchIcon,
+} from "@/components/shared/icons/Icons";
 
 export default function HomeScreen() {
   const { profile, logout, setProfile } = useAuth();
@@ -17,6 +24,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [commentPostId, setCommentPostId] = useState<string | null>(null);
 
   // Convert profile to UserMinimalDto for components
   const userMinimal: UserMinimalDto | null = profile
@@ -68,7 +76,15 @@ export default function HomeScreen() {
   };
 
   const handleCommentPress = (postId: string) => {
-    router.push(`/post/${postId}` as any);
+    setCommentPostId(postId);
+  };
+
+  const handleCommentCountChange = (postId: string, delta: number) => {
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId ? { ...p, commentsCount: p.commentsCount + delta } : p
+      )
+    );
   };
 
   const handleUserPress = (userId: string) => {
@@ -105,7 +121,7 @@ export default function HomeScreen() {
 
     return (
       <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4">
-        <Icon name="exclamationmark.triangle" size={48} color="#EF4444" />
+        <ReportIcon size={48} color="#EF4444" />
         <Text className="mt-4 text-center">{error}</Text>
         <TouchableOpacity
           onPress={handleTryAgain}
@@ -131,14 +147,10 @@ export default function HomeScreen() {
               </Text>
               <View className="flex-row items-center gap-1">
                 <TouchableOpacity onPress={handleSearch} className="p-2">
-                  <Icon name="magnifyingglass" size={23} color="#1E2021" />
+                  <SearchIcon size={23} color="#1E2021" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleMessages} className="p-2">
-                  <Icon
-                    name="bubble.left.and.bubble.right"
-                    size={22}
-                    color="#1E2021"
-                  />
+                  <MessageIcon size={22} color="#1E2021" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -167,7 +179,7 @@ export default function HomeScreen() {
         }
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
-            <Icon name="doc.text" size={48} color="#9CA3AF" />
+            <PostIcon size={48} color="#9CA3AF" />
             <Text variant="muted" className="mt-4">
               No posts yet
             </Text>
@@ -175,6 +187,12 @@ export default function HomeScreen() {
         }
         contentContainerStyle={{ paddingBottom: 96 }}
         showsVerticalScrollIndicator={false}
+      />
+
+      <CommentModal
+        postId={commentPostId}
+        onClose={() => setCommentPostId(null)}
+        onCommentCountChange={handleCommentCountChange}
       />
     </SafeAreaView>
   );

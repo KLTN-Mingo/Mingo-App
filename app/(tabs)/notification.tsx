@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NotificationCard } from '@/components/notification';
 import { NotificationScreenSkeleton } from '@/components/skeleton';
-import { Icon, Tab, Text } from '@/components/ui';
+import { Tab, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import {
   NotificationCountDto,
@@ -19,6 +19,11 @@ import {
   NotificationType,
   PaginationDto,
 } from '@/dtos';
+import {
+  CircleTickIcon,
+  NotificationIcon,
+  TrashIcon,
+} from '@/components/shared/icons/Icons';
 import { notificationService } from '@/services/notification.service';
 
 type FilterType = 'all' | 'unread' | 'follow' | 'like' | 'comment';
@@ -211,14 +216,13 @@ export default function NotificationScreen() {
             className="p-2"
             disabled={!count || count.unread === 0}
           >
-            <Icon
-              name="checkmark.circle"
+            <CircleTickIcon
               size={24}
               color={count && count.unread > 0 ? '#768D85' : '#9CA3AF'}
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleDeleteAll} className="p-2">
-            <Icon name="trash" size={24} color="#EF4444" />
+            <TrashIcon size={24} color="#EF4444" />
           </TouchableOpacity>
         </View>
       </View>
@@ -271,7 +275,7 @@ export default function NotificationScreen() {
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
-            <Icon name="bell" size={64} color="#9CA3AF" />
+            <NotificationIcon size={64} color="#9CA3AF" />
             <Text variant="muted" className="mt-4 text-center">
               Không có thông báo nào
             </Text>

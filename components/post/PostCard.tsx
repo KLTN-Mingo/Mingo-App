@@ -2,9 +2,16 @@ import { formatDistanceToNow } from "date-fns";
 import React, { useState } from "react";
 import { Dimensions, Image, TouchableOpacity, View } from "react-native";
 
-import { Avatar, Icon, Text } from "@/components/ui";
+import { Avatar, Text } from "@/components/ui";
 import { PostResponseDto, UserMinimalDto } from "@/dtos";
 import { postService } from "@/services/post.service";
+import {
+  CommentIcon,
+  LikeIcon,
+  LocationIcon,
+  MusicIcon,
+  ThreeDotsIcon,
+} from "@/components/shared/icons/Icons";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -137,7 +144,7 @@ export function PostCard({
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => onMorePress?.(post)} className="p-2">
-          <Icon name="ellipsis" size={20} color="#1E2021" />
+          <ThreeDotsIcon size={20} color="#1E2021" />
         </TouchableOpacity>
       </View>
 
@@ -155,7 +162,7 @@ export function PostCard({
         <View className="flex-row flex-wrap items-center px-4 pb-2 pt-1">
           {post.location?.name && (
             <View className="mr-2 flex-row items-center">
-              <Icon name="location" size={14} color="#8E9794" />
+              <LocationIcon size={14} color="#8E9794" />
               <Text className="ml-1 text-xs text-[#7E8785]">
                 {post.location.name}
               </Text>
@@ -164,12 +171,7 @@ export function PostCard({
           {firstMusicTag && (
             <View className="max-w-[70%] flex-row items-center">
               <Text className="text-xs text-[#7E8785]">-</Text>
-              <Icon
-                name="music.note"
-                size={14}
-                color="#8E9794"
-                className="ml-1"
-              />
+              <MusicIcon size={14} color="#8E9794" />
               <Text
                 className="ml-1 text-xs text-[#7E8785]"
                 numberOfLines={1}
@@ -217,11 +219,7 @@ export function PostCard({
           className="mr-6 flex-row items-center"
           disabled={likeLoading}
         >
-          <Icon
-            name={isLiked ? "heart.fill" : "heart"}
-            size={24}
-            color={isLiked ? "#EB5A5A" : "#212625"}
-          />
+          <LikeIcon size={24} color={isLiked ? "#EB5A5A" : "#212625"} />
           {likesCount > 0 && (
             <Text className="ml-2 text-[17px] text-[#2F3735]">
               {likesCount} likes
@@ -234,7 +232,7 @@ export function PostCard({
           onPress={() => onCommentPress?.(post.id)}
           className="flex-row items-center"
         >
-          <Icon name="bubble.left" size={23} color="#212625" />
+          <CommentIcon size={23} color="#212625" />
           {post.commentsCount > 0 && (
             <Text className="ml-2 text-[17px] text-[#2F3735]">
               {post.commentsCount} comments

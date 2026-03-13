@@ -16,11 +16,21 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfo } from "@/components/profile/ProfileInfo";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { ProfileSkeleton } from "@/components/skeleton";
-import { Icon, Text } from "@/components/ui";
+import { Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { PostResponseDto, UserProfileDto } from "@/dtos";
 import { postService } from "@/services/post.service";
 import { userService } from "@/services/user.service";
+import {
+  ImageIcon,
+  LogoutIcon,
+  MovieIcon,
+  PenIcon,
+  PostIcon,
+  ReportIcon,
+  SettingsIcon,
+  VideoIcon,
+} from "@/components/shared/icons/Icons";
 
 type TabKey = "posts" | "photos" | "videos";
 
@@ -131,7 +141,7 @@ export default function ProfileScreen() {
           ))
         ) : (
           <View className="items-center justify-center py-20">
-            <Icon name="doc.text" size={48} color="#9CA3AF" />
+            <PostIcon size={48} color="#9CA3AF" />
             <Text variant="muted" className="mt-4">
               No posts yet
             </Text>
@@ -161,7 +171,7 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View className="items-center justify-center py-20">
-            <Icon name="photo" size={48} color="#9CA3AF" />
+            <ImageIcon size={48} color="#9CA3AF" />
             <Text variant="muted" className="mt-4">
               No photos yet
             </Text>
@@ -188,7 +198,7 @@ export default function ProfileScreen() {
                 />
                 <View className="absolute inset-0 items-center justify-center">
                   <View className="bg-black/50 rounded-full p-2">
-                    <Icon name="play.fill" size={20} color="#fff" />
+                    <VideoIcon size={20} color="#fff" />
                   </View>
                 </View>
               </TouchableOpacity>
@@ -196,7 +206,7 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View className="items-center justify-center py-20">
-            <Icon name="video" size={48} color="#9CA3AF" />
+            <MovieIcon size={48} color="#9CA3AF" />
             <Text variant="muted" className="mt-4">
               No videos yet
             </Text>
@@ -228,7 +238,7 @@ export default function ProfileScreen() {
 
     return (
       <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4">
-        <Icon name="exclamationmark.triangle" size={48} color="#EF4444" />
+        <ReportIcon size={48} color="#EF4444" />
         <Text className="mt-4 text-center">
           {profileError || "Không tải được thông tin cá nhân"}
         </Text>
@@ -290,7 +300,7 @@ export default function ProfileScreen() {
             onPress={() => setSettingsVisible(true)}
             className="p-2"
           >
-            <Icon name="gear" size={24} color="#768D85" />
+            <SettingsIcon size={24} color="#768D85" />
           </TouchableOpacity>
         </View>
 
@@ -348,7 +358,7 @@ export default function ProfileScreen() {
               }}
               className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
             >
-              <Icon name="pencil" size={22} color="#768D85" />
+              <PenIcon size={22} color="#768D85" />
               <Text className="ml-3">Edit Profile</Text>
             </TouchableOpacity>
 
@@ -359,7 +369,7 @@ export default function ProfileScreen() {
               }}
               className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
             >
-              <Icon name="gear" size={22} color="#768D85" />
+              <SettingsIcon size={22} color="#768D85" />
               <Text className="ml-3">Account Settings</Text>
             </TouchableOpacity>
 
@@ -370,11 +380,7 @@ export default function ProfileScreen() {
               }}
               className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
             >
-              <Icon
-                name="rectangle.portrait.and.arrow.right"
-                size={22}
-                color="#EF4444"
-              />
+              <LogoutIcon size={22} color="#EF4444" />
               <Text className="ml-3 text-red-500">Logout</Text>
             </TouchableOpacity>
 

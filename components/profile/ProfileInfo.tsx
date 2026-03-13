@@ -1,8 +1,9 @@
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 
-import { Icon, Text } from '@/components/ui';
+import { Text } from '@/components/ui';
 import { UserProfileDto } from '@/dtos';
+import { CircleTickIcon } from '@/components/shared/icons/Icons';
 
 interface ProfileInfoProps {
   user: UserProfileDto;
@@ -23,7 +24,9 @@ export function ProfileInfo({
           {user.name || 'Unknown'}
         </Text>
         {user.verified && (
-          <Icon name="checkmark.seal.fill" size={20} color="#768D85" className="ml-2" />
+          <View className="ml-2">
+            <CircleTickIcon size={20} color="#768D85" />
+          </View>
         )}
       </View>
 
