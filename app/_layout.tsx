@@ -13,6 +13,8 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { CallProvider } from "@/context/CallContext";
+import { ChatProvider } from "@/context/ChatContext";
 import { ThemeProvider as AppThemeProvider } from "@/context/ThemeContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -61,6 +63,8 @@ export default function RootLayout() {
       <>
         <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
         <AppThemeProvider>
+          <ChatProvider>
+            <CallProvider>
           <ThemeProvider
             value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
           >
@@ -68,12 +72,22 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
               <Stack.Screen
+                name="chat"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="modal"
                 options={{ presentation: "modal", title: "Modal" }}
+              />
+              <Stack.Screen
+                name="(modals)"
+                options={{ headerShown: false }}
               />
             </Stack>
             <StatusBar style="auto" />
           </ThemeProvider>
+            </CallProvider>
+          </ChatProvider>
         </AppThemeProvider>
       </>
     </AuthProvider>
