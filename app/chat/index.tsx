@@ -9,13 +9,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChatListItem } from "@/components/chat";
+import { ArrowIcon } from "@/components/shared/icons/Icons";
 import { Input, Text } from "@/components/ui";
 import { useChatList } from "@/hooks/use-chat-list";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import {
-  ArrowIcon,
-  PlusIcon,
-} from "@/components/shared/icons/Icons";
 
 // Old Mingo_App colors for matching list UI
 const chatColors = {
@@ -36,11 +33,7 @@ export default function ChatListScreen() {
   const colors = colorScheme === "dark" ? chatColors.dark : chatColors.light;
   const iconColor = colorScheme === "dark" ? "#ffffff" : "#92898A";
 
-  const {
-    filteredConversations,
-    refetch,
-    setSearchQuery,
-  } = useChatList();
+  const { filteredConversations, refetch, setSearchQuery } = useChatList();
   const [searchText, setSearchText] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -113,9 +106,9 @@ export default function ChatListScreen() {
                 className="rounded-xl"
               />
             </View>
-            <TouchableOpacity style={{ padding: 4 }}>
+            {/* <TouchableOpacity style={{ padding: 4 }}>
               <PlusIcon color={iconColor} size={40} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
 
           <FlatList

@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Platform,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -19,9 +20,10 @@ import { Avatar, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useCall } from "@/context/CallContext";
 import { useChatContext } from "@/context/ChatContext";
-import { ConversationType } from "@/dtos";
+import { ConversationType, MessageResponseDto } from "@/dtos";
 import { useChatMessages } from "@/hooks/use-chat-messages";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { messageService } from "@/services/message.service";
 
 const chatColors = {
   dark: { 100: "#CFBFAD", 300: "#515E5A", 500: "#1E2021" },
@@ -46,7 +48,8 @@ export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile } = useAuth();
-  const { conversations, setConversations, setFilteredConversations } = useChatContext();
+  const { conversations, setConversations, setFilteredConversations } =
+    useChatContext();
   const conversation = conversations.find((c) => c.id === id);
   const isGroup = conversation?.type === ConversationType.GROUP;
   const currentUserId = profile?.id;
@@ -56,6 +59,10 @@ export default function ChatScreen() {
   const headerTextColor = isDark ? chatColors.dark[100] : "#1E2021";
   const iconColor = isDark ? "#ffffff" : "#92898A";
   const [infoModalVisible, setInfoModalVisible] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<MessageResponseDto[]>([]);
+  const [searching, setSearching] = useState(false);
 
   const { startVideoCall, startAudioCall } = useCall();
   const { messages, isLoading, error, sendMessage, sendFile, markAsRead } =
@@ -89,6 +96,24 @@ export default function ChatScreen() {
       receiverName,
       receiverAvatar,
     });
+  };
+
+  const handleSearch = async (q: string) => {
+    setSearchQuery(q);
+    if (!q.trim() || !id) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const results = await messageService.searchMessages(id, q.trim());
+      setSearchResults(results);
+    } catch (err) {
+      console.error("Search error:", err);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
   };
 
   useEffect(() => {
@@ -181,6 +206,50 @@ export default function ChatScreen() {
           </View>
         </View>
 
+        {searchVisible && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              gap: 8,
+              backgroundColor: isDark
+                ? chatColors.dark[500]
+                : chatColors.light[500],
+              borderBottomWidth: 1,
+              borderBottomColor: isDark ? "#333" : "#E5E7EB",
+            }}
+          >
+            <TextInput
+              autoFocus
+              value={searchQuery}
+              onChangeText={handleSearch}
+              placeholder="Search messages..."
+              placeholderTextColor={isDark ? "#888" : "#92898A"}
+              style={{
+                flex: 1,
+                fontSize: 14,
+                paddingVertical: 8,
+                paddingHorizontal: 16,
+                borderRadius: 9999,
+                borderWidth: 1,
+                borderColor: isDark ? "#444" : "#E5E7EB",
+                color: isDark ? "#CFBFAD" : "#1E2021",
+              }}
+            />
+            <TouchableOpacity
+              onPress={() => {
+                setSearchVisible(false);
+                setSearchQuery("");
+                setSearchResults([]);
+              }}
+            >
+              <Text style={{ color: "#FFAABB", fontSize: 14 }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <InfoChat
           visible={infoModalVisible}
           onClose={() => setInfoModalVisible(false)}
@@ -190,6 +259,7 @@ export default function ChatScreen() {
             setConversations(next);
             setFilteredConversations(next);
           }}
+          onOpenSearch={() => setSearchVisible(true)}
         />
 
         {/* Messages */}
@@ -207,7 +277,9 @@ export default function ChatScreen() {
           <>
             <FlatList
               ref={flatListRef}
-              data={messages}
+              data={
+                searchVisible && searchQuery.trim() ? searchResults : messages
+              }
               keyExtractor={(item) => item.id}
               style={{ flex: 1, backgroundColor: messagesBg }}
               contentContainerStyle={{
@@ -217,7 +289,11 @@ export default function ChatScreen() {
                 flexGrow: 1,
               }}
               renderItem={({ item, index }) => {
-                const prev = index > 0 ? messages[index - 1] : null;
+                const source =
+                  searchVisible && searchQuery.trim()
+                    ? searchResults
+                    : messages;
+                const prev = index > 0 ? source[index - 1] : null;
                 const prevDate = prev
                   ? new Date(prev.createdAt).toDateString()
                   : "";
@@ -235,7 +311,13 @@ export default function ChatScreen() {
               }}
               ListEmptyComponent={
                 <View className="py-12 items-center">
-                  <Text variant="muted">No messages yet. Say hi!</Text>
+                  <Text variant="muted">
+                    {searchVisible && searchQuery.trim()
+                      ? searching
+                        ? "Searching..."
+                        : "No results found"
+                      : "No messages yet. Say hi!"}
+                  </Text>
                 </View>
               }
             />

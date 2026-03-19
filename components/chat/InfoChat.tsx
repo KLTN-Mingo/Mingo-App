@@ -1,33 +1,41 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  ScrollView,
-  Platform,
-  Alert,
-} from "react-native";
 import {
   ArrowIcon,
-  UserIcon,
-  NotificationIcon,
-  SearchIcon,
-  ImageIcon,
-  FileIcon,
-  ReportIcon,
   BlockIcon,
+  FileIcon,
+  ImageIcon,
+  NotificationIcon,
+  ReportIcon,
+  SearchIcon,
   TrashIcon,
+  UserIcon,
 } from "@/components/shared/icons/Icons";
 import { Avatar } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
 import type { ChatConversationDto } from "@/dtos";
 import { ConversationType } from "@/dtos";
-import { useAuth } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { FileResponse, messageService } from "@/services/message.service";
 import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const chatColors = {
-  dark: { 100: "#CFBFAD", 200: "#515E5A", 300: "#515E5A", 500: "#1E2021", 700: "#1E2021" },
+  dark: {
+    100: "#CFBFAD",
+    200: "#515E5A",
+    300: "#515E5A",
+    500: "#1E2021",
+    700: "#1E2021",
+  },
   light: { 500: "#1E2021", 700: "#FAFAFA", 800: "#E8E8E8" },
 };
 
@@ -36,6 +44,7 @@ interface InfoChatProps {
   onClose: () => void;
   conversation: ChatConversationDto | null;
   onDeleteChat?: (conversationId: string) => void;
+  onOpenSearch?: () => void;
 }
 
 export function InfoChat({
@@ -43,6 +52,7 @@ export function InfoChat({
   onClose,
   conversation,
   onDeleteChat,
+  onOpenSearch,
 }: InfoChatProps) {
   const router = useRouter();
   const { profile } = useAuth();
@@ -53,6 +63,9 @@ export function InfoChat({
     conversation?.participants?.find((p) => p.id !== currentUserId)?.id;
   const isDark = colorScheme === "dark";
   const [notificationsOn, setNotificationsOn] = useState(true);
+  const [images, setImages] = useState<FileResponse[]>([]);
+  const [files, setFiles] = useState<FileResponse[]>([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
 
   const textColor = isDark ? chatColors.dark[100] : chatColors.light[500];
   const bgColor = isDark ? chatColors.dark[500] : chatColors.light[700];
@@ -66,6 +79,21 @@ export function InfoChat({
     if (otherUserId) router.push(`/profile/${otherUserId}` as any);
   };
 
+  useEffect(() => {
+    if (!visible || !conversation?.id) return;
+    setLoadingMedia(true);
+    Promise.all([
+      messageService.getImageList(conversation.id),
+      messageService.getFileList(conversation.id),
+    ])
+      .then(([imgs, fils]) => {
+        setImages(imgs);
+        setFiles(fils);
+      })
+      .catch((err) => console.error("Error loading media:", err))
+      .finally(() => setLoadingMedia(false));
+  }, [visible, conversation?.id]);
+
   const handleDeleteChat = () => {
     if (!conversation?.id) return;
     Alert.alert(
@@ -76,7 +104,12 @@ export function InfoChat({
         {
           text: "Remove",
           style: "destructive",
-          onPress: () => {
+          onPress: async () => {
+            try {
+              await messageService.deleteBox(conversation.id);
+            } catch (err) {
+              console.error("Delete box error:", err);
+            }
             onDeleteChat?.(conversation.id);
             onClose();
             router.back();
@@ -86,9 +119,10 @@ export function InfoChat({
     );
   };
 
-  const handleReport = () => {
+  const handleReport = async () => {
+    if (!conversation?.id) return;
+    await messageService.reportConversation(conversation.id);
     onClose();
-    // TODO: navigate to report or open report modal
   };
 
   const handleBlock = () => {
@@ -97,7 +131,12 @@ export function InfoChat({
       "Block this user? You won't receive messages from them.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Block", onPress: () => { onClose(); } },
+        {
+          text: "Block",
+          onPress: () => {
+            onClose();
+          },
+        },
       ]
     );
   };
@@ -119,28 +158,61 @@ export function InfoChat({
             paddingBottom: 40,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 12, marginBottom: 16 }}>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 12,
+              marginBottom: 16,
+            }}
+          >
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <ArrowIcon size={30} color="#FFAABB" />
             </TouchableOpacity>
-            <Text style={{ color: "#FFAABB", fontSize: 17, fontWeight: "600", marginLeft: 8 }}>
+            <Text
+              style={{
+                color: "#FFAABB",
+                fontSize: 17,
+                fontWeight: "600",
+                marginLeft: 8,
+              }}
+            >
               Chat info
             </Text>
           </View>
 
           <View style={{ alignItems: "center", marginBottom: 16 }}>
             <Avatar
-              source={conversation?.avatarUrl ? { uri: conversation.avatarUrl } : undefined}
+              source={
+                conversation?.avatarUrl
+                  ? { uri: conversation.avatarUrl }
+                  : undefined
+              }
               fallback={conversation?.name?.charAt(0)?.toUpperCase() ?? "?"}
               className="w-[70px] h-[70px]"
             />
             <Text
-              style={{ color: textColor, fontSize: 18, fontWeight: "500", marginTop: 12 }}
+              style={{
+                color: textColor,
+                fontSize: 18,
+                fontWeight: "500",
+                marginTop: 12,
+              }}
               numberOfLines={1}
             >
               {conversation?.name ?? "Chat"}
             </Text>
-            <Text style={{ color: textColor, fontSize: 14, opacity: 0.8, marginTop: 4 }}>
+            <Text
+              style={{
+                color: textColor,
+                fontSize: 14,
+                opacity: 0.8,
+                marginTop: 4,
+              }}
+            >
               {isGroup ? "Group" : "Direct chat"}
             </Text>
           </View>
@@ -170,7 +242,9 @@ export function InfoChat({
               >
                 <UserIcon size={26} color={iconColor} />
               </View>
-              <Text style={{ color: textColor, fontSize: 12, marginTop: 6 }}>Profile</Text>
+              <Text style={{ color: textColor, fontSize: 12, marginTop: 6 }}>
+                Profile
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -195,7 +269,10 @@ export function InfoChat({
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => { onClose(); /* TODO: open search in chat */ }}
+              onPress={() => {
+                onClose();
+                onOpenSearch?.();
+              }}
               style={{ alignItems: "center", width: 72 }}
             >
               <View
@@ -210,51 +287,171 @@ export function InfoChat({
               >
                 <SearchIcon size={24} color={iconColor} />
               </View>
-              <Text style={{ color: textColor, fontSize: 12, marginTop: 6 }}>Search</Text>
+              <Text style={{ color: textColor, fontSize: 12, marginTop: 6 }}>
+                Search
+              </Text>
             </TouchableOpacity>
           </View>
 
           <View style={{ paddingHorizontal: 16 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
               <ImageIcon size={24} color={iconColor} />
-              <Text style={{ color: textColor, fontSize: 16, marginLeft: 12 }}>Images</Text>
+              <Text style={{ color: textColor, fontSize: 16, marginLeft: 12 }}>
+                Images
+              </Text>
             </View>
-            <Text style={{ color: textColor, opacity: 0.7, fontSize: 14, marginLeft: 36 }}>
-              No images in this chat
-            </Text>
+            {loadingMedia ? (
+              <Text
+                style={{
+                  color: textColor,
+                  opacity: 0.7,
+                  fontSize: 14,
+                  marginLeft: 36,
+                }}
+              >
+                Loading...
+              </Text>
+            ) : images.length === 0 ? (
+              <Text
+                style={{
+                  color: textColor,
+                  opacity: 0.7,
+                  fontSize: 14,
+                  marginLeft: 36,
+                }}
+              >
+                No images in this chat
+              </Text>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginLeft: 36 }}
+              >
+                {images.map((img) => (
+                  <TouchableOpacity key={img._id} style={{ marginRight: 8 }}>
+                    <Image
+                      source={{ uri: img.url }}
+                      style={{ width: 72, height: 72, borderRadius: 8 }}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
 
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 20, marginBottom: 12 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginTop: 20,
+                marginBottom: 12,
+              }}
+            >
               <FileIcon size={24} color={iconColor} />
-              <Text style={{ color: textColor, fontSize: 16, marginLeft: 12 }}>Files</Text>
+              <Text style={{ color: textColor, fontSize: 16, marginLeft: 12 }}>
+                Files
+              </Text>
             </View>
-            <Text style={{ color: textColor, opacity: 0.7, fontSize: 14, marginLeft: 36 }}>
-              No files in this chat
-            </Text>
+            {loadingMedia ? (
+              <Text
+                style={{
+                  color: textColor,
+                  opacity: 0.7,
+                  fontSize: 14,
+                  marginLeft: 36,
+                }}
+              >
+                Loading...
+              </Text>
+            ) : files.length === 0 ? (
+              <Text
+                style={{
+                  color: textColor,
+                  opacity: 0.7,
+                  fontSize: 14,
+                  marginLeft: 36,
+                }}
+              >
+                No files in this chat
+              </Text>
+            ) : (
+              <View style={{ marginLeft: 36 }}>
+                {files.map((file) => (
+                  <TouchableOpacity
+                    key={file._id}
+                    style={{
+                      paddingVertical: 6,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <FileIcon size={18} color={iconColor} />
+                    <Text
+                      style={{ color: textColor, fontSize: 14 }}
+                      numberOfLines={1}
+                    >
+                      {file.fileName}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <TouchableOpacity
               onPress={handleReport}
-              style={{ flexDirection: "row", alignItems: "center", marginTop: 24, paddingVertical: 8 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginTop: 24,
+                paddingVertical: 8,
+              }}
             >
               <ReportIcon size={24} color={iconColor} />
-              <Text style={{ color: textColor, fontSize: 16, marginLeft: 12 }}>Report</Text>
+              <Text style={{ color: textColor, fontSize: 16, marginLeft: 12 }}>
+                Report
+              </Text>
             </TouchableOpacity>
 
             {!isGroup && (
               <TouchableOpacity
                 onPress={handleBlock}
-                style={{ flexDirection: "row", alignItems: "center", marginTop: 12, paddingVertical: 8 }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: 12,
+                  paddingVertical: 8,
+                }}
               >
                 <BlockIcon size={24} color={iconColor} />
-                <Text style={{ color: textColor, fontSize: 16, marginLeft: 12 }}>Block</Text>
+                <Text
+                  style={{ color: textColor, fontSize: 16, marginLeft: 12 }}
+                >
+                  Block
+                </Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity
               onPress={handleDeleteChat}
-              style={{ flexDirection: "row", alignItems: "center", marginTop: 12, paddingVertical: 8 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginTop: 12,
+                paddingVertical: 8,
+              }}
             >
               <TrashIcon size={24} color={iconColor} />
-              <Text style={{ color: "#E53935", fontSize: 16, marginLeft: 12 }}>Remove chat</Text>
+              <Text style={{ color: "#E53935", fontSize: 16, marginLeft: 12 }}>
+                Remove chat
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
