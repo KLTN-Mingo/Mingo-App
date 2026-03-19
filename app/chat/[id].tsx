@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -20,7 +20,7 @@ import { Avatar, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useCall } from "@/context/CallContext";
 import { useChatContext } from "@/context/ChatContext";
-import { ConversationType, MessageResponseDto } from "@/dtos";
+import { ChatConversationDto, ConversationType, MessageResponseDto } from "@/dtos";
 import { useChatMessages } from "@/hooks/use-chat-messages";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { messageService } from "@/services/message.service";
@@ -65,9 +65,47 @@ export default function ChatScreen() {
   const [searching, setSearching] = useState(false);
 
   const { startVideoCall, startAudioCall } = useCall();
-  const { messages, isLoading, error, sendMessage, sendFile, markAsRead } =
-    useChatMessages(id, isGroup);
+  const handleMessageSent = useCallback(
+    (newMsg: MessageResponseDto) => {
+      const updateConv = (list: ChatConversationDto[]) =>
+        list.map((c) => {
+          if (c.id !== id) return c;
+          return {
+            ...c,
+            updatedAt: newMsg.createdAt,
+            lastMessage: {
+              id: newMsg.id,
+              conversationId: id ?? "",
+              senderId: newMsg.senderId,
+              content: newMsg.content ?? "",
+              createdAt: newMsg.createdAt,
+              isRevoked: false,
+              readBy: newMsg.readBy ?? [],
+              attachment: newMsg.attachment,
+            },
+            unreadCount: 0,
+          };
+        });
+
+      setConversations((prev) => updateConv(prev));
+      setFilteredConversations((prev) => updateConv(prev));
+    },
+    [id, setConversations, setFilteredConversations]
+  );
+  const {
+    messages,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    error,
+    sendMessage,
+    sendFile,
+    markAsRead,
+    loadMore,
+  } = useChatMessages(id, isGroup, handleMessageSent);
   const flatListRef = useRef<FlatList>(null);
+  const lastMessageIdRef = useRef<string>("");
+  const initialScrollDoneRef = useRef(false);
 
   const roomId = id ?? "";
   const receiverId =
@@ -97,6 +135,45 @@ export default function ChatScreen() {
       receiverAvatar,
     });
   };
+
+  // Scroll lần đầu sau khi load xong
+  useEffect(() => {
+    if (isLoading) return;
+    if (initialScrollDoneRef.current) return;
+    if (messages.length === 0) return;
+
+    initialScrollDoneRef.current = true;
+    const lastMsg = messages[messages.length - 1];
+    lastMessageIdRef.current = lastMsg.id;
+
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: false });
+    }, 300);
+  }, [isLoading, messages]);
+
+  // Scroll khi có tin nhắn mới sau lần đầu
+  useEffect(() => {
+    if (!initialScrollDoneRef.current) return;
+    if (messages.length === 0) return;
+
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.id !== lastMessageIdRef.current) {
+      lastMessageIdRef.current = lastMsg.id;
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages]);
+
+  const handleScroll = useCallback(
+    (event: any) => {
+      const offsetY = event.nativeEvent.contentOffset.y;
+      if (offsetY < 50 && hasMore && !isLoadingMore) {
+        loadMore();
+      }
+    },
+    [hasMore, isLoadingMore, loadMore]
+  );
 
   const handleSearch = async (q: string) => {
     setSearchQuery(q);
@@ -288,6 +365,38 @@ export default function ChatScreen() {
                 paddingBottom: 8,
                 flexGrow: 1,
               }}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+              ListHeaderComponent={
+                isLoadingMore ? (
+                  <View
+                    style={{ paddingVertical: 12, alignItems: "center" }}
+                  >
+                    <Text
+                      style={{
+                        color: isDark ? "#888" : "#92898A",
+                        fontSize: 13,
+                      }}
+                    >
+                      Loading older messages...
+                    </Text>
+                  </View>
+                ) : hasMore ? (
+                  <View
+                    style={{ paddingVertical: 12, alignItems: "center" }}
+                  >
+                    <Text
+                      style={{
+                        color: isDark ? "#888" : "#92898A",
+                        fontSize: 13,
+                      }}
+                    >
+                      Scroll up for older messages
+                    </Text>
+                  </View>
+                ) : null
+              }
               renderItem={({ item, index }) => {
                 const source =
                   searchVisible && searchQuery.trim()

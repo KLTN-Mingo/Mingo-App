@@ -44,38 +44,30 @@ export function ChatListItem({ conversation }: ChatListItemProps) {
     >
       <Avatar
         source={
-          conversation.avatarUrl
-            ? { uri: conversation.avatarUrl }
-            : undefined
+          conversation.avatarUrl ? { uri: conversation.avatarUrl } : undefined
         }
         fallback={conversation.name?.charAt(0)?.toUpperCase() || "?"}
         size="lg"
       />
       <View className="flex-1 ml-3 min-w-0">
         <View className="flex-row items-center justify-between">
-          <Text
-            variant="semibold"
-            numberOfLines={1}
-            className="flex-1"
-          >
+          <Text variant="semibold" numberOfLines={1} className="flex-1">
             {conversation.name || "Unknown"}
           </Text>
           <Text variant="muted" className="text-xs ml-2">
             {timeStr}
           </Text>
         </View>
-        <Text
-          variant="muted"
-          numberOfLines={1}
-          className="mt-0.5 text-sm"
-        >
+        <Text variant="muted" numberOfLines={1} className="mt-0.5 text-sm">
           {preview}
         </Text>
       </View>
       {conversation.unreadCount != null && conversation.unreadCount > 0 && (
         <View className="w-5 h-5 rounded-full bg-primary-400 items-center justify-center ml-2">
           <Text className="text-xs text-white font-semibold">
-            {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+            {conversation.unreadCount > 99
+              ? "99+"
+              : conversation.unreadCount}{" "}
           </Text>
         </View>
       )}
