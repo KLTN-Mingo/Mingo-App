@@ -6,17 +6,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CommentModal } from "@/components/post/CommentModal";
 import { CreatePostButton } from "@/components/post/CreatePostButton";
 import { PostCard } from "@/components/post/PostCard";
-import { HomeSkeleton } from "@/components/skeleton";
-import { Text } from "@/components/ui";
-import { useAuth } from "@/context/AuthContext";
-import { PostResponseDto, UserMinimalDto } from "@/dtos";
-import { postService } from "@/services/post.service";
 import {
   MessageIcon,
   PostIcon,
   ReportIcon,
   SearchIcon,
 } from "@/components/shared/icons/Icons";
+import { HomeSkeleton } from "@/components/skeleton";
+import { Text } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
+import { PostResponseDto, UserMinimalDto } from "@/dtos";
+import { postService } from "@/services/post.service";
 
 export default function HomeScreen() {
   const { profile, logout, setProfile } = useAuth();
@@ -100,7 +100,7 @@ export default function HomeScreen() {
   };
 
   const handleMessages = () => {
-    router.push("/(tabs)/notification" as any);
+    router.push("/chat" as any);
   };
 
   // Loading state
