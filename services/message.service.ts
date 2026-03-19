@@ -230,6 +230,41 @@ class MessageServiceClass {
     };
   }
 
+  /** GET /:boxId/media/images — lấy danh sách ảnh trong box */
+  async getImageList(boxId: string): Promise<FileResponse[]> {
+    const data = await this.request<FileResponse[]>(
+      "GET",
+      `/${encodeURIComponent(boxId)}/media/images`
+    );
+    return Array.isArray(data) ? data : [];
+  }
+
+  /** GET /:boxId/media/files — lấy danh sách file khác trong box */
+  async getFileList(boxId: string): Promise<FileResponse[]> {
+    const data = await this.request<FileResponse[]>(
+      "GET",
+      `/${encodeURIComponent(boxId)}/media/files`
+    );
+    return Array.isArray(data) ? data : [];
+  }
+
+  /** GET /:boxId/search?q=query — tìm kiếm tin nhắn trong box */
+  async searchMessages(
+    boxId: string,
+    query: string
+  ): Promise<MessageResponseDto[]> {
+    const data = await this.request<{
+      success: boolean;
+      messages: MessageResponse[];
+    }>("GET", `/${encodeURIComponent(boxId)}/search`, {
+      query: { q: query },
+    });
+    const d = data as { success: boolean; messages: MessageResponse[] };
+    return Array.isArray(d.messages)
+      ? d.messages.map((m) => this.mapMessageToDto(m))
+      : [];
+  }
+
   /** GET /:boxId/group — group messages in a box */
   async getGroupMessages(boxId: string): Promise<MessageListData> {
     const data = await this.request<MessageListData>(
@@ -381,6 +416,20 @@ class MessageServiceClass {
       `/${encodeURIComponent(messageId)}`,
       { body: { action } }
     );
+  }
+
+  /** DELETE /boxes/:boxId — xóa box chat */
+  async deleteBox(boxId: string): Promise<void> {
+    await this.request<{ message?: string }>(
+      "DELETE",
+      `/boxes/${encodeURIComponent(boxId)}`
+    );
+  }
+
+  /** POST report — tạm thời log, backend chưa có endpoint */
+  async reportConversation(boxId: string): Promise<void> {
+    // TODO: implement khi backend có endpoint /report
+    console.log("Report conversation:", boxId);
   }
 
   // ─── Helpers for existing UI (map to app DTOs) ───────────────────────────────
