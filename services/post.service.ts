@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ApiResponse,
   CreatePostRequestDto,
+  FeedTab,
   PaginatedPostsDto,
   PostDetailDto,
   PostResponseDto,
@@ -12,6 +13,48 @@ import { authService } from "@/services/auth.service";
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
 
 class PostService {
+  private normalizePost(raw: any): PostResponseDto {
+    const postId = raw?.id ?? raw?._id?.toString?.() ?? String(raw?._id ?? "");
+
+    const rawUser = raw?.user;
+    const userId =
+      raw?.userId ??
+      rawUser?.id ??
+      rawUser?._id?.toString?.() ??
+      String(rawUser?._id ?? "");
+
+    const user = rawUser
+      ? {
+          ...rawUser,
+          id:
+            rawUser.id ??
+            rawUser._id?.toString?.() ??
+            String(rawUser._id ?? ""),
+        }
+      : undefined;
+
+    return {
+      ...raw,
+      id: postId,
+      userId,
+      user,
+      media: Array.isArray(raw?.media)
+        ? raw.media
+        : Array.isArray(raw?.mediaFiles)
+          ? raw.mediaFiles
+          : [],
+      mentions: Array.isArray(raw?.mentions) ? raw.mentions : [],
+      hashtags: Array.isArray(raw?.hashtags) ? raw.hashtags : [],
+      likesCount: Number(raw?.likesCount ?? 0),
+      commentsCount: Number(raw?.commentsCount ?? 0),
+      sharesCount: Number(raw?.sharesCount ?? 0),
+      savesCount: Number(raw?.savesCount ?? 0),
+      viewsCount: Number(raw?.viewsCount ?? 0),
+      createdAt: raw?.createdAt ?? new Date().toISOString(),
+      updatedAt: raw?.updatedAt ?? raw?.createdAt ?? new Date().toISOString(),
+    } as PostResponseDto;
+  }
+
   private async getAuthHeaders(): Promise<HeadersInit> {
     const token = await AsyncStorage.getItem("accessToken");
     return {
@@ -46,9 +89,50 @@ class PostService {
     return this.request<PostResponseDto[]>("");
   }
 
-  // Get feed posts (from following)
-  async getFeedPosts(page = 1, limit = 10): Promise<PaginatedPostsDto> {
-    return this.request<PaginatedPostsDto>(`/feed?page=${page}&limit=${limit}`);
+  // Get feed posts by tab (explore/friends)
+  async getFeedPosts(
+    page = 1,
+    limit = 20,
+    tab: FeedTab = "explore"
+  ): Promise<PaginatedPostsDto> {
+    const raw = await this.request<any>(
+      `/feed?tab=${tab}&page=${page}&limit=${limit}`
+    );
+
+    const rawPosts = Array.isArray(raw?.posts)
+      ? raw.posts
+      : Array.isArray(raw?.items)
+        ? raw.items
+        : Array.isArray(raw)
+          ? raw
+          : [];
+
+    const posts = rawPosts.map((item: any) => this.normalizePost(item));
+
+    const rawPagination = raw?.pagination ?? {};
+    const pagination = {
+      page: Number(rawPagination.page ?? page),
+      limit: Number(rawPagination.limit ?? limit),
+      total: Number(rawPagination.total ?? posts.length),
+      totalPages: Number(rawPagination.totalPages ?? 1),
+      hasMore: Boolean(rawPagination.hasMore ?? false),
+    };
+
+    const data: PaginatedPostsDto = {
+      posts,
+      pagination,
+    };
+
+    console.log("[postService.getFeedPosts]", {
+      tab,
+      page,
+      limit,
+      raw,
+      normalizedPostsCount: posts.length,
+      data,
+    });
+
+    return data;
   }
 
   // Get trending posts

@@ -5,24 +5,25 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// Cập nhật theo bảng màu dark mode mới
+const tintColorLight = '#768D85';
+const tintColorDark = '#768D85';
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: '#CFBFAD',
+    background: '#1E2021',
     tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
+    icon: '#CFBFAD',
+    tabIconDefault: '#515E5A',
     tabIconSelected: tintColorLight,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
+    text: '#CFBFAD',
+    background: '#1E2021',
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: '#CFBFAD',
+    tabIconDefault: '#515E5A',
     tabIconSelected: tintColorDark,
   },
 };

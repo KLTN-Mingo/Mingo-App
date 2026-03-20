@@ -1,10 +1,6 @@
 import "@/global.css";
 
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
+import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -14,7 +10,6 @@ import "react-native-reanimated";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider as AppThemeProvider } from "@/context/ThemeContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 
 // Giữ splash hiển thị cho đến khi auth check xong
 SplashScreen.preventAutoHideAsync();
@@ -40,8 +35,6 @@ function HideSplashWhenReady({ fontsLoaded }: { fontsLoaded: boolean }) {
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   const [fontsLoaded] = useFonts({
     "Montserrat-Thin": require("@/assets/font/Montserrat-Thin.ttf"),
     "Montserrat-Light": require("@/assets/font/Montserrat-Light.ttf"),
@@ -61,9 +54,8 @@ export default function RootLayout() {
       <>
         <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
         <AppThemeProvider>
-          <ThemeProvider
-            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-          >
+          {/* Luôn dùng DarkTheme cho toàn bộ app */}
+          <ThemeProvider value={DarkTheme}>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -72,7 +64,7 @@ export default function RootLayout() {
                 options={{ presentation: "modal", title: "Modal" }}
               />
             </Stack>
-            <StatusBar style="auto" />
+            <StatusBar style="light" />
           </ThemeProvider>
         </AppThemeProvider>
       </>

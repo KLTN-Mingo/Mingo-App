@@ -6,23 +6,36 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CommentModal } from "@/components/post/CommentModal";
 import { CreatePostButton } from "@/components/post/CreatePostButton";
 import { PostCard } from "@/components/post/PostCard";
-import { HomeSkeleton } from "@/components/skeleton";
-import { Text } from "@/components/ui";
-import { useAuth } from "@/context/AuthContext";
-import { PostResponseDto, UserMinimalDto } from "@/dtos";
-import { postService } from "@/services/post.service";
 import {
   MessageIcon,
   PostIcon,
   ReportIcon,
   SearchIcon,
 } from "@/components/shared/icons/Icons";
+import { HomeSkeleton } from "@/components/skeleton";
+import { Tab, Text } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
+import {
+  FeedTab,
+  PaginationDto,
+  PostResponseDto,
+  UserMinimalDto,
+} from "@/dtos";
+import { postService } from "@/services/post.service";
+
+const FEED_TABS: { key: FeedTab; label: string }[] = [
+  { key: "explore", label: "Khám phá" },
+  { key: "friends", label: "Bạn bè" },
+];
 
 export default function HomeScreen() {
   const { profile, logout, setProfile } = useAuth();
+  const [activeTab, setActiveTab] = useState<FeedTab>("explore");
   const [posts, setPosts] = useState<PostResponseDto[]>([]);
+  const [pagination, setPagination] = useState<PaginationDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
 
@@ -36,29 +49,62 @@ export default function HomeScreen() {
       }
     : null;
 
-  const fetchPosts = useCallback(async () => {
-    try {
-      setError(null);
-      const data = await postService.getAllPosts();
-      setPosts(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to load posts");
-      console.error("Error fetching posts:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchPosts = useCallback(
+    async (
+      page: number = 1,
+      append: boolean = false,
+      tab: FeedTab = activeTab
+    ) => {
+      try {
+        if (!append) {
+          setError(null);
+        }
+
+        const data = await postService.getFeedPosts(page, 20, tab);
+
+        if (append) {
+          setPosts((prev) => [...prev, ...data.posts]);
+        } else {
+          setPosts(data.posts);
+        }
+        setPagination(data.pagination);
+      } catch (err: any) {
+        if (!append) {
+          setError(err.message || "Failed to load posts");
+        }
+        console.error("Error fetching posts:", err);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+        setLoadingMore(false);
+      }
+    },
+    [activeTab]
+  );
 
   useEffect(() => {
     if (profile) {
-      fetchPosts();
+      setLoading(true);
+      fetchPosts(1, false, activeTab);
     }
-  }, [profile, fetchPosts]);
+  }, [profile, activeTab, fetchPosts]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchPosts();
-    setRefreshing(false);
+    await fetchPosts(1, false, activeTab);
+  };
+
+  const handleTabChange = (tab: FeedTab) => {
+    if (tab === activeTab) return;
+    setPosts([]);
+    setPagination(null);
+    setActiveTab(tab);
+  };
+
+  const onLoadMore = () => {
+    if (loadingMore || !pagination?.hasMore) return;
+    setLoadingMore(true);
+    fetchPosts(pagination.page + 1, true, activeTab);
   };
 
   const handleLikeChange = (postId: string, isLiked: boolean) => {
@@ -134,7 +180,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F3F4F3]" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-background-dark" edges={["top"]}>
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -142,21 +188,33 @@ export default function HomeScreen() {
           <View className="px-4 pt-2 pb-3">
             {/* Header */}
             <View className="flex-row items-center justify-between py-2">
-              <Text className="text-[33px] leading-[38px] font-medium text-[#1E2021]">
-                Min<Text className="text-primary-400 font-bold">gle</Text>
+              <Text className="text-[33px] leading-[38px] font-medium text-text-dark">
+                Min<Text className="text-primary-100 font-bold">gle</Text>
               </Text>
               <View className="flex-row items-center gap-1">
                 <TouchableOpacity onPress={handleSearch} className="p-2">
-                  <SearchIcon size={23} color="#1E2021" />
+                  <SearchIcon size={23} color="#CFBFAD" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleMessages} className="p-2">
-                  <MessageIcon size={22} color="#1E2021" />
+                  <MessageIcon size={22} color="#CFBFAD" />
                 </TouchableOpacity>
               </View>
             </View>
 
             {/* Create Post Button */}
             <CreatePostButton user={userMinimal} onPress={handleCreatePost} />
+
+            {/* Feed Tabs */}
+            <View className="mt-3 flex-row gap-2">
+              {FEED_TABS.map((tab) => (
+                <Tab
+                  key={tab.key}
+                  content={tab.label}
+                  isActive={activeTab === tab.key}
+                  onClick={() => handleTabChange(tab.key)}
+                />
+              ))}
+            </View>
           </View>
         }
         renderItem={({ item }) => (
@@ -177,13 +235,24 @@ export default function HomeScreen() {
             tintColor="#768D85"
           />
         }
+        onEndReached={onLoadMore}
+        onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
             <PostIcon size={48} color="#9CA3AF" />
             <Text variant="muted" className="mt-4">
-              No posts yet
+              {activeTab === "explore"
+                ? "Chưa có bài viết để khám phá"
+                : "Chưa có bài viết từ bạn bè"}
             </Text>
           </View>
+        }
+        ListFooterComponent={
+          loadingMore ? (
+            <View className="py-4 items-center">
+              <Text variant="muted">Đang tải thêm...</Text>
+            </View>
+          ) : null
         }
         contentContainerStyle={{ paddingBottom: 96 }}
         showsVerticalScrollIndicator={false}
