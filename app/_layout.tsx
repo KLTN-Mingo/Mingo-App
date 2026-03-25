@@ -9,6 +9,8 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { CallProvider } from "@/context/CallContext";
+import { ChatProvider } from "@/context/ChatContext";
 import { ThemeProvider as AppThemeProvider } from "@/context/ThemeContext";
 
 // Giữ splash hiển thị cho đến khi auth check xong
@@ -55,17 +57,32 @@ export default function RootLayout() {
         <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
         <AppThemeProvider>
           {/* Luôn dùng DarkTheme cho toàn bộ app */}
-          <ThemeProvider value={DarkTheme}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="modal"
-                options={{ presentation: "modal", title: "Modal" }}
-              />
-            </Stack>
-            <StatusBar style="light" />
-          </ThemeProvider>
+          <ChatProvider>
+            <CallProvider>
+              <ThemeProvider value={DarkTheme}>
+                <Stack>
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="(auth)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen name="chat" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="modal"
+                    options={{ presentation: "modal", title: "Modal" }}
+                  />
+                  <Stack.Screen
+                    name="(modals)"
+                    options={{ headerShown: false }}
+                  />
+                </Stack>
+                <StatusBar style="light" />
+              </ThemeProvider>
+            </CallProvider>
+          </ChatProvider>
         </AppThemeProvider>
       </>
     </AuthProvider>
