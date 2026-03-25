@@ -146,7 +146,7 @@ export default function HomeScreen() {
   };
 
   const handleMessages = () => {
-    router.push("/(tabs)/notification" as any);
+    router.push("/chat" as any);
   };
 
   // Loading state

@@ -21,3 +21,9 @@ export * from './media.dto';
 
 // Notification
 export * from './notification.dto';
+
+// Message / Chat
+export * from './message.dto';
+
+// Call / Socket
+export * from './call.dto';
