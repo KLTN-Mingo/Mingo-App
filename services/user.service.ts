@@ -17,8 +17,8 @@ class UserService {
     const nestedError =
       typeof json.error === "string"
         ? json.error
-        : typeof (json.error as Record<string, unknown> | undefined)?.message ===
-          "string"
+        : typeof (json.error as Record<string, unknown> | undefined)
+              ?.message === "string"
           ? ((json.error as Record<string, unknown>).message as string)
           : undefined;
 

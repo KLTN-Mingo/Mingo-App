@@ -41,7 +41,11 @@ class CommentService {
   }
 
   // Get comments for a post
-  async getComments(postId: string, page = 1, limit = 20): Promise<PaginatedCommentsDto> {
+  async getComments(
+    postId: string,
+    page = 1,
+    limit = 20
+  ): Promise<PaginatedCommentsDto> {
     return this.request<PaginatedCommentsDto>(
       `/posts/${postId}/comments?page=${page}&limit=${limit}`
     );

@@ -13,12 +13,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PostCard } from "@/components/post/PostCard";
+import { ArrowIcon, LikeIcon, SendIcon } from "@/components/shared/icons/Icons";
 import { Avatar, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { CommentResponseDto, PostResponseDto, UserMinimalDto } from "@/dtos";
 import { commentService } from "@/services/comment.service";
 import { postService } from "@/services/post.service";
-import { ArrowIcon, LikeIcon, SendIcon } from "@/components/shared/icons/Icons";
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,7 +33,12 @@ export default function PostDetailScreen() {
   const inputRef = useRef<TextInput>(null);
 
   const currentUser: UserMinimalDto | null = profile
-    ? { id: profile.id, name: profile.name, avatar: profile.avatar, verified: profile.verified }
+    ? {
+        id: profile.id,
+        name: profile.name,
+        avatar: profile.avatar,
+        verified: profile.verified,
+      }
     : null;
 
   const fetchPost = useCallback(async () => {
@@ -137,19 +142,25 @@ export default function PostDetailScreen() {
         size="sm"
       />
       <View className="ml-3 flex-1">
-        <View className="rounded-2xl bg-surface-light dark:bg-surface-dark px-3 py-2">
-          <Text className="font-semibold text-sm">{item.user?.name || "Unknown"}</Text>
-          <Text className="text-sm mt-0.5">{item.contentText}</Text>
+        <View className="rounded-2xl bg-surface-dark px-3 py-2">
+          <Text className="font-semibold text-sm text-text-dark">
+            {item.user?.name || "Unknown"}
+          </Text>
+          <Text className="text-sm mt-0.5 text-text-dark">{item.contentText}</Text>
         </View>
         <View className="flex-row items-center mt-1 gap-4 ml-1">
-          <Text variant="muted" className="text-xs">{formatTime(item.createdAt)}</Text>
-          <TouchableOpacity onPress={() => handleLikeComment(item)} className="flex-row items-center gap-1">
-            <LikeIcon
-              size={13}
-              color={item.isLiked ? "#EB5A5A" : "#9CA3AF"}
-            />
+          <Text variant="muted" className="text-xs">
+            {formatTime(item.createdAt)}
+          </Text>
+          <TouchableOpacity
+            onPress={() => handleLikeComment(item)}
+            className="flex-row items-center gap-1"
+          >
+            <LikeIcon size={13} color={item.isLiked ? "#EB5A5A" : "#9CA3AF"} />
             {item.likesCount > 0 && (
-              <Text variant="muted" className="text-xs">{item.likesCount}</Text>
+              <Text variant="muted" className="text-xs">
+                {item.likesCount}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -173,13 +184,23 @@ export default function PostDetailScreen() {
           currentUser={currentUser}
           onLikeChange={(postId, isLiked) =>
             setPost((prev) =>
-              prev ? { ...prev, isLiked, likesCount: isLiked ? prev.likesCount + 1 : prev.likesCount - 1 } : prev
+              prev
+                ? {
+                    ...prev,
+                    isLiked,
+                    likesCount: isLiked
+                      ? prev.likesCount + 1
+                      : prev.likesCount - 1,
+                  }
+                : prev
             )
           }
         />
-        <View className="px-4 py-3 border-b border-border-light dark:border-border-dark">
-          <Text className="font-semibold">
-            {post.commentsCount > 0 ? `${post.commentsCount} bình luận` : "Chưa có bình luận"}
+        <View className="px-4 py-3 border-b border-border-dark">
+          <Text className="font-semibold text-text-dark">
+            {post.commentsCount > 0
+              ? `${post.commentsCount} bình luận`
+              : "Chưa có bình luận"}
           </Text>
         </View>
       </>
@@ -187,13 +208,16 @@ export default function PostDetailScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F3F4F3] dark:bg-background-dark" edges={["top"]}>
+    <SafeAreaView
+      className="flex-1 bg-background-dark"
+      edges={["top"]}
+    >
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 bg-white dark:bg-surface-dark border-b border-border-light dark:border-border-dark">
+      <View className="flex-row items-center px-4 py-3 bg-surface-dark border-b border-border-dark">
         <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
-          <ArrowIcon size={22} color="#1E2021" />
+          <ArrowIcon size={22} color="#CFBFAD" />
         </TouchableOpacity>
-        <Text className="font-semibold text-lg">Bài viết</Text>
+        <Text className="font-semibold text-lg text-text-dark">Bài viết</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -218,9 +242,11 @@ export default function PostDetailScreen() {
         />
 
         {/* Comment Input */}
-        <View className="flex-row items-center px-4 py-3 bg-white dark:bg-surface-dark border-t border-border-light dark:border-border-dark gap-3">
+        <View className="flex-row items-center px-4 py-3 bg-surface-dark border-t border-border-dark gap-3">
           <Avatar
-            source={currentUser?.avatar ? { uri: currentUser.avatar } : undefined}
+            source={
+              currentUser?.avatar ? { uri: currentUser.avatar } : undefined
+            }
             fallback={currentUser?.name}
             size="sm"
           />
@@ -229,8 +255,8 @@ export default function PostDetailScreen() {
             value={commentText}
             onChangeText={setCommentText}
             placeholder="Viết bình luận..."
-            placeholderTextColor="#9CA3AF"
-            className="flex-1 bg-surface-light dark:bg-surface-dark rounded-full px-4 py-2.5 text-base font-regular text-text-light dark:text-text-dark"
+            placeholderTextColor="#515E5A"
+            className="flex-1 bg-[#2D2F2F] rounded-full px-4 py-2.5 text-base font-regular text-text-dark"
             multiline
             maxLength={500}
           />

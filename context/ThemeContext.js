@@ -1,20 +1,20 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext } from "react";
 
-// Tạo Context
-const ThemeContext = createContext();
+// Luôn chạy ở chế độ dark – không còn light mode
+const ThemeContext = createContext({
+  colorScheme: "dark",
+  // Để tránh crash nếu code cũ vẫn gọi toggle
+  toggleColorScheme: () => {},
+});
 
-// Provider để chia sẻ trạng thái dark/light mode
 export const ThemeProvider = ({ children }) => {
-  const [colorScheme, setColorScheme] = useState("light");
-
-  const toggleColorScheme = () => {
-    setColorScheme((prev) => (prev === "light" ? "dark" : "light"));
+  const value = {
+    colorScheme: "dark",
+    toggleColorScheme: () => {},
   };
 
   return (
-    <ThemeContext.Provider value={{ colorScheme, toggleColorScheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 };
 
