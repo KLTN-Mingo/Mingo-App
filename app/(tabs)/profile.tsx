@@ -15,12 +15,6 @@ import { PostCard } from "@/components/post/PostCard";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfo } from "@/components/profile/ProfileInfo";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
-import { ProfileSkeleton } from "@/components/skeleton";
-import { Text } from "@/components/ui";
-import { useAuth } from "@/context/AuthContext";
-import { PostResponseDto, UserProfileDto } from "@/dtos";
-import { postService } from "@/services/post.service";
-import { userService } from "@/services/user.service";
 import {
   ImageIcon,
   LogoutIcon,
@@ -31,6 +25,12 @@ import {
   SettingsIcon,
   VideoIcon,
 } from "@/components/shared/icons/Icons";
+import { ProfileSkeleton } from "@/components/skeleton";
+import { Text } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
+import { PostResponseDto, UserProfileDto } from "@/dtos";
+import { postService } from "@/services/post.service";
+import { userService } from "@/services/user.service";
 
 type TabKey = "posts" | "photos" | "videos";
 
@@ -248,10 +248,7 @@ export default function ProfileScreen() {
         >
           <Text className="text-white font-semibold">Thử lại</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleGoToLogin}
-          className="mt-3 px-6 py-3"
-        >
+        <TouchableOpacity onPress={handleGoToLogin} className="mt-3 px-6 py-3">
           <Text className="text-primary-400 font-semibold">Đăng nhập lại</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -288,7 +285,9 @@ export default function ProfileScreen() {
             <Text className="flex-1 text-amber-800 dark:text-amber-200 text-sm">
               Không tải được thông tin mới nhất. Nhấn để thử lại.
             </Text>
-            <Text className="text-primary-400 font-semibold text-sm">Thử lại</Text>
+            <Text className="text-primary-400 font-semibold text-sm">
+              Thử lại
+            </Text>
           </TouchableOpacity>
         )}
         {/* Header with name and settings */}

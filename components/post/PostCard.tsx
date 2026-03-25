@@ -117,7 +117,7 @@ export function PostCard({
       : baseMediaWidth;
 
   return (
-    <View className="mx-4 mb-3 overflow-hidden rounded-2xl bg-white">
+    <View className="mx-4 mb-3 overflow-hidden rounded-2xl bg-surface-dark">
       {/* Header */}
       <View className="flex-row items-start px-4 pb-2 pt-4">
         <TouchableOpacity
@@ -132,12 +132,12 @@ export function PostCard({
           />
           <View className="ml-3 flex-1">
             <View className="flex-row flex-wrap items-center">
-              <Text className="text-[22px] leading-[23px] font-semibold text-[#1F2423]">
+              <Text className="text-[22px] leading-[23px] font-semibold text-text-dark">
                 {post.user?.name || "Unknown"}
               </Text>
               {renderMentions()}
             </View>
-            <Text className="mt-0.5 text-xs text-[#8A9190]">
+            <Text className="mt-0.5 text-xs text-text-muted-dark">
               {formatTime(post.createdAt)}
             </Text>
           </View>
@@ -159,7 +159,7 @@ export function PostCard({
 
       {/* Location & Music Tags */}
       {(post.location?.name || firstMusicTag) && (
-        <View className="flex-row flex-wrap items-center px-4 pb-2 pt-1">
+            <View className="flex-row flex-wrap items-center px-4 pb-2 pt-1">
           {post.location?.name && (
             <View className="mr-2 flex-row items-center">
               <LocationIcon size={14} color="#8E9794" />
@@ -186,7 +186,7 @@ export function PostCard({
 
       {/* Media */}
       {post.media && post.media.length > 0 && (
-        <View className="mt-1 bg-[#F4F4F4]">
+            <View className="mt-1 bg-[#2D2F2F]">
           {post.media.length === 1 ? (
             <Image
               source={{ uri: post.media[0].mediaUrl }}
@@ -250,9 +250,9 @@ export function PostCard({
         />
         <TouchableOpacity
           onPress={() => onCommentPress?.(post.id)}
-          className="h-10 flex-1 justify-center rounded-full bg-[#F1F3F2] px-4"
+          className="h-10 flex-1 justify-center rounded-full bg-[#2D2F2F] px-4"
         >
-          <Text className="text-[16px] text-[#B2B7B5]">Write comment...</Text>
+          <Text className="text-[16px] text-text-muted-dark">Write comment...</Text>
         </TouchableOpacity>
       </View>
     </View>

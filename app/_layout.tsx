@@ -1,10 +1,6 @@
 import "@/global.css";
 
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
+import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -16,7 +12,6 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { CallProvider } from "@/context/CallContext";
 import { ChatProvider } from "@/context/ChatContext";
 import { ThemeProvider as AppThemeProvider } from "@/context/ThemeContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 
 // Giữ splash hiển thị cho đến khi auth check xong
 SplashScreen.preventAutoHideAsync();
@@ -42,8 +37,6 @@ function HideSplashWhenReady({ fontsLoaded }: { fontsLoaded: boolean }) {
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   const [fontsLoaded] = useFonts({
     "Montserrat-Thin": require("@/assets/font/Montserrat-Thin.ttf"),
     "Montserrat-Light": require("@/assets/font/Montserrat-Light.ttf"),
@@ -63,29 +56,31 @@ export default function RootLayout() {
       <>
         <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
         <AppThemeProvider>
+          {/* Luôn dùng DarkTheme cho toàn bộ app */}
           <ChatProvider>
             <CallProvider>
-          <ThemeProvider
-            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-          >
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="chat"
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="modal"
-                options={{ presentation: "modal", title: "Modal" }}
-              />
-              <Stack.Screen
-                name="(modals)"
-                options={{ headerShown: false }}
-              />
-            </Stack>
-            <StatusBar style="auto" />
-          </ThemeProvider>
+              <ThemeProvider value={DarkTheme}>
+                <Stack>
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="(auth)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen name="chat" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="modal"
+                    options={{ presentation: "modal", title: "Modal" }}
+                  />
+                  <Stack.Screen
+                    name="(modals)"
+                    options={{ headerShown: false }}
+                  />
+                </Stack>
+                <StatusBar style="light" />
+              </ThemeProvider>
             </CallProvider>
           </ChatProvider>
         </AppThemeProvider>

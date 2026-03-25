@@ -9,16 +9,16 @@ const MyTextArea = ({ value, onChangeText, placeholder }) => {
   return (
     <View className="mb-4 h-32 w-full">
       <TextInput
-        className="rounded-lg p-2 h-full w-full font-mmedium"
+        className="rounded-lg p-2 h-full w-full font-mmedium bg-[#2D2F2F]"
         multiline
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#9CA3AF" // Màu sắc cho placeholder (tùy chọn)
+        placeholderTextColor="#515E5A"
         style={{
           textAlign: "left",
-          color: colorScheme === "dark" ? colors.dark[100] : colors.light[500],
-        }} // Căn trái cho placeholder
+          color: colors.dark[100],
+        }}
         textAlignVertical="top" // Để căn chỉnh văn bản từ trên
       />
     </View>

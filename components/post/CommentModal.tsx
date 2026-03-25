@@ -23,7 +23,11 @@ interface CommentModalProps {
   onCommentCountChange?: (postId: string, delta: number) => void;
 }
 
-export function CommentModal({ postId, onClose, onCommentCountChange }: CommentModalProps) {
+export function CommentModal({
+  postId,
+  onClose,
+  onCommentCountChange,
+}: CommentModalProps) {
   const { profile } = useAuth();
   const [comments, setComments] = useState<CommentResponseDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,7 +62,9 @@ export function CommentModal({ postId, onClose, onCommentCountChange }: CommentM
 
     setSubmitting(true);
     try {
-      const newComment = await commentService.createComment(postId, { contentText: text });
+      const newComment = await commentService.createComment(postId, {
+        contentText: text,
+      });
       setComments((prev) => [newComment, ...prev]);
       setCommentText("");
       onCommentCountChange?.(postId, 1);
@@ -74,7 +80,11 @@ export function CommentModal({ postId, onClose, onCommentCountChange }: CommentM
     setComments((prev) =>
       prev.map((c) =>
         c.id === comment.id
-          ? { ...c, isLiked: newIsLiked, likesCount: newIsLiked ? c.likesCount + 1 : c.likesCount - 1 }
+          ? {
+              ...c,
+              isLiked: newIsLiked,
+              likesCount: newIsLiked ? c.likesCount + 1 : c.likesCount - 1,
+            }
           : c
       )
     );
@@ -88,7 +98,11 @@ export function CommentModal({ postId, onClose, onCommentCountChange }: CommentM
       setComments((prev) =>
         prev.map((c) =>
           c.id === comment.id
-            ? { ...c, isLiked: !newIsLiked, likesCount: newIsLiked ? c.likesCount - 1 : c.likesCount + 1 }
+            ? {
+                ...c,
+                isLiked: !newIsLiked,
+                likesCount: newIsLiked ? c.likesCount - 1 : c.likesCount + 1,
+              }
             : c
         )
       );
@@ -111,12 +125,16 @@ export function CommentModal({ postId, onClose, onCommentCountChange }: CommentM
         size="sm"
       />
       <View className="ml-3 flex-1">
-        <View className="rounded-2xl bg-surface-light dark:bg-surface-dark px-3 py-2">
-          <Text className="font-semibold text-sm">{item.user?.name || "Unknown"}</Text>
-          <Text className="text-sm mt-0.5">{item.contentText}</Text>
+        <View className="rounded-2xl bg-surface-dark px-3 py-2">
+          <Text className="font-semibold text-sm text-text-dark">
+            {item.user?.name || "Unknown"}
+          </Text>
+          <Text className="text-sm mt-0.5 text-text-dark">{item.contentText}</Text>
         </View>
         <View className="flex-row items-center mt-1 gap-4 ml-1">
-          <Text variant="muted" className="text-xs">{formatTime(item.createdAt)}</Text>
+          <Text variant="muted" className="text-xs">
+            {formatTime(item.createdAt)}
+          </Text>
           <TouchableOpacity
             onPress={() => handleLikeComment(item)}
             className="flex-row items-center gap-1"
@@ -127,7 +145,9 @@ export function CommentModal({ postId, onClose, onCommentCountChange }: CommentM
               color={item.isLiked ? "#EB5A5A" : "#9CA3AF"}
             />
             {item.likesCount > 0 && (
-              <Text variant="muted" className="text-xs">{item.likesCount}</Text>
+              <Text variant="muted" className="text-xs">
+                {item.likesCount}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -142,12 +162,15 @@ export function CommentModal({ postId, onClose, onCommentCountChange }: CommentM
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView className="flex-1 bg-[#F3F4F3] dark:bg-background-dark" edges={["top"]}>
+      <SafeAreaView
+        className="flex-1 bg-background-dark"
+        edges={["top"]}
+      >
         {/* Header */}
-        <View className="flex-row items-center justify-between px-4 py-3 bg-white dark:bg-surface-dark border-b border-border-light dark:border-border-dark">
-          <Text className="font-semibold text-base">Bình luận</Text>
+        <View className="flex-row items-center justify-between px-4 py-3 bg-surface-dark border-b border-border-dark">
+          <Text className="font-semibold text-base text-text-dark">Bình luận</Text>
           <TouchableOpacity onPress={onClose} className="p-1">
-            <Icon name="xmark" size={20} color="#1E2021" />
+            <Icon name="xmark" size={20} color="#CFBFAD" />
           </TouchableOpacity>
         </View>
 
@@ -168,7 +191,9 @@ export function CommentModal({ postId, onClose, onCommentCountChange }: CommentM
               ListEmptyComponent={
                 <View className="flex-1 items-center justify-center py-20">
                   <Icon name="bubble.left" size={40} color="#9CA3AF" />
-                  <Text variant="muted" className="mt-3">Chưa có bình luận nào</Text>
+                  <Text variant="muted" className="mt-3">
+                    Chưa có bình luận nào
+                  </Text>
                 </View>
               }
               contentContainerStyle={{ paddingBottom: 16 }}
@@ -176,7 +201,7 @@ export function CommentModal({ postId, onClose, onCommentCountChange }: CommentM
           )}
 
           {/* Comment Input */}
-          <View className="flex-row items-center px-4 py-3 bg-white dark:bg-surface-dark border-t border-border-light dark:border-border-dark gap-3">
+          <View className="flex-row items-center px-4 py-3 bg-surface-dark border-t border-border-dark gap-3">
             <Avatar
               source={profile?.avatar ? { uri: profile.avatar } : undefined}
               fallback={profile?.name}
@@ -187,8 +212,8 @@ export function CommentModal({ postId, onClose, onCommentCountChange }: CommentM
               value={commentText}
               onChangeText={setCommentText}
               placeholder="Viết bình luận..."
-              placeholderTextColor="#9CA3AF"
-              className="flex-1 bg-surface-light dark:bg-surface-dark rounded-full px-4 py-2.5 text-base font-regular text-text-light dark:text-text-dark"
+              placeholderTextColor="#515E5A"
+              className="flex-1 bg-[#2D2F2F] rounded-full px-4 py-2.5 text-base font-regular text-text-dark"
               multiline
               maxLength={500}
             />

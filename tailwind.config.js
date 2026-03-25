@@ -10,45 +10,35 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Main color palette từ #768D85
+        // Primary accent từ bảng màu dark mode
         primary: {
-          50: "#f3f6f5",
-          100: "#e7edeb",
-          200: "#c3d2cd",
-          300: "#9fb7af",
-          400: "#768D85", // Main color
-          500: "#5a7770",
-          600: "#476059",
-          700: "#3a4d48",
-          800: "#313f3b",
-          900: "#2b3633",
-          950: "#161d1b",
+          100: "#768D85", // main accent
         },
-        // Background colors
+        // Nền chính của app (toàn màn)
         background: {
-          light: "#FFFFFF",
-          dark: "#121212",
+          light: "#1E2021", // không dùng light mode nữa nhưng giữ để class cũ không lỗi
+          dark: "#1E2021",
         },
-        // Surface colors (cards, modals)
+        // Nền của card / surface
         surface: {
-          light: "#F5F5F5",
-          dark: "#1E1E1E",
+          light: "#252525",
+          dark: "#252525",
         },
-        // Text colors
+        // Màu chữ
         text: {
-          light: "#1A1A1A",
-          dark: "#FAFAFA",
+          light: "#CFBFAD",
+          dark: "#CFBFAD",
           muted: {
-            light: "#6B7280",
-            dark: "#9CA3AF",
+            light: "#515E5A",
+            dark: "#515E5A",
           },
         },
-        // Border colors
+        // Viền
         border: {
-          light: "#E5E7EB",
-          dark: "#374151",
+          light: "#2D2F2F",
+          dark: "#2D2F2F",
         },
-        // Status colors
+        // Status colors giữ nguyên để reuse
         success: {
           light: "#22C55E",
           dark: "#4ADE80",

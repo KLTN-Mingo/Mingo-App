@@ -1,20 +1,20 @@
-import { PaginationDto, PaginationParams } from './common.dto';
-import { UserMinimalDto } from './user.dto';
+import { PaginationDto, PaginationParams } from "./common.dto";
+import { UserMinimalDto } from "./user.dto";
 
 // ─── Enums ─────────────────────────────────────────────────────────────────────
 
 export enum PostVisibility {
-  PUBLIC = 'public',
-  FRIENDS = 'friends',
-  CLOSE_FRIENDS = 'close_friends',
-  PRIVATE = 'private',
+  PUBLIC = "public",
+  FRIENDS = "friends",
+  CLOSE_FRIENDS = "close_friends",
+  PRIVATE = "private",
 }
 
 export enum ModerationStatus {
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  FLAGGED = 'flagged',
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+  FLAGGED = "flagged",
 }
 
 // ─── Request DTOs ──────────────────────────────────────────────────────────────
@@ -36,7 +36,7 @@ export interface UpdatePostRequestDto {
 }
 
 export interface MediaFileDto {
-  mediaType: 'image' | 'video';
+  mediaType: "image" | "video";
   mediaUrl: string;
   thumbnailUrl?: string;
   width?: number;
@@ -51,7 +51,11 @@ export interface GetPostsQueryDto extends PaginationParams {
   visibility?: PostVisibility;
 }
 
-export interface GetFeedQueryDto extends PaginationParams {}
+export type FeedTab = "explore" | "friends";
+
+export interface GetFeedQueryDto extends PaginationParams {
+  tab?: FeedTab;
+}
 
 export interface SearchPostsQueryDto extends PaginationParams {
   query?: string;
@@ -60,7 +64,7 @@ export interface SearchPostsQueryDto extends PaginationParams {
 
 export interface SharePostRequestDto {
   postId: string;
-  sharedTo: 'feed' | 'message' | 'external';
+  sharedTo: "feed" | "message" | "external";
   caption?: string;
 }
 
@@ -77,7 +81,7 @@ export interface GetSavedPostsQueryDto extends PaginationParams {
 
 export interface PostMediaDto {
   id: string;
-  mediaType: 'image' | 'video';
+  mediaType: "image" | "video";
   mediaUrl: string;
   thumbnailUrl?: string;
   width?: number;
@@ -137,14 +141,14 @@ export interface PaginatedPostsDto {
 
 export interface PostLikersDto {
   users: UserMinimalDto[];
-  pagination: Pick<PaginationDto, 'page' | 'limit' | 'total'>;
+  pagination: Pick<PaginationDto, "page" | "limit" | "total">;
 }
 
 export interface ShareResponseDto {
   id: string;
   userId: string;
   postId: string;
-  sharedTo: 'feed' | 'message' | 'external';
+  sharedTo: "feed" | "message" | "external";
   caption?: string;
   createdAt: string;
 }
@@ -152,7 +156,7 @@ export interface ShareResponseDto {
 export interface SavedPostsResponseDto {
   posts: PostResponseDto[];
   collections: string[];
-  pagination: Pick<PaginationDto, 'page' | 'limit' | 'total'>;
+  pagination: Pick<PaginationDto, "page" | "limit" | "total">;
 }
 
 // ─── Comment Summary (tránh circular import) ───────────────────────────────────
