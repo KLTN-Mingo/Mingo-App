@@ -14,7 +14,7 @@ const Tab: React.FC<TabProps> = ({ content, isActive, onClick }) => {
 
   const activeBackgroundColor = colors.primary[100];
   const inactiveBackgroundColor =
-    colorScheme === "dark" ? colors.dark[400] : colors.light[400];
+    colorScheme === "dark" ? colors.dark[400] : colors.light[200];
 
   const activeTextColor =
     colorScheme === "dark" ? colors.dark[100] : colors.light[500];

@@ -61,7 +61,7 @@ const MyTextarea: React.FC<MyTextareaProps> = ({
     input: {
       color: colorScheme === "dark" ? colors.dark[100] : colors.light[100],
       fontSize,
-      fontFamily: fontFamily ?? "System",
+      fontFamily: fontFamily ?? "Montserrat-Regular",
       flex: 1,
       textAlignVertical: "top", // <-- giúp căn dòng từ trên
     },

@@ -1,8 +1,12 @@
-import { ActivityIndicator, TouchableOpacity, TouchableOpacityProps } from 'react-native';
-import { Text } from './Text';
+import {
+  ActivityIndicator,
+  TouchableOpacity,
+  TouchableOpacityProps,
+} from "react-native";
+import { Text } from "./Text";
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
+type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonProps extends TouchableOpacityProps {
   variant?: ButtonVariant;
@@ -13,53 +17,67 @@ interface ButtonProps extends TouchableOpacityProps {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-primary-400 active:bg-primary-500',
-  secondary: 'bg-surface-light dark:bg-surface-dark active:opacity-80',
-  outline: 'border-2 border-primary-400 bg-transparent active:bg-primary-50',
-  ghost: 'bg-transparent active:bg-surface-light dark:active:bg-surface-dark',
-  danger: 'bg-error-light dark:bg-error-dark active:opacity-80',
+  primary: "bg-primary-100 active:opacity-90",
+  secondary:
+    "bg-surface-muted-light dark:bg-surface-muted-dark active:opacity-80",
+  outline: "border-2 border-primary-100 bg-transparent active:opacity-80",
+  ghost:
+    "bg-transparent active:bg-surface-muted-light dark:active:bg-surface-muted-dark",
+  danger: "bg-error-light dark:bg-error-dark active:opacity-80",
 };
 
 const textVariantClasses: Record<ButtonVariant, string> = {
-  primary: 'text-white',
-  secondary: 'text-text-light dark:text-text-dark',
-  outline: 'text-primary-400',
-  ghost: 'text-primary-400',
-  danger: 'text-white',
+  primary:
+    "text-primary-foreground-light dark:text-primary-foreground-dark",
+  secondary: "text-text-light dark:text-text-dark",
+  outline: "text-primary-100",
+  ghost: "text-primary-100",
+  danger: "text-white",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'px-3 py-2 rounded-lg',
-  md: 'px-4 py-3 rounded-xl',
-  lg: 'px-6 py-4 rounded-2xl',
+  sm: "px-3 py-2 rounded-lg",
+  md: "px-4 py-3 rounded-xl",
+  lg: "px-6 py-4 rounded-2xl",
 };
 
 const textSizeClasses: Record<ButtonSize, string> = {
-  sm: 'text-sm',
-  md: 'text-base',
-  lg: 'text-lg',
+  sm: "text-sm",
+  md: "text-base",
+  lg: "text-lg",
 };
 
 export function Button({
-  variant = 'primary',
-  size = 'md',
+  variant = "primary",
+  size = "md",
   loading = false,
   children,
-  className = '',
+  className = "",
   disabled,
   ...props
 }: ButtonProps) {
+  const spinnerOnPrimary =
+    variant === "outline" || variant === "ghost" ? "#768D85" : "#FFFFFF";
+
   return (
     <TouchableOpacity
-      className={`items-center justify-center ${variantClasses[variant]} ${sizeClasses[size]} ${disabled || loading ? 'opacity-50' : ''} ${className}`}
+      className={`items-center justify-center ${variantClasses[variant]} ${sizeClasses[size]} ${disabled || loading ? "opacity-50" : ""} ${className}`}
       disabled={disabled || loading}
       activeOpacity={0.8}
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'outline' || variant === 'ghost' ? '#768D85' : '#fff'} />
+        <ActivityIndicator
+          color={
+            variant === "primary" || variant === "danger"
+              ? spinnerOnPrimary
+              : "#768D85"
+          }
+        />
       ) : (
-        <Text className={`font-semibold ${textVariantClasses[variant]} ${textSizeClasses[size]}`}>
+        <Text
+          className={`font-semibold ${textVariantClasses[variant]} ${textSizeClasses[size]}`}
+        >
           {children}
         </Text>
       )}

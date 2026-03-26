@@ -305,6 +305,7 @@ export default function FriendScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
             className="mt-3"
+            leftIcon={<SearchIcon size={20} color="#515E5A" />}
           />
         )}
       </View>

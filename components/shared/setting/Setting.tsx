@@ -23,7 +23,7 @@ import SavedPosts from "./SavedPosts";
 const Setting = ({ setSetting }: any) => {
   const { logout } = useAuth();
   const router = useRouter();
-  const { colorScheme, toggleColorScheme } = useTheme();
+  const { colorScheme, setColorScheme } = useTheme();
   const iconColor =
     colorScheme === "dark" ? colors.dark[100] : colors.light[100];
   const [isSavedPostModalVisible, setSavedPostModalVisible] = useState(false);
@@ -105,7 +105,7 @@ const Setting = ({ setSetting }: any) => {
             </Text>
             <Switch
               value={colorScheme === "dark"}
-              onValueChange={toggleColorScheme}
+              onValueChange={(dark) => setColorScheme(dark ? "dark" : "light")}
             />
           </View>
 

@@ -5,6 +5,16 @@
 /* Custom base styles */
 @layer base {
   :root {
-    --color-primary: #768D85;
+    --color-primary: #768d85;
+    --color-bg-light: #ffffff;
+    --color-bg-dark: #1e2021;
+    --color-surface-dark: #2d2f2f;
+    --color-text-light: #1e2021;
+    --color-text-dark: #cfbfad;
+    --color-muted: #515e5a;
+  }
+
+  * {
+    @apply font-sans;
   }
 }

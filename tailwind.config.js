@@ -10,35 +10,42 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Primary accent từ bảng màu dark mode
         primary: {
-          100: "#768D85", // main accent
+          100: "#768D85",
+          /** Chữ trên nền primary */
+          foreground: {
+            light: "#FFFFFF",
+            dark: "#CFBFAD",
+          },
         },
-        // Nền chính của app (toàn màn)
         background: {
-          light: "#1E2021", // không dùng light mode nữa nhưng giữ để class cũ không lỗi
+          light: "#FFFFFF",
           dark: "#1E2021",
         },
-        // Nền của card / surface
         surface: {
-          light: "#252525",
+          light: "#FFFFFF",
+          dark: "#2D2F2F",
+        },
+        "surface-muted": {
+          light: "#F2F2F2",
           dark: "#252525",
         },
-        // Màu chữ
+        input: {
+          light: "#FFFFFF",
+          dark: "#2D2F2F",
+        },
         text: {
-          light: "#CFBFAD",
+          light: "#1E2021",
           dark: "#CFBFAD",
           muted: {
             light: "#515E5A",
             dark: "#515E5A",
           },
         },
-        // Viền
         border: {
-          light: "#2D2F2F",
-          dark: "#2D2F2F",
+          light: "#E5E7EB",
+          dark: "#515E5A",
         },
-        // Status colors giữ nguyên để reuse
         success: {
           light: "#22C55E",
           dark: "#4ADE80",
@@ -55,6 +62,10 @@ module.exports = {
           light: "#3B82F6",
           dark: "#60A5FA",
         },
+      },
+      borderColor: {
+        "pill-light": "#E5E7EB",
+        "pill-dark": "rgba(207, 191, 173, 0.45)",
       },
       fontFamily: {
         sans: ["Montserrat-Regular"],

@@ -12,9 +12,9 @@ const variantClasses: Record<TextVariant, string> = {
   title: 'text-3xl font-bold leading-8 text-text-light dark:text-text-dark',
   subtitle: 'text-xl font-bold text-text-light dark:text-text-dark',
   semibold: 'text-base leading-6 font-semibold text-text-light dark:text-text-dark',
-  link: 'text-base leading-8 text-primary-400 underline',
-  muted: 'text-sm text-text-muted-light dark:text-text-muted-dark',
-  small: 'text-xs text-text-light dark:text-text-dark',
+  link: 'text-base leading-8 text-primary-100 underline font-regular',
+  muted: 'text-sm text-text-muted-light dark:text-text-muted-dark font-regular',
+  small: 'text-xs text-text-light dark:text-text-dark font-regular',
 };
 
 export function Text({ variant = 'default', className = '', ...props }: CustomTextProps) {

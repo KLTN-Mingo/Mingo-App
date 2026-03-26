@@ -4,10 +4,10 @@ import { FlatList, RefreshControl, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CommentModal } from "@/components/post/CommentModal";
-import { CreatePostButton } from "@/components/post/CreatePostButton";
 import { PostCard } from "@/components/post/PostCard";
 import {
-  MessageIcon,
+  LocationPinIcon,
+  NotificationIcon,
   PostIcon,
   ReportIcon,
   SearchIcon,
@@ -145,7 +145,7 @@ export default function HomeScreen() {
     router.push("/search" as any);
   };
 
-  const handleMessages = () => {
+  const handleNotifications = () => {
     router.push("/(tabs)/notification" as any);
   };
 
@@ -171,38 +171,59 @@ export default function HomeScreen() {
         <Text className="mt-4 text-center">{error}</Text>
         <TouchableOpacity
           onPress={handleTryAgain}
-          className="mt-4 bg-primary-400 px-6 py-3 rounded-xl"
+          className="mt-4 bg-primary-100 px-6 py-3 rounded-xl"
         >
-          <Text className="text-white font-semibold">Đăng nhập lại</Text>
+          <Text className="text-primary-foreground-light font-semibold">
+            Đăng nhập lại
+          </Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background-dark" edges={["top"]}>
+    <SafeAreaView
+      className="flex-1 bg-background-light dark:bg-background-dark"
+      edges={["top"]}
+    >
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <View className="px-4 pt-2 pb-3">
-            {/* Header */}
+            {/* Header: logo + thông báo */}
             <View className="flex-row items-center justify-between py-2">
-              <Text className="text-[33px] leading-[38px] font-medium text-text-dark">
-                Min<Text className="text-primary-100 font-bold">gle</Text>
+              <Text className="text-[33px] leading-[38px] font-medium text-text-light dark:text-text-dark">
+                <Text className="text-primary-100 font-Montserrat-Bold">Min<Text className="text-[22px] leading-[23px] font-semibold text-text-dark">go<Text/></Text>
               </Text>
-              <View className="flex-row items-center gap-1">
-                <TouchableOpacity onPress={handleSearch} className="p-2">
-                  <SearchIcon size={23} color="#CFBFAD" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleMessages} className="p-2">
-                  <MessageIcon size={22} color="#CFBFAD" />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                onPress={handleNotifications}
+                className="p-2 relative"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <NotificationIcon size={24} color="#CFBFAD" />
+                <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border border-white dark:border-[#1E2021]" />
+              </TouchableOpacity>
             </View>
 
+            {/* Thanh search (mở màn tìm kiếm) */}
+            <TouchableOpacity
+              onPress={handleSearch}
+              activeOpacity={0.85}
+              className="flex-row items-center mt-1 px-4 py-3 rounded-2xl bg-input-light dark:bg-input-dark"
+            >
+              <LocationPinIcon size={22} color="#515E5A" />
+              <Text
+                variant="muted"
+                className="flex-1 ml-3 text-text-muted-light dark:text-text-muted-dark"
+              >
+                Tìm kiếm bài viết, địa điểm...
+              </Text>
+              <SearchIcon size={22} color="#515E5A" />
+            </TouchableOpacity>
+
             {/* Create Post Button */}
-            <CreatePostButton user={userMinimal} onPress={handleCreatePost} />
+            {/* <CreatePostButton user={userMinimal} onPress={handleCreatePost} /> */}
 
             {/* Feed Tabs */}
             <View className="mt-3 flex-row gap-2">
@@ -254,7 +275,7 @@ export default function HomeScreen() {
             </View>
           ) : null
         }
-        contentContainerStyle={{ paddingBottom: 96 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       />
 

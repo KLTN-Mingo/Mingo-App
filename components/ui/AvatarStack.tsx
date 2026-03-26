@@ -29,7 +29,7 @@ export function AvatarStack({
               borderRadius: size / 2,
               marginLeft: index > 0 ? -8 : 0,
               borderWidth: 2,
-              borderColor: 'white',
+              borderColor: "#1E2021",
             }}
           />
         ))}

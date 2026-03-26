@@ -4,17 +4,17 @@ import { useEffect } from "react";
 
 const AuthLayout = () => {
   const [fontsLoaded, error] = useFonts({
-    "Montserrat-Black": require("../../assets/font/Montserrat-Black.ttf"),
-    "Montserrat-Bold": require("../../assets/font/Montserrat-Bold.ttf"),
-    "Montserrat-ExtraBold": require("../../assets/font/Montserrat-ExtraBold.ttf"),
-    "Montserrat-ExtraLight": require("../../assets/font/Montserrat-ExtraLight.ttf"),
-    "Montserrat-Light": require("../../assets/font/Montserrat-Light.ttf"),
-    "Montserrat-Medium": require("../../assets/font/Montserrat-Medium.ttf"),
-    "Montserrat-Regular": require("../../assets/font/Montserrat-Regular.ttf"),
-    "Montserrat-SemiBold": require("../../assets/font/Montserrat-SemiBold.ttf"),
-    "Montserrat-Thin": require("../../assets/font/Montserrat-Thin.ttf"),
-    "JosefinSans-SemiBold": require("../../assets/font/JosefinSans-SemiBold.ttf"),
-  });
+    "Montserrat-Black": require("@/assets/fonts/Montserrat-Black.ttf"),
+    "Montserrat-Bold": require("../../assets/fonts/Montserrat-Bold.ttf"),
+    "Montserrat-ExtraBold": require("@/assets/fonts/Montserrat-ExtraBold.ttf"),
+    "Montserrat-ExtraLight": require("@/assets/fonts/Montserrat-ExtraLight.ttf"),
+    "Montserrat-Light": require("@/assets/fonts/Montserrat-Light.ttf"),
+    "Montserrat-Medium": require("../../assets/fonts/Montserrat-Medium.ttf"),
+    "Montserrat-Regular": require("../../assets/fonts/Montserrat-Regular.ttf"),
+    "Montserrat-SemiBold": require("../../assets/fonts/Montserrat-SemiBold.ttf"),
+    "Montserrat-Thin": require("../../assets/fonts/Montserrat-Thin.ttf"),
+    "JosefinSans-SemiBold": require("../../assets/fonts/JosefinSans-SemiBold.ttf"),
+  })
 
   useEffect(() => {
     if (fontsLoaded || error) SplashScreen.hideAsync();

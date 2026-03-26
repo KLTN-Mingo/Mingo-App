@@ -123,7 +123,7 @@ const MyInput: React.FC<MyInputProps> = ({
     input: {
       color: colorScheme === "dark" ? colors.dark[100] : colors.light[100],
       fontSize: fontSize ?? 14,
-      fontFamily: fontFamily ?? "System",
+      fontFamily: fontFamily ?? "Montserrat-Regular",
       flex: 1,
     },
   });
