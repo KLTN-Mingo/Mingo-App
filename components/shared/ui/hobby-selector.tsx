@@ -43,7 +43,7 @@ const HobbySelector: React.FC<HobbySelectorProps> = ({
             <Text
               style={{
                 color: isSelected
-                  ? "#ffffff"
+                  ? colors.light[400]
                   : colorScheme === "dark"
                     ? colors.dark[100]
                     : colors.light[100],

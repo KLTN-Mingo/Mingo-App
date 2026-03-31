@@ -9,12 +9,12 @@ const MyTextArea = ({ value, onChangeText, placeholder }) => {
   return (
     <View className="mb-4 h-32 w-full">
       <TextInput
-        className="rounded-lg p-2 h-full w-full font-mmedium bg-[#2D2F2F]"
+        className="rounded-lg p-2 h-full w-full font-mmedium bg-surface-dark"
         multiline
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#515E5A"
+        placeholderTextColor={colors.dark[300]}
         style={{
           textAlign: "left",
           color: colors.dark[100],

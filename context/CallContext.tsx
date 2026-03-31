@@ -1,24 +1,384 @@
-// // context/CallContext.tsx
-// "use client";
-// import React, {
-//   createContext,
-//   useContext,
-//   useEffect,
-//   useState,
-//   useRef,
-//   useCallback,
-// } from "react";
-// import {
-//   mediaDevices,
-//   RTCPeerConnection,
-//   RTCIceCandidate,
-//   RTCSessionDescription,
-//   MediaStream,
-// } from "react-native-webrtc";
-// import { io, Socket } from "socket.io-client";
-// import { SocketUser, OngoingCall, Participants } from "@/dtos/SocketDTO";
-// import { useRouter } from "expo-router";
-// import { useAuth } from "./AuthContext";
+// context/CallContext.tsx – call API + Socket.IO (Mingo-BE src/socket events)
+"use client";
+
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { useRouter } from "expo-router";
+import { io, type Socket } from "socket.io-client";
+import type { OngoingCall, Participants, SocketUser } from "@/dtos/call.dto";
+import {
+  toAppParticipants,
+  toBackendParticipants,
+  type BackendCallParticipants,
+} from "@/lib/socket/callPayload";
+import { getSocketUrl } from "@/lib/socket/config";
+import { useAuth } from "./AuthContext";
+
+// ─── Types (backend: call, callAccepted, callRejected, hangup, webrtcSignal) ───
+
+export interface CallContextProps {
+  ongoingCall: OngoingCall | null;
+  setOngoingCall: React.Dispatch<React.SetStateAction<OngoingCall | null>>;
+  handleHangUp: (data: {
+    ongoingCall?: OngoingCall | null;
+    isEmitHangUp?: boolean;
+  }) => void;
+  startVideoCall: (params: {
+    roomId: string;
+    receiverId: string;
+    receiverName?: string;
+    receiverAvatar?: string;
+    /** socketId của người nhận (backend cần để emit incomingCall). Lấy từ onlineUsers hoặc API. */
+    receiverSocketId?: string;
+  }) => void;
+  startAudioCall: (params: {
+    roomId: string;
+    receiverId: string;
+    receiverName?: string;
+    receiverAvatar?: string;
+    receiverSocketId?: string;
+  }) => void;
+  acceptCall: (call: OngoingCall) => void;
+  rejectCall: (call: OngoingCall) => void;
+  /** Danh sách user online (userId -> socketId) để gọi. Backend có thể emit getUsers / userOnline. */
+  onlineUsers: Record<string, { socketId: string; name?: string; avatar?: string }>;
+}
+
+const CallContext = createContext<CallContextProps | null>(null);
+
+function buildSocketUser(
+  userId: string,
+  socketId: string,
+  name?: string,
+  avatar?: string
+): SocketUser {
+  return {
+    userId,
+    socketId,
+    profile: { id: userId, name, avatar },
+  };
+}
+
+export function CallProvider({ children }: { children: React.ReactNode }) {
+  const { profile } = useAuth();
+  const router = useRouter();
+  const [ongoingCall, setOngoingCall] = useState<OngoingCall | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState<
+    Record<string, { socketId: string; name?: string; avatar?: string }>
+  >({});
+  const socketRef = useRef<Socket | null>(null);
+
+  const handleHangUp = useCallback(
+    (data: { ongoingCall?: OngoingCall | null; isEmitHangUp?: boolean }) => {
+      const socket = socketRef.current;
+      if (socket && profile && data?.ongoingCall && data?.isEmitHangUp) {
+        const payload = {
+          ongoingCall: {
+            participants: toBackendParticipants(data.ongoingCall.participants),
+            boxId: data.ongoingCall.boxId,
+            isVideoCall: data.ongoingCall.isVideoCall,
+          },
+          userHangingupId: profile.id,
+        };
+        socket.emit("hangup", payload);
+      }
+      setOngoingCall(null);
+      router.back();
+    },
+    [profile, router]
+  );
+
+  const startVideoCall = useCallback(
+    (params: {
+      roomId: string;
+      receiverId: string;
+      receiverName?: string;
+      receiverAvatar?: string;
+      receiverSocketId?: string;
+    }) => {
+      if (!profile) return;
+      const socket = socketRef.current;
+      const callerSocketId = socket?.id ?? "";
+      const receiverSocketId =
+        params.receiverSocketId ??
+        onlineUsers[params.receiverId]?.socketId ??
+        "";
+      const caller = buildSocketUser(
+        profile.id,
+        callerSocketId,
+        profile.name,
+        profile.avatar
+      );
+      const receiver = buildSocketUser(
+        params.receiverId,
+        receiverSocketId,
+        params.receiverName,
+        params.receiverAvatar
+      );
+      const participants: Participants = { caller, receiver };
+      const call: OngoingCall = {
+        participants,
+        isRinging: false,
+        isVideoCall: true,
+        callStatus: "outgoing",
+        boxId: params.roomId,
+      };
+      setOngoingCall(call);
+      if (socket) {
+        const payload = {
+          participants: toBackendParticipants(participants),
+          isVideoCall: true,
+          boxId: params.roomId,
+        };
+        socket.emit("call", payload);
+      }
+      router.push({
+        pathname: "/(modals)/[roomId]",
+        params: {
+          roomId: params.roomId,
+          isVideoCall: "true",
+          receiverAva: params.receiverAvatar ?? "",
+        },
+      });
+    },
+    [profile, router, onlineUsers]
+  );
+
+  const startAudioCall = useCallback(
+    (params: {
+      roomId: string;
+      receiverId: string;
+      receiverName?: string;
+      receiverAvatar?: string;
+      receiverSocketId?: string;
+    }) => {
+      if (!profile) return;
+      const socket = socketRef.current;
+      const callerSocketId = socket?.id ?? "";
+      const receiverSocketId =
+        params.receiverSocketId ??
+        onlineUsers[params.receiverId]?.socketId ??
+        "";
+      const caller = buildSocketUser(
+        profile.id,
+        callerSocketId,
+        profile.name,
+        profile.avatar
+      );
+      const receiver = buildSocketUser(
+        params.receiverId,
+        receiverSocketId,
+        params.receiverName,
+        params.receiverAvatar
+      );
+      const participants: Participants = { caller, receiver };
+      const call: OngoingCall = {
+        participants,
+        isRinging: false,
+        isVideoCall: false,
+        callStatus: "outgoing",
+        boxId: params.roomId,
+      };
+      setOngoingCall(call);
+      if (socket) {
+        socket.emit("call", {
+          participants: toBackendParticipants(participants),
+          isVideoCall: false,
+          boxId: params.roomId,
+        });
+      }
+      router.push({
+        pathname: "/(modals)/[roomId]",
+        params: {
+          roomId: params.roomId,
+          isVideoCall: "false",
+          receiverAva: params.receiverAvatar ?? "",
+        },
+      });
+    },
+    [profile, router, onlineUsers]
+  );
+
+  const acceptCall = useCallback(
+    (call: OngoingCall) => {
+      const socket = socketRef.current;
+      if (socket) {
+        socket.emit("callAccepted", {
+          ongoingCall: {
+            participants: toBackendParticipants(call.participants),
+            boxId: call.boxId,
+            isVideoCall: call.isVideoCall,
+          },
+        });
+      }
+      setOngoingCall({ ...call, isRinging: false, callStatus: "connected" });
+      const roomId = call.boxId ?? call.participants.caller.socketId;
+      router.push({
+        pathname: "/(modals)/[roomId]",
+        params: {
+          roomId,
+          isVideoCall: call.isVideoCall ? "true" : "false",
+          receiverAva: call.participants.receiver.profile.avatar ?? "",
+        },
+      });
+    },
+    [router]
+  );
+
+  const rejectCall = useCallback(
+    (call: OngoingCall) => {
+      const socket = socketRef.current;
+      if (socket && profile) {
+        socket.emit("callRejected", {
+          ongoingCall: {
+            participants: toBackendParticipants(call.participants),
+            boxId: call.boxId,
+            isVideoCall: call.isVideoCall,
+          },
+          rejectedBy: profile.id,
+        });
+      }
+      setOngoingCall(null);
+      router.back();
+    },
+    [profile, router]
+  );
+
+  useEffect(() => {
+    if (!profile) return;
+    const url = getSocketUrl();
+    const socket = io(url, {
+      transports: ["websocket"],
+      autoConnect: true,
+    });
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      socket.emit("register", {
+        userId: profile.id,
+        socketId: socket.id,
+        name: profile.name,
+        avatar: profile.avatar,
+      });
+    });
+
+    socket.on("getUsers", (users: { userId: string; socketId: string; name?: string; avatar?: string }[]) => {
+      const map: Record<string, { socketId: string; name?: string; avatar?: string }> = {};
+      users.forEach((u) => {
+        map[u.userId] = { socketId: u.socketId, name: u.name, avatar: u.avatar };
+      });
+      setOnlineUsers(map);
+    });
+
+    socket.on(
+      "incomingCall",
+      (
+        participants: BackendCallParticipants,
+        isVideoCall: boolean,
+        boxId?: string
+      ) => {
+        setOngoingCall({
+          participants: toAppParticipants(participants),
+          isRinging: true,
+          isVideoCall: !!isVideoCall,
+          boxId,
+          callStatus: "ringing",
+        });
+        router.push("/(modals)/incoming-call");
+      }
+    );
+
+    socket.on("callAccepted", (data: { ongoingCall: { participants: BackendCallParticipants; isVideoCall: boolean; boxId?: string } }) => {
+      const { ongoingCall } = data;
+      setOngoingCall((prev) =>
+        prev
+          ? { ...prev, isRinging: false, callStatus: "connected" }
+          : {
+              participants: toAppParticipants(ongoingCall.participants),
+              isRinging: false,
+              isVideoCall: ongoingCall.isVideoCall,
+              boxId: ongoingCall.boxId,
+              callStatus: "connected",
+            }
+      );
+      const roomId = ongoingCall.boxId ?? ongoingCall.participants.caller.socketId;
+      router.push({
+        pathname: "/(modals)/[roomId]",
+        params: {
+          roomId,
+          isVideoCall: ongoingCall.isVideoCall ? "true" : "false",
+          receiverAva: ongoingCall.participants.receiver.avatar ?? "",
+        },
+      });
+    });
+
+    socket.on("callRejected", () => {
+      setOngoingCall(null);
+      router.back();
+    });
+
+    socket.on("hangup", () => {
+      setOngoingCall(null);
+      router.back();
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("getUsers");
+      socket.off("incomingCall");
+      socket.off("callAccepted");
+      socket.off("callRejected");
+      socket.off("hangup");
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [profile, router]);
+
+  return (
+    <CallContext.Provider
+      value={{
+        ongoingCall,
+        setOngoingCall,
+        handleHangUp,
+        startVideoCall,
+        startAudioCall,
+        acceptCall,
+        rejectCall,
+        onlineUsers,
+      }}
+    >
+      {children}
+    </CallContext.Provider>
+  );
+}
+
+export function useCall(): CallContextProps {
+  const ctx = useContext(CallContext);
+  if (!ctx) throw new Error("useCall must be used within CallProvider");
+  return ctx;
+}
+
+// Alias for compatibility with (modals) base – same API surface
+export function useSocket(): CallContextProps {
+  return useCall();
+}
+
+// ─── Legacy commented base (WebRTC/socket) kept below for reference ───────────
+// // import {
+// //   mediaDevices,
+// //   RTCPeerConnection,
+// //   RTCIceCandidate,
+// //   RTCSessionDescription,
+// //   MediaStream,
+// // } from "react-native-webrtc";
+// // import { io, Socket } from "socket.io-client";
+// // import { SocketUser, OngoingCall, Participants } from "@/dtos/SocketDTO";
 
 // interface CallContextProps {
 //   onlineUsers: SocketUser[] | null;

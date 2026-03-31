@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 import { FriendIcon, MessageIcon } from "@/components/shared/icons/Icons";
-import { colors } from "@/constants/designTokens";
+import { BORDER_DEFAULT, colors } from "@/constants/designTokens";
 import { useTheme } from "@/context/ThemeContext";
 
 const H_MARGIN = 20;
@@ -224,18 +224,18 @@ export function GlassTabBar({ state, navigation }: BottomTabBarProps) {
           height: ROW_HEIGHT,
           borderRadius: PILL_RADIUS,
         },
-        Platform.OS === "ios"
+        Platform.OS === "ios" && !isDark
           ? styles.pillIosClear
           : isDark
             ? styles.pillDark
             : styles.pillLight,
       ]}
     >
-      {Platform.OS === "ios" ? (
+      {Platform.OS === "ios" && !isDark ? (
         <>
           <BlurView
-            intensity={isDark ? 36 : 50}
-            tint={isDark ? "dark" : "light"}
+            intensity={50}
+            tint="light"
             style={StyleSheet.absoluteFillObject}
           />
           <View style={styles.pillForeground} pointerEvents="box-none">
@@ -252,10 +252,7 @@ export function GlassTabBar({ state, navigation }: BottomTabBarProps) {
     <View
       style={[
         styles.screenWidthBar,
-        {
-          width: windowWidth,
-          paddingBottom: bottomPad,
-        },
+        { paddingBottom: bottomPad },
       ]}
     >
       <View style={styles.pillCenter}>{pillChrome}</View>
@@ -275,11 +272,11 @@ const styles = StyleSheet.create({
   pillOuter: {
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(207, 191, 173, 0.28)",
+    borderColor: BORDER_DEFAULT,
     ...Platform.select({
       android: {
         elevation: 12,
-        shadowColor: "#000",
+        shadowColor: colors.dark[500],
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.28,
         shadowRadius: 10,
@@ -291,7 +288,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   pillDark: {
-    backgroundColor: "rgba(30, 32, 33, 0.94)",
+    backgroundColor: colors.dark[500],
   },
   pillLight: {
     backgroundColor: "rgba(255, 255, 255, 0.96)",
@@ -326,7 +323,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   plus: {
-    color: "#FFFFFF",
+    color: colors.light[400],
     fontSize: 28,
     fontFamily: "Montserrat-Medium",
     lineHeight: 30,
@@ -341,7 +338,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   plusOnPrimary: {
-    color: "#FFFFFF",
+    color: colors.light[400],
     fontSize: 20,
     fontFamily: "Montserrat-SemiBold",
     includeFontPadding: false,

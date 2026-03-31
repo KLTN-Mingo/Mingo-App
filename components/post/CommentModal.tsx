@@ -16,6 +16,7 @@ import { Avatar, Icon, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { CommentResponseDto } from "@/dtos";
 import { commentService } from "@/services/comment.service";
+import { BORDER_DEFAULT, colors, statusColors } from "@/styles/colors";
 
 interface CommentModalProps {
   postId: string | null;
@@ -142,7 +143,9 @@ export function CommentModal({
             <Icon
               name={item.isLiked ? "heart.fill" : "heart"}
               size={13}
-              color={item.isLiked ? "#EB5A5A" : "#9CA3AF"}
+              color={
+                item.isLiked ? statusColors.error.dark : colors.dark[300]
+              }
             />
             {item.likesCount > 0 && (
               <Text variant="muted" className="text-xs">
@@ -170,7 +173,7 @@ export function CommentModal({
         <View className="flex-row items-center justify-between px-4 py-3 bg-surface-dark border-b border-border-dark">
           <Text className="font-semibold text-base text-text-dark">Bình luận</Text>
           <TouchableOpacity onPress={onClose} className="p-1">
-            <Icon name="xmark" size={20} color="#CFBFAD" />
+            <Icon name="xmark" size={20} color={colors.dark[100]} />
           </TouchableOpacity>
         </View>
 
@@ -181,7 +184,7 @@ export function CommentModal({
         >
           {loading ? (
             <View className="flex-1 items-center justify-center">
-              <ActivityIndicator color="#768D85" />
+              <ActivityIndicator color={colors.primary[100]} />
             </View>
           ) : (
             <FlatList
@@ -190,7 +193,11 @@ export function CommentModal({
               renderItem={renderComment}
               ListEmptyComponent={
                 <View className="flex-1 items-center justify-center py-20">
-                  <Icon name="bubble.left" size={40} color="#9CA3AF" />
+                  <Icon
+                    name="bubble.left"
+                    size={40}
+                    color={colors.dark[300]}
+                  />
                   <Text variant="muted" className="mt-3">
                     Chưa có bình luận nào
                   </Text>
@@ -212,8 +219,8 @@ export function CommentModal({
               value={commentText}
               onChangeText={setCommentText}
               placeholder="Viết bình luận..."
-              placeholderTextColor="#515E5A"
-              className="flex-1 bg-[#2D2F2F] rounded-full px-4 py-2.5 text-base font-regular text-text-dark"
+              placeholderTextColor={colors.dark[300]}
+              className="flex-1 bg-surface-dark rounded-full px-4 py-2.5 text-base font-regular text-text-dark"
               multiline
               maxLength={500}
             />
@@ -223,12 +230,14 @@ export function CommentModal({
               className="p-2"
             >
               {submitting ? (
-                <ActivityIndicator size="small" color="#768D85" />
+                <ActivityIndicator size="small" color={colors.primary[100]} />
               ) : (
                 <Icon
                   name="paperplane.fill"
                   size={22}
-                  color={commentText.trim() ? "#768D85" : "#C4C4C4"}
+                  color={
+                    commentText.trim() ? colors.primary[100] : BORDER_DEFAULT
+                  }
                 />
               )}
             </TouchableOpacity>

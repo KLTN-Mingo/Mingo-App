@@ -4,6 +4,7 @@ import { TouchableOpacity, View } from 'react-native';
 import { Text } from '@/components/ui';
 import { UserProfileDto } from '@/dtos';
 import { CircleTickIcon } from '@/components/shared/icons/Icons';
+import { colors } from '@/styles/colors';
 
 interface ProfileInfoProps {
   user: UserProfileDto;
@@ -25,7 +26,7 @@ export function ProfileInfo({
         </Text>
         {user.verified && (
           <View className="ml-2">
-            <CircleTickIcon size={20} color="#768D85" />
+            <CircleTickIcon size={20} color={colors.primary[100]} />
           </View>
         )}
       </View>

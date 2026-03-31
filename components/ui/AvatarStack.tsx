@@ -1,5 +1,6 @@
 import { Image, View } from 'react-native';
 import { Text } from './Text';
+import { colors } from '@/styles/colors';
 
 interface AvatarStackProps {
   avatars: string[];
@@ -29,7 +30,7 @@ export function AvatarStack({
               borderRadius: size / 2,
               marginLeft: index > 0 ? -8 : 0,
               borderWidth: 2,
-              borderColor: "#1E2021",
+              borderColor: colors.dark[500],
             }}
           />
         ))}

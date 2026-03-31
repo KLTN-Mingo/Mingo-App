@@ -1,26 +1,15 @@
+
 import { Tabs } from "expo-router";
 import React from "react";
 import { View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
-import { GlassTabBar } from "@/components/navigation/GlassTabBar";
 import { FriendIcon, MessageIcon } from "@/components/shared/icons/Icons";
 import { colors } from "@/constants/designTokens";
 
-const TabIcon = ({ SvgIcon, color }: { SvgIcon: any; color: string }) => (
-  <View
-    style={{
-      alignItems: "center",
-      justifyContent: "center",
-      width: 48,
-      height: 32,
-    }}
-  >
-    <SvgIcon color={color} />
-  </View>
-);
+// ─── Icons ────────────────────────────────────────────────────────────────────
 
-const HomeIcon = ({ color = "currentColor", width = 24, height = 24 }) => (
+const HomeIcon = ({ color = colors.light[400], width = 22, height = 22 }) => (
   <Svg width={width} height={height} viewBox="0 0 24 24" fill="none">
     <Path
       fill={color}
@@ -32,9 +21,9 @@ const HomeIcon = ({ color = "currentColor", width = 24, height = 24 }) => (
 );
 
 const UserOutlineIcon = ({
-  color = "currentColor",
-  width = 24,
-  height = 24,
+  color = colors.light[400],
+  width = 22,
+  height = 22,
 }) => (
   <Svg width={width} height={height} viewBox="0 0 24 24" fill="none">
     <Path
@@ -46,22 +35,63 @@ const UserOutlineIcon = ({
   </Svg>
 );
 
+// ─── Tab Icon wrapper ──────────────────────────────────────────────────────────
+
+const TabIcon = ({ SvgIcon, color }: { SvgIcon: any; color: string }) => (
+  <View style={{ alignItems: "center", justifyContent: "center", width: 28, height: 28 }}>
+    <SvgIcon color={color} />
+  </View>
+);
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
+
+const BAR_HEIGHT = 64;
+
 export default function TabsLayout() {
   return (
     <Tabs
-      tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarActiveTintColor: colors.primary[100],
-        tabBarInactiveTintColor: colors.dark[300],
+        tabBarActiveTintColor: colors.light[400],
+        tabBarInactiveTintColor: "rgba(255,255,255,0.45)",
+
+        // The pill bar styling
         tabBarStyle: {
-          backgroundColor: "transparent",
+          // Position & size
+          position: "absolute",
+          bottom: 20,
+          left: 40,
+          right: 40,
+          height: BAR_HEIGHT,
+
+          // Pill shape
+          borderRadius: 999,
+          /** Trung tính charcoal (tránh rgba(22,22,35) tông xanh lạnh) */
+          backgroundColor: "rgba(30, 32, 33, 0.94)",
+
+          // Border / shadow
           borderTopWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-          paddingTop: 4,
-          height: "auto",
+          // borderWidth: 0.5,
+          // borderColor: "rgba(255,255,255,0.10)",
+          elevation: 24,
+          shadowColor: colors.dark[500],
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.4,
+          shadowRadius: 20,
+
+          // Center items vertically
+          paddingBottom: 0,
+          paddingTop: 0,
+          marginLeft: 20,
+          marginRight: 20,
+        },
+
+        // Active tab indicator — small pill behind the active icon
+        tabBarItemStyle: {
+          borderRadius: 999,
+          marginVertical: 10,
+          marginHorizontal: 2,
         },
       }}
     >
@@ -81,7 +111,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color }) => (
             <TabIcon
               SvgIcon={(p: { color: string }) => (
-                <FriendIcon size={24} color={p.color} />
+                <FriendIcon size={22} color={p.color} />
               )}
               color={color}
             />
@@ -91,13 +121,38 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="post"
         listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-          },
+          tabPress: (e) => e.preventDefault(),
         }}
         options={{
           title: "Đăng",
-          tabBarIcon: () => null,
+          tabBarIcon: ({ color }) => (
+            // Plus button in the center
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 999,
+                backgroundColor: colors.primary[100],
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 2,
+                shadowColor: colors.primary[100],
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.35,
+                shadowRadius: 8,
+                elevation: 8,
+              }}
+            >
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M12 5v14M5 12h14"
+                  stroke={colors.light[400]}
+                  strokeWidth={2.2}
+                  strokeLinecap="round"
+                />
+              </Svg>
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
@@ -107,7 +162,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color }) => (
             <TabIcon
               SvgIcon={(p: { color: string }) => (
-                <MessageIcon size={24} color={p.color} />
+                <MessageIcon size={22} color={p.color} />
               )}
               color={color}
             />

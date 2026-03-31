@@ -1,5 +1,5 @@
 import { useTheme } from "@/context/ThemeContext";
-import { colors } from "@/styles/colors";
+import { BORDER_DEFAULT, colors, getSemantic } from "@/styles/colors";
 import React from "react";
 import {
   TextInput,
@@ -53,7 +53,7 @@ const MyTextarea: React.FC<MyTextareaProps> = ({
         (colorScheme === "dark" ? colors.dark[500] : colors.light[500]),
       borderRadius,
       borderWidth,
-      borderColor: borderColor ?? "#ccc",
+      borderColor: borderColor ?? BORDER_DEFAULT,
       paddingHorizontal: 12,
       paddingVertical: 10,
       justifyContent: "flex-start",
@@ -67,6 +67,8 @@ const MyTextarea: React.FC<MyTextareaProps> = ({
     },
   });
 
+  const placeholderTextColor = getSemantic(colorScheme).placeholder;
+
   return (
     <View style={[styles.container, containerStyle]}>
       <TextInput
@@ -74,7 +76,7 @@ const MyTextarea: React.FC<MyTextareaProps> = ({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
+        placeholderTextColor={placeholderTextColor}
         secureTextEntry={secureTextEntry}
         onSubmitEditing={onSubmitEditing}
         style={[styles.input, inputStyle]}

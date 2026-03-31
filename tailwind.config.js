@@ -11,11 +11,20 @@ module.exports = {
     extend: {
       colors: {
         primary: {
+          50: "#768D85",
           100: "#768D85",
+          200: "#768D85",
+          300: "#768D85",
+          400: "#768D85",
+          500: "#768D85",
+          600: "#768D85",
+          700: "#768D85",
+          800: "#768D85",
+          900: "#768D85",
           /** Chữ trên nền primary */
           foreground: {
             light: "#FFFFFF",
-            dark: "#CFBFAD",
+            dark: "#EFE7DF",
           },
         },
         background: {
@@ -36,15 +45,15 @@ module.exports = {
         },
         text: {
           light: "#1E2021",
-          dark: "#CFBFAD",
+          dark: "#EFE7DF",
           muted: {
             light: "#515E5A",
             dark: "#515E5A",
           },
         },
         border: {
-          light: "#E5E7EB",
-          dark: "#515E5A",
+          light: "#CCCCCC",
+          dark: "#CCCCCC",
         },
         success: {
           light: "#22C55E",
@@ -64,8 +73,8 @@ module.exports = {
         },
       },
       borderColor: {
-        "pill-light": "#E5E7EB",
-        "pill-dark": "rgba(207, 191, 173, 0.45)",
+        "pill-light": "#CCCCCC",
+        "pill-dark": "#CCCCCC",
       },
       fontFamily: {
         sans: ["Montserrat-Regular"],
@@ -78,6 +87,9 @@ module.exports = {
         extrabold: ["Montserrat-ExtraBold"],
         black: ["Montserrat-Black"],
         josefin: ["JosefinSans-SemiBold"],
+        /** Logo / brand — @expo-google-fonts/jost */
+        jost: ["Jost_600SemiBold"],
+        "jost-bold": ["Jost_700Bold"],
       },
       borderRadius: {
         "4xl": "2rem",

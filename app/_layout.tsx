@@ -1,5 +1,6 @@
 import "@/global.css";
 
+import { Jost_600SemiBold, Jost_700Bold } from "@expo-google-fonts/jost";
 import {
   DarkTheme,
   DefaultTheme,
@@ -13,7 +14,7 @@ import { useEffect, useMemo } from "react";
 import { View } from "react-native";
 import "react-native-reanimated";
 
-import { colors } from "@/constants/designTokens";
+import { BORDER_DEFAULT, colors } from "@/constants/designTokens";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import {
   ThemeProvider as AppThemeProvider,
@@ -66,7 +67,7 @@ function ThemedNavigation() {
         background: colors.light[500],
         card: colors.light[500],
         text: colors.light[100],
-        border: "#E5E7EB",
+        border: BORDER_DEFAULT,
       },
     };
   }, [colorScheme]);
@@ -104,6 +105,8 @@ export default function RootLayout() {
     "Montserrat-Black": require("@/assets/fonts/Montserrat-Black.ttf"),
     "Montserrat-Italic": require("@/assets/fonts/Montserrat-Italic.ttf"),
     "JosefinSans-SemiBold": require("@/assets/fonts/JosefinSans-SemiBold.ttf"),
+    Jost_600SemiBold,
+    Jost_700Bold,
   });
 
   return (

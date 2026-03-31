@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, Modal } from "react-native";
+import {
+  CalendarIcon,
+  DobIcon,
+  EmailIcon,
+  GenderFemaleIcon,
+  GenderMaleIcon,
+  HobbyIcon,
+  JobIcon,
+  LikeIcon,
+  LocationPinIcon,
+  PenIcon,
+} from "@/components/shared/icons/Icons";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { colors } from "@/styles/colors";
-import {
-  LocationPinIcon,
-  JobIcon,
-  DobIcon,
-  GenderFemaleIcon,
-  GenderMaleIcon,
-  EmailIcon,
-  CalendarIcon,
-  PenIcon,
-  LikeIcon,
-  HobbyIcon,
-} from "@/components/shared/icons/Icons";
-import UpdateInformation from "../../forms/setting/UpdateInformation";
+import React, { useEffect, useState } from "react";
+import { Modal, Text, TouchableOpacity, View } from "react-native";
+// import UpdateInformation from "../../forms/setting/UpdateInformation";
 
 const DetailRow = ({
   icon: Icon,
@@ -185,11 +185,11 @@ const DetailInformation = ({ profileUser, setProfileUser }: any) => {
               flex: 1,
             }}
           >
-            <UpdateInformation
+            {/* <UpdateInformation
               profileUser={profileUser}
               setProfileUser={setProfileUser}
               onClose={() => setShowEdit(false)}
-            />
+            /> */}
           </View>
         </Modal>
       </View>

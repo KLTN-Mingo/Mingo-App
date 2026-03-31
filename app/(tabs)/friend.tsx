@@ -13,6 +13,8 @@ import { FriendRequestCard } from '@/components/friend/FriendRequestCard';
 import { FriendListSkeleton, FriendRequestListSkeleton } from '@/components/skeleton';
 import { Input, Tab, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { colors, getSemantic } from '@/styles/colors';
 import {
   CloseFriendDto,
   FollowerDto,
@@ -40,6 +42,8 @@ const TABS: { key: TabType; label: string }[] = [
 
 export default function FriendScreen() {
   const { profile } = useAuth();
+  const colorScheme = useColorScheme() ?? 'light';
+  const semantic = getSemantic(colorScheme);
   const [activeTab, setActiveTab] = useState<TabType>('requests');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -272,7 +276,7 @@ export default function FriendScreen() {
 
   const renderEmptyState = (message: string) => (
     <View className="flex-1 items-center justify-center py-20">
-      <FriendIcon size={48} color="#9CA3AF" />
+      <FriendIcon size={48} color={semantic.placeholder} />
       <Text variant="muted" className="mt-4">{message}</Text>
     </View>
   );
@@ -290,10 +294,10 @@ export default function FriendScreen() {
               onPress={() => setIsSearchVisible(!isSearchVisible)}
               className="p-2"
             >
-              <SearchIcon size={24} color="#768D85" />
+              <SearchIcon size={24} color={colors.primary[100]} />
             </TouchableOpacity>
             <TouchableOpacity className="p-2">
-              <AddIcon size={24} color="#768D85" />
+              <AddIcon size={24} color={colors.primary[100]} />
             </TouchableOpacity>
           </View>
         </View>
@@ -305,7 +309,7 @@ export default function FriendScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
             className="mt-3"
-            leftIcon={<SearchIcon size={20} color="#515E5A" />}
+            leftIcon={<SearchIcon size={20} color={semantic.textMuted} />}
           />
         )}
       </View>

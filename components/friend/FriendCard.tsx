@@ -2,6 +2,7 @@ import { TouchableOpacity, View } from 'react-native';
 
 import { Avatar, Icon, Text } from '@/components/ui';
 import { UserMinimalDto } from '@/dtos';
+import { colors } from '@/styles/colors';
 
 interface FriendCardProps {
   user: UserMinimalDto;
@@ -31,7 +32,7 @@ export function FriendCard({
         />
         {isCloseFriend && (
           <View className="absolute -bottom-1 -right-1 bg-yellow-400 rounded-full p-0.5">
-            <Icon name="star.fill" size={12} color="#fff" />
+            <Icon name="star.fill" size={12} color={colors.light[400]} />
           </View>
         )}
       </View>
@@ -43,7 +44,12 @@ export function FriendCard({
             {user.name || 'Unknown'}
           </Text>
           {user.verified && (
-            <Icon name="checkmark.seal.fill" size={16} color="#768D85" className="ml-1" />
+            <Icon
+              name="checkmark.seal.fill"
+              size={16}
+              color={colors.primary[100]}
+              className="ml-1"
+            />
           )}
         </View>
         {isCloseFriend && (
@@ -53,7 +59,7 @@ export function FriendCard({
 
       {/* More Button */}
       <TouchableOpacity onPress={onMorePress} className="p-2">
-        <Icon name="ellipsis" size={20} color="#9CA3AF" />
+        <Icon name="ellipsis" size={20} color={colors.dark[300]} />
       </TouchableOpacity>
     </TouchableOpacity>
   );

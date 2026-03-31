@@ -31,11 +31,18 @@ import { useAuth } from "@/context/AuthContext";
 import { PostResponseDto, UserProfileDto } from "@/dtos";
 import { postService } from "@/services/post.service";
 import { userService } from "@/services/user.service";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { colors, getSemantic, getStatusColor } from "@/styles/colors";
+import { useTheme } from "@/context/ThemeContext";
 
 type TabKey = "posts" | "photos" | "videos";
 
 export default function ProfileScreen() {
   const { profile, setProfile, logout } = useAuth();
+  const colorScheme = useColorScheme() ?? "light";
+  const semantic = getSemantic(colorScheme);
+  const errorColor = getStatusColor(colorScheme, "error");
+  const { colorScheme: themeColorScheme, toggleColorScheme } = useTheme();
   const [userProfile, setUserProfile] = useState<UserProfileDto | null>(null);
   const [posts, setPosts] = useState<PostResponseDto[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("posts");
@@ -141,7 +148,7 @@ export default function ProfileScreen() {
           ))
         ) : (
           <View className="items-center justify-center py-20">
-            <PostIcon size={48} color="#9CA3AF" />
+            <PostIcon size={48} color={semantic.placeholder} />
             <Text variant="muted" className="mt-4">
               No posts yet
             </Text>
@@ -171,7 +178,7 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View className="items-center justify-center py-20">
-            <ImageIcon size={48} color="#9CA3AF" />
+            <ImageIcon size={48} color={semantic.placeholder} />
             <Text variant="muted" className="mt-4">
               No photos yet
             </Text>
@@ -198,7 +205,7 @@ export default function ProfileScreen() {
                 />
                 <View className="absolute inset-0 items-center justify-center">
                   <View className="bg-black/50 rounded-full p-2">
-                    <VideoIcon size={20} color="#fff" />
+                    <VideoIcon size={20} color={colors.light[400]} />
                   </View>
                 </View>
               </TouchableOpacity>
@@ -206,7 +213,7 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View className="items-center justify-center py-20">
-            <MovieIcon size={48} color="#9CA3AF" />
+            <MovieIcon size={48} color={semantic.placeholder} />
             <Text variant="muted" className="mt-4">
               No videos yet
             </Text>
@@ -238,7 +245,7 @@ export default function ProfileScreen() {
 
     return (
       <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4">
-        <ReportIcon size={48} color="#EF4444" />
+        <ReportIcon size={48} color={errorColor} />
         <Text className="mt-4 text-center">
           {profileError || "Không tải được thông tin cá nhân"}
         </Text>
@@ -271,8 +278,8 @@ export default function ProfileScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#768D85"]}
-            tintColor="#768D85"
+          colors={[colors.primary[100]]}
+          tintColor={colors.primary[100]}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -299,7 +306,7 @@ export default function ProfileScreen() {
             onPress={() => setSettingsVisible(true)}
             className="p-2"
           >
-            <SettingsIcon size={24} color="#768D85" />
+            <SettingsIcon size={24} color={colors.primary[100]} />
           </TouchableOpacity>
         </View>
 
@@ -357,7 +364,7 @@ export default function ProfileScreen() {
               }}
               className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
             >
-              <PenIcon size={22} color="#768D85" />
+              <PenIcon size={22} color={colors.primary[100]} />
               <Text className="ml-3">Edit Profile</Text>
             </TouchableOpacity>
 
@@ -368,8 +375,21 @@ export default function ProfileScreen() {
               }}
               className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
             >
-              <SettingsIcon size={22} color="#768D85" />
+              <SettingsIcon size={22} color={colors.primary[100]} />
               <Text className="ml-3">Account Settings</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                toggleColorScheme();
+              }}
+              className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
+            >
+              <Text className="flex-1 ml-3 font-semibold text-text-dark dark:text-text-light">
+                {themeColorScheme === "dark"
+                  ? "Switch to Light"
+                  : "Switch to Dark"}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -379,7 +399,7 @@ export default function ProfileScreen() {
               }}
               className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
             >
-              <LogoutIcon size={22} color="#EF4444" />
+              <LogoutIcon size={22} color={errorColor} />
               <Text className="ml-3 text-red-500">Logout</Text>
             </TouchableOpacity>
 
