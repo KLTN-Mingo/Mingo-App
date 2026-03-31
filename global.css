@@ -10,8 +10,9 @@
     --color-bg-dark: #1e2021;
     --color-surface-dark: #2d2f2f;
     --color-text-light: #1e2021;
-    --color-text-dark: #cfbfad;
+    --color-text-dark: #EFE7DF;
     --color-muted: #515e5a;
+    --color-border: #cccccc;
   }
 
   * {

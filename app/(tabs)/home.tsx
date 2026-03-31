@@ -6,11 +6,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CommentModal } from "@/components/post/CommentModal";
 import { PostCard } from "@/components/post/PostCard";
 import {
-  LocationPinIcon,
   NotificationIcon,
   PostIcon,
   ReportIcon,
-  SearchIcon,
+  SearchIcon
 } from "@/components/shared/icons/Icons";
 import { HomeSkeleton } from "@/components/skeleton";
 import { Tab, Text } from "@/components/ui";
@@ -21,7 +20,9 @@ import {
   PostResponseDto,
   UserMinimalDto,
 } from "@/dtos";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { postService } from "@/services/post.service";
+import { colors, getSemantic, getStatusColor } from "@/styles/colors";
 
 const FEED_TABS: { key: FeedTab; label: string }[] = [
   { key: "explore", label: "Khám phá" },
@@ -30,6 +31,9 @@ const FEED_TABS: { key: FeedTab; label: string }[] = [
 
 export default function HomeScreen() {
   const { profile, logout, setProfile } = useAuth();
+  const colorScheme = useColorScheme() ?? "light";
+  const semantic = getSemantic(colorScheme);
+  const errorColor = getStatusColor(colorScheme, "error");
   const [activeTab, setActiveTab] = useState<FeedTab>("explore");
   const [posts, setPosts] = useState<PostResponseDto[]>([]);
   const [pagination, setPagination] = useState<PaginationDto | null>(null);
@@ -167,7 +171,7 @@ export default function HomeScreen() {
 
     return (
       <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4">
-        <ReportIcon size={48} color="#EF4444" />
+        <ReportIcon size={48} color={errorColor} />
         <Text className="mt-4 text-center">{error}</Text>
         <TouchableOpacity
           onPress={handleTryAgain}
@@ -183,26 +187,32 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-background-light dark:bg-background-dark"
+      className="flex-1 px-5 py-8"
       edges={["top"]}
     >
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
+        className="gap-6"
         ListHeaderComponent={
-          <View className="px-4 pt-2 pb-3">
+          <View className="gap-5 mb-5">
             {/* Header: logo + thông báo */}
-            <View className="flex-row items-center justify-between py-2">
-              <Text className="text-[33px] leading-[38px] font-medium text-text-light dark:text-text-dark">
-                <Text className="text-primary-100 font-Montserrat-Bold">Min<Text className="text-[22px] leading-[23px] font-semibold text-text-dark">go<Text/></Text>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[33px] leading-[38px] font-jost">
+                <Text className="font-montserrat-bold text-text-light dark:text-text-dark">
+                  Min
+                </Text>
+                <Text className="text-[22px] leading-[23px] text-primary-100 dark:text-primary-100">
+                  go
+                </Text>
               </Text>
               <TouchableOpacity
                 onPress={handleNotifications}
                 className="p-2 relative"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                // hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <NotificationIcon size={24} color="#CFBFAD" />
-                <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border border-white dark:border-[#1E2021]" />
+                <NotificationIcon size={24} color={semantic.text} />
+                <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error-light dark:bg-error-dark border border-white dark:border-background-dark" />
               </TouchableOpacity>
             </View>
 
@@ -210,23 +220,20 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={handleSearch}
               activeOpacity={0.85}
-              className="flex-row items-center mt-1 px-4 py-3 rounded-2xl bg-input-light dark:bg-input-dark"
+              className="flex-row items-center mt-1 px-4 py-3 rounded-[20px] bg-input-light dark:bg-input-dark"
             >
-              <LocationPinIcon size={22} color="#515E5A" />
+              {/* <LocationPinIcon size={22} color={semantic.textMuted} /> */}
               <Text
                 variant="muted"
-                className="flex-1 ml-3 text-text-muted-light dark:text-text-muted-dark"
+                className="flex-1 text-[16px] h-[20px] text-text-muted-light dark:text-text-muted-dark"
               >
-                Tìm kiếm bài viết, địa điểm...
+                Tìm kiếm bài viết, người dùng...
               </Text>
-              <SearchIcon size={22} color="#515E5A" />
+              <SearchIcon size={22} color={semantic.textMuted} />
             </TouchableOpacity>
 
-            {/* Create Post Button */}
-            {/* <CreatePostButton user={userMinimal} onPress={handleCreatePost} /> */}
-
             {/* Feed Tabs */}
-            <View className="mt-3 flex-row gap-2">
+            <View className="flex-row gap-2">
               {FEED_TABS.map((tab) => (
                 <Tab
                   key={tab.key}
@@ -247,20 +254,20 @@ export default function HomeScreen() {
             onUserPress={handleUserPress}
           />
         )}
-        ItemSeparatorComponent={() => <View className="h-0.5" />}
+        ItemSeparatorComponent={() => <View className="h-4" />}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#768D85"]}
-            tintColor="#768D85"
+                colors={[colors.primary[100]]}
+                tintColor={colors.primary[100]}
           />
         }
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
-            <PostIcon size={48} color="#9CA3AF" />
+            <PostIcon size={48} color={semantic.placeholder} />
             <Text variant="muted" className="mt-4">
               {activeTab === "explore"
                 ? "Chưa có bài viết để khám phá"

@@ -28,7 +28,7 @@ const MyButton = ({
   isActive,
 }) => {
   const { colorScheme } = useTheme();
-  const textColor = isActive ? "#fff" : color;
+  const textColor = isActive ? colors.light[400] : color;
 
   const [fontsLoaded] = useFonts({
     "Montserrat-Black": require("../../assets/fonts/Montserrat-Black.ttf"),
@@ -67,7 +67,7 @@ const MyButton = ({
         // Bóng đổ cho cả iOS và Android nếu isShadow là true
         ...(isShadow && {
           // Bóng đổ cho iOS
-          shadowColor: "#000", // Màu bóng
+          shadowColor: colors.dark[500], // Màu bóng
           shadowOffset: {
             width: 0,
             height: 2, // Độ cao bóng (chỉ ở dưới)

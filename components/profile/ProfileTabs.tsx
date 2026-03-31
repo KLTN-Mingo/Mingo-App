@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 
 import { Icon, Text } from '@/components/ui';
+import { colors } from '@/styles/colors';
 
 type TabKey = 'posts' | 'photos' | 'videos';
 
@@ -32,7 +33,7 @@ export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
           <Icon
             name={tab.icon}
             size={22}
-            color={activeTab === tab.key ? '#768D85' : '#9CA3AF'}
+            color={activeTab === tab.key ? colors.primary[100] : colors.dark[300]}
           />
           <Text
             className={`text-xs mt-1 ${

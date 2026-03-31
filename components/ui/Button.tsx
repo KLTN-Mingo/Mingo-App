@@ -4,6 +4,7 @@ import {
   TouchableOpacityProps,
 } from "react-native";
 import { Text } from "./Text";
+import { colors } from "@/styles/colors";
 
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
@@ -57,7 +58,9 @@ export function Button({
   ...props
 }: ButtonProps) {
   const spinnerOnPrimary =
-    variant === "outline" || variant === "ghost" ? "#768D85" : "#FFFFFF";
+    variant === "outline" || variant === "ghost"
+      ? colors.primary[100]
+      : colors.light[400];
 
   return (
     <TouchableOpacity
@@ -71,7 +74,7 @@ export function Button({
           color={
             variant === "primary" || variant === "danger"
               ? spinnerOnPrimary
-              : "#768D85"
+              : colors.primary[100]
           }
         />
       ) : (

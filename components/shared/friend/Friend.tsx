@@ -5,6 +5,7 @@ import { getMyFriends } from "@/lib/service/user.service";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import FriendCard from "../../card/friend/FriendCard";
 import { FriendResponseDTO } from "@/dtos/FriendDTO";
+import { colors } from "@/styles/colors";
 
 const Friend = () => {
   const [friends, setFriends] = useState<FriendResponseDTO[]>([]);
@@ -34,7 +35,7 @@ const Friend = () => {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color={colors.primary[100]} />
         <Text>Loading...</Text>
       </View>
     );

@@ -19,6 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import { CommentResponseDto, PostResponseDto, UserMinimalDto } from "@/dtos";
 import { commentService } from "@/services/comment.service";
 import { postService } from "@/services/post.service";
+import { BORDER_DEFAULT, colors, statusColors } from "@/styles/colors";
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -156,7 +157,10 @@ export default function PostDetailScreen() {
             onPress={() => handleLikeComment(item)}
             className="flex-row items-center gap-1"
           >
-            <LikeIcon size={13} color={item.isLiked ? "#EB5A5A" : "#9CA3AF"} />
+            <LikeIcon
+              size={13}
+              color={item.isLiked ? statusColors.error.dark : colors.dark[300]}
+            />
             {item.likesCount > 0 && (
               <Text variant="muted" className="text-xs">
                 {item.likesCount}
@@ -172,7 +176,7 @@ export default function PostDetailScreen() {
     if (loadingPost) {
       return (
         <View className="py-8 items-center">
-          <ActivityIndicator color="#768D85" />
+          <ActivityIndicator color={colors.primary[100]} />
         </View>
       );
     }
@@ -215,7 +219,7 @@ export default function PostDetailScreen() {
       {/* Header */}
       <View className="flex-row items-center px-4 py-3 bg-surface-dark border-b border-border-dark">
         <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
-          <ArrowIcon size={22} color="#CFBFAD" />
+          <ArrowIcon size={22} color={colors.dark[100]} />
         </TouchableOpacity>
         <Text className="font-semibold text-lg text-text-dark">Bài viết</Text>
       </View>
@@ -234,7 +238,7 @@ export default function PostDetailScreen() {
           ListEmptyComponent={
             loadingComments ? (
               <View className="py-8 items-center">
-                <ActivityIndicator color="#768D85" />
+                <ActivityIndicator color={colors.primary[100]} />
               </View>
             ) : null
           }
@@ -255,8 +259,8 @@ export default function PostDetailScreen() {
             value={commentText}
             onChangeText={setCommentText}
             placeholder="Viết bình luận..."
-            placeholderTextColor="#515E5A"
-            className="flex-1 bg-[#2D2F2F] rounded-full px-4 py-2.5 text-base font-regular text-text-dark"
+            placeholderTextColor={colors.dark[300]}
+            className="flex-1 bg-surface-dark rounded-full px-4 py-2.5 text-base font-regular text-text-dark"
             multiline
             maxLength={500}
           />
@@ -266,11 +270,11 @@ export default function PostDetailScreen() {
             className="p-2"
           >
             {submitting ? (
-              <ActivityIndicator size="small" color="#768D85" />
+              <ActivityIndicator size="small" color={colors.primary[100]} />
             ) : (
               <SendIcon
                 size={22}
-                color={commentText.trim() ? "#768D85" : "#C4C4C4"}
+                color={commentText.trim() ? colors.primary[100] : BORDER_DEFAULT}
               />
             )}
           </TouchableOpacity>

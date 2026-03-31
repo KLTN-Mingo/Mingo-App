@@ -7,7 +7,7 @@
 | `dark.500` | `#1E2021` | Nền toàn màn hình |
 | `dark.400` | `#2D2F2F` | Card, khối nổi |
 | `dark.200` | `#252525` | Surface phụ |
-| `dark.100` | `#CFBFAD` | Chữ / icon chính |
+| `dark.100` | `#EFE7DF` | Chữ / icon chính |
 | `dark.300` | `#515E5A` | Chữ phụ, placeholder, ô nhập pill |
 | `primary.100` | `#768D85` | Tab active, nút Accept, logo accent |
 
@@ -82,8 +82,8 @@ import {
   title="Friends"
   rightSlot={
     <>
-      <Icon name="magnifyingglass" size={22} color="#CFBFAD" />
-      <Icon name="plus" size={22} color="#CFBFAD" />
+      <Icon name="magnifyingglass" size={22} color="#EFE7DF" />
+      <Icon name="plus" size={22} color="#EFE7DF" />
     </>
   }
 />

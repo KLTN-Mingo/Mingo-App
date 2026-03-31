@@ -25,6 +25,8 @@ import {
   TrashIcon,
 } from '@/components/shared/icons/Icons';
 import { notificationService } from '@/services/notification.service';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { colors, getSemantic, getStatusColor } from '@/styles/colors';
 
 type FilterType = 'all' | 'unread' | 'follow' | 'like' | 'comment';
 
@@ -38,6 +40,9 @@ const FILTERS: { key: FilterType; label: string }[] = [
 
 export default function NotificationScreen() {
   const { profile } = useAuth();
+  const colorScheme = useColorScheme() ?? 'light';
+  const semantic = getSemantic(colorScheme);
+  const errorColor = getStatusColor(colorScheme, 'error');
   const [notifications, setNotifications] = useState<NotificationResponseDto[]>([]);
   const [pagination, setPagination] = useState<PaginationDto | null>(null);
   const [count, setCount] = useState<NotificationCountDto | null>(null);
@@ -218,11 +223,11 @@ export default function NotificationScreen() {
           >
             <CircleTickIcon
               size={24}
-              color={count && count.unread > 0 ? '#768D85' : '#9CA3AF'}
+              color={count && count.unread > 0 ? colors.primary[100] : semantic.placeholder}
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleDeleteAll} className="p-2">
-            <TrashIcon size={24} color="#EF4444" />
+            <TrashIcon size={24} color={errorColor} />
           </TouchableOpacity>
         </View>
       </View>
@@ -267,15 +272,15 @@ export default function NotificationScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#768D85']}
-            tintColor="#768D85"
+            colors={[colors.primary[100]]}
+            tintColor={colors.primary[100]}
           />
         }
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
-            <NotificationIcon size={64} color="#9CA3AF" />
+            <NotificationIcon size={64} color={semantic.placeholder} />
             <Text variant="muted" className="mt-4 text-center">
               Không có thông báo nào
             </Text>

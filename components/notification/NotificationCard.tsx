@@ -8,6 +8,7 @@ import {
   NotificationResponseDto,
   NotificationType,
 } from '@/dtos';
+import { colors, statusColors } from '@/styles/colors';
 
 interface NotificationCardProps {
   notification: NotificationResponseDto;
@@ -24,88 +25,88 @@ function getNotificationIcon(type: NotificationType): {
     // Post
     [NotificationType.POST_LIKE]: {
       name: 'heart.fill',
-      color: '#EF4444',
+      color: statusColors.error.light,
       bgColor: 'bg-red-100 dark:bg-red-900/30',
     },
     [NotificationType.POST_COMMENT]: {
       name: 'bubble.left.fill',
-      color: '#3B82F6',
+      color: statusColors.info.light,
       bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     },
     [NotificationType.POST_SHARE]: {
       name: 'arrowshape.turn.up.right.fill',
-      color: '#10B981',
+      color: statusColors.success.light,
       bgColor: 'bg-green-100 dark:bg-green-900/30',
     },
     [NotificationType.POST_MENTION]: {
       name: 'at',
-      color: '#8B5CF6',
+      color: statusColors.info.light,
       bgColor: 'bg-purple-100 dark:bg-purple-900/30',
     },
     // Media
     [NotificationType.MEDIA_LIKE]: {
       name: 'heart.fill',
-      color: '#EF4444',
+      color: statusColors.error.light,
       bgColor: 'bg-red-100 dark:bg-red-900/30',
     },
     [NotificationType.MEDIA_COMMENT]: {
       name: 'bubble.left.fill',
-      color: '#3B82F6',
+      color: statusColors.info.light,
       bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     },
     // Comment
     [NotificationType.COMMENT_LIKE]: {
       name: 'heart.fill',
-      color: '#EF4444',
+      color: statusColors.error.light,
       bgColor: 'bg-red-100 dark:bg-red-900/30',
     },
     [NotificationType.COMMENT_REPLY]: {
       name: 'arrowshape.turn.up.left.fill',
-      color: '#3B82F6',
+      color: statusColors.info.light,
       bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     },
     [NotificationType.COMMENT_MENTION]: {
       name: 'at',
-      color: '#8B5CF6',
+      color: statusColors.info.light,
       bgColor: 'bg-purple-100 dark:bg-purple-900/30',
     },
     // Follow
     [NotificationType.FOLLOW_REQUEST]: {
       name: 'person.badge.plus',
-      color: '#F59E0B',
+      color: statusColors.warning.light,
       bgColor: 'bg-amber-100 dark:bg-amber-900/30',
     },
     [NotificationType.FOLLOW_ACCEPTED]: {
       name: 'person.fill.checkmark',
-      color: '#10B981',
+      color: statusColors.success.light,
       bgColor: 'bg-green-100 dark:bg-green-900/30',
     },
     [NotificationType.FOLLOW_NEW]: {
       name: 'person.fill.badge.plus',
-      color: '#768D85',
+      color: colors.primary[100],
       bgColor: 'bg-primary-100 dark:bg-primary-900/30',
     },
     // Close Friend
     [NotificationType.CLOSE_FRIEND_REQUEST]: {
       name: 'star.fill',
-      color: '#F59E0B',
+      color: statusColors.warning.light,
       bgColor: 'bg-amber-100 dark:bg-amber-900/30',
     },
     [NotificationType.CLOSE_FRIEND_ACCEPTED]: {
       name: 'star.fill',
-      color: '#10B981',
+      color: statusColors.success.light,
       bgColor: 'bg-green-100 dark:bg-green-900/30',
     },
     // Message
     [NotificationType.MESSAGE_NEW]: {
       name: 'envelope.fill',
-      color: '#3B82F6',
+      color: statusColors.info.light,
       bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     },
     // System
     [NotificationType.SYSTEM]: {
       name: 'bell.fill',
-      color: '#6B7280',
+      color: colors.dark[300],
       bgColor: 'bg-gray-100 dark:bg-gray-800',
     },
   };
@@ -113,7 +114,7 @@ function getNotificationIcon(type: NotificationType): {
   return (
     icons[type] || {
       name: 'bell.fill',
-      color: '#768D85',
+      color: colors.primary[100],
       bgColor: 'bg-primary-100 dark:bg-primary-900/30',
     }
   );

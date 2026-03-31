@@ -1,5 +1,6 @@
 import Svg, { Path, Rect, Circle } from "react-native-svg";
 import { useTheme } from "@react-navigation/native";
+import { statusColors } from "@/styles/colors";
 const SearchIcon = ({ size = 24, color }) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 256 256" fill="none">
@@ -939,7 +940,7 @@ export const PlayAudioIcon = ({ size = 24, color = "currentColor" }) => (
     <Path fill={color} d="M14 19V5h4v14zm-8 0V5h4v14z" />
   </Svg>
 );
-export const DocTypeIcon = ({ size = 70, color = "#1f64ad" }) => {
+export const DocTypeIcon = ({ size = 70, color = statusColors.info.light }) => {
   // Blue for Word
   return (
     <Svg
@@ -957,7 +958,7 @@ export const DocTypeIcon = ({ size = 70, color = "#1f64ad" }) => {
   );
 };
 
-export const PptTypeIcon = ({ size = 70, color = "#e50000" }) => {
+export const PptTypeIcon = ({ size = 70, color = statusColors.error.light }) => {
   // Red for PowerPoint
   return (
     <Svg
@@ -977,7 +978,7 @@ export const PptTypeIcon = ({ size = 70, color = "#e50000" }) => {
   );
 };
 
-export const PdfTypeIcon = ({ size = 70, color = "#e50000" }) => {
+export const PdfTypeIcon = ({ size = 70, color = statusColors.error.light }) => {
   // Red for PDF
   return (
     <Svg

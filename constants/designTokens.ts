@@ -5,9 +5,12 @@
 
 export type ColorScheme = "light" | "dark";
 
+/** Viền mặc định dùng xuyên app (Tailwind `border-*`, semantic, v.v.) */
+export const BORDER_DEFAULT = "#CCCCCC";
+
 /** Thang màu “dark” (tên gốc từ thiết kế — dùng cho dark mode) */
 export const paletteDark = {
-  100: "#CFBFAD",
+  100: "#EFE7DF",
   200: "#252525",
   300: "#515E5A",
   400: "#2D2F2F",
@@ -19,7 +22,7 @@ export const paletteLight = {
   100: "#1E2021",
   200: "#F2F2F2",
   300: "#515E5A",
-  400: "#FFFFFF",
+  400: "#F1F4F3",
   500: "#FFFFFF",
   700: "#F0F2F5",
 } as const;
@@ -58,8 +61,8 @@ export function getSemantic(scheme: ColorScheme): SemanticColors {
       input: paletteDark[400],
       text: paletteDark[100],
       textMuted: paletteDark[300],
-      border: paletteDark[300],
-      pillBorder: "rgba(207, 191, 173, 0.45)",
+      border: BORDER_DEFAULT,
+      pillBorder: BORDER_DEFAULT,
       primary: palettePrimary[100],
       onPrimary: paletteDark[100],
       placeholder: paletteDark[300],
@@ -72,12 +75,40 @@ export function getSemantic(scheme: ColorScheme): SemanticColors {
     input: paletteLight[400],
     text: paletteLight[100],
     textMuted: paletteLight[300],
-    border: "#E5E7EB",
-    pillBorder: "#E5E7EB",
+    border: BORDER_DEFAULT,
+    pillBorder: BORDER_DEFAULT,
     primary: palettePrimary[100],
     onPrimary: "#FFFFFF",
     placeholder: "#9CA3AF",
   };
+}
+
+export type StatusColorKind = "success" | "warning" | "error" | "info";
+
+export const statusColors = {
+  success: {
+    light: "#22C55E",
+    dark: "#4ADE80",
+  },
+  warning: {
+    light: "#F59E0B",
+    dark: "#FBBF24",
+  },
+  error: {
+    light: "#EF4444",
+    dark: "#F87171",
+  },
+  info: {
+    light: "#3B82F6",
+    dark: "#60A5FA",
+  },
+} as const;
+
+export function getStatusColor(
+  scheme: ColorScheme,
+  kind: StatusColorKind
+): string {
+  return statusColors[kind][scheme];
 }
 
 export const colorTable = {
