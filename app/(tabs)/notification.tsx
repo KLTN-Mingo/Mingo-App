@@ -105,6 +105,12 @@ export default function NotificationScreen() {
     fetchNotifications(1);
   }, [fetchNotifications]);
 
+  useEffect(() => {
+    notificationService.markAllAsSeen().catch((error) => {
+      console.warn("Cannot mark notifications as seen:", error);
+    });
+  }, []);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchNotifications(1);
@@ -135,7 +141,7 @@ export default function NotificationScreen() {
     }
 
     // Navigate based on notification type
-    const { notificationType, entityId, postId, mediaId, commentId, actor } = notification;
+    const { notificationType, postId, mediaId, actor } = notification;
 
     switch (notificationType) {
       case NotificationType.POST_LIKE:
@@ -143,6 +149,16 @@ export default function NotificationScreen() {
       case NotificationType.POST_SHARE:
       case NotificationType.POST_MENTION:
         if (postId) router.push(`/post/${postId}` as any);
+        break;
+      case NotificationType.MEDIA_LIKE:
+      case NotificationType.MEDIA_COMMENT:
+      case NotificationType.MEDIA_SHARE:
+      case NotificationType.COMMENT_LIKE:
+      case NotificationType.COMMENT_REPLY:
+      case NotificationType.COMMENT_MENTION:
+        if (postId) {
+          router.push(`/post/${postId}` as any);
+        }
         break;
       case NotificationType.FOLLOW_REQUEST:
       case NotificationType.FOLLOW_ACCEPTED:

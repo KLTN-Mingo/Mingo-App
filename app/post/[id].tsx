@@ -127,6 +127,19 @@ export default function PostDetailScreen() {
     }
   };
 
+  const handleDeleteComment = async (comment: CommentResponseDto) => {
+    if (!id) return;
+    try {
+      await commentService.deleteComment(id, comment.id);
+      setComments((prev) => prev.filter((c) => c.id !== comment.id));
+      setPost((prev) =>
+        prev ? { ...prev, commentsCount: Math.max(0, prev.commentsCount - 1) } : prev
+      );
+    } catch (error) {
+      console.warn("Cannot delete comment:", error);
+    }
+  };
+
   const formatTime = (dateStr: string) => {
     try {
       return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
@@ -167,6 +180,13 @@ export default function PostDetailScreen() {
               </Text>
             )}
           </TouchableOpacity>
+          {currentUser?.id && item.userId === currentUser.id && (
+            <TouchableOpacity onPress={() => handleDeleteComment(item)}>
+              <Text variant="muted" className="text-xs text-red-400">
+                Xóa
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -197,6 +217,11 @@ export default function PostDetailScreen() {
                       : prev.likesCount - 1,
                   }
                 : prev
+            )
+          }
+          onShareChange={(postId, nextCount) =>
+            setPost((prev) =>
+              prev && prev.id === postId ? { ...prev, sharesCount: nextCount } : prev
             )
           }
         />

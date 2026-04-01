@@ -178,7 +178,7 @@ export function NotificationCard({
         {/* Additional content (comment text, etc.) */}
         {content && (
           <Text variant="muted" numberOfLines={1} className="mt-0.5">
-            "{content}"
+            &quot;{content}&quot;
           </Text>
         )}
 

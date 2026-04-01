@@ -10,11 +10,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FriendCard } from '@/components/friend/FriendCard';
 import { FriendRequestCard } from '@/components/friend/FriendRequestCard';
+import {
+  AddIcon,
+  FriendIcon,
+  SearchIcon,
+} from '@/components/shared/icons/Icons';
 import { FriendListSkeleton, FriendRequestListSkeleton } from '@/components/skeleton';
-import { Input, Tab, Text } from '@/components/ui';
+import { Button, Input, Tab, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { colors, getSemantic } from '@/styles/colors';
 import {
   CloseFriendDto,
   FollowerDto,
@@ -22,18 +25,25 @@ import {
   FollowRequestDto,
   FollowStatsDto,
   FriendDto,
+  CloseFriendRequestDto,
 } from '@/dtos';
-import {
-  AddIcon,
-  FriendIcon,
-  SearchIcon,
-} from '@/components/shared/icons/Icons';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FollowApi } from '@/services/follow.service';
+import { colors, getSemantic } from '@/styles/colors';
 
-type TabType = 'requests' | 'friends' | 'bestfriends' | 'followers' | 'following';
+type TabType =
+  | 'requests'
+  | 'sent'
+  | 'closeRequests'
+  | 'friends'
+  | 'bestfriends'
+  | 'followers'
+  | 'following';
 
 const TABS: { key: TabType; label: string }[] = [
   { key: 'requests', label: 'Requests' },
+  { key: 'sent', label: 'Sent' },
+  { key: 'closeRequests', label: 'Close requests' },
   { key: 'friends', label: 'Friends' },
   { key: 'bestfriends', label: 'Best friends' },
   { key: 'followers', label: 'Followers' },
@@ -41,6 +51,13 @@ const TABS: { key: TabType; label: string }[] = [
 ];
 
 export default function FriendScreen() {
+  const isDark = useColorScheme() === "dark";
+
+  const theme = {
+    icon: isDark ? colors.dark[100] : colors.light[100],
+    iconMuted: isDark ? colors.dark[300] : colors.light[300],
+  };
+
   const { profile } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const semantic = getSemantic(colorScheme);
@@ -50,6 +67,8 @@ export default function FriendScreen() {
 
   // Data states - using DTOs
   const [requests, setRequests] = useState<FollowRequestDto[]>([]);
+  const [sentRequests, setSentRequests] = useState<FollowRequestDto[]>([]);
+  const [closeFriendRequests, setCloseFriendRequests] = useState<CloseFriendRequestDto[]>([]);
   const [friends, setFriends] = useState<FriendDto[]>([]);
   const [closeFriends, setCloseFriends] = useState<CloseFriendDto[]>([]);
   const [followers, setFollowers] = useState<FollowerDto[]>([]);
@@ -74,6 +93,16 @@ export default function FriendScreen() {
         case 'friends':
           const friendsData = await FollowApi.getFriends(profile.id);
           setFriends(friendsData.friends);
+          break;
+        case 'sent':
+          const sentData = await FollowApi.getSentRequests();
+          setSentRequests(sentData.requests);
+          break;
+        case 'closeRequests':
+          if (FollowApi.getPendingCloseFriendRequests) {
+            const closeReqData = await FollowApi.getPendingCloseFriendRequests();
+            setCloseFriendRequests(closeReqData.requests);
+          }
           break;
         case 'bestfriends':
           const bffData = await FollowApi.getCloseFriends(profile.id);
@@ -143,6 +172,10 @@ export default function FriendScreen() {
         return renderRequests();
       case 'friends':
         return renderFriends();
+      case 'sent':
+        return renderSentRequests();
+      case 'closeRequests':
+        return renderCloseRequests();
       case 'bestfriends':
         return renderCloseFriends();
       case 'followers':
@@ -199,6 +232,79 @@ export default function FriendScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  };
+
+  const handleCancelRequest = async (targetUserId: string) => {
+    try {
+      if (!FollowApi.cancelRequest) return;
+      await FollowApi.cancelRequest(targetUserId);
+      setSentRequests((prev) => prev.filter((r) => r.user.id !== targetUserId));
+    } catch (error) {
+      console.error("Error canceling request:", error);
+    }
+  };
+
+  const renderSentRequests = () => {
+    if (sentRequests.length === 0) {
+      return renderEmptyState("No sent requests");
+    }
+
+    return (
+      <FlatList
+        data={sentRequests}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View className="flex-row items-center justify-between px-4 py-4 bg-surface-muted-light dark:bg-surface-muted-dark rounded-[10px] mb-3">
+            <Text className="flex-1 mr-3">
+              {item.user.name || "Unknown"}
+            </Text>
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={() => handleCancelRequest(item.user.id)}
+            >
+              Cancel
+            </Button>
+          </View>
+        )}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  };
+
+  const handleCloseFriendResponse = async (requestId: string, accept: boolean) => {
+    try {
+      if (!FollowApi.respondCloseFriendRequest) return;
+      await FollowApi.respondCloseFriendRequest(requestId, accept);
+      setCloseFriendRequests((prev) => prev.filter((r) => r.id !== requestId));
+      fetchData();
+    } catch (error) {
+      console.error("Error responding close friend request:", error);
+    }
+  };
+
+  const renderCloseRequests = () => {
+    if (closeFriendRequests.length === 0) {
+      return renderEmptyState("No close-friend requests");
+    }
+
+    return (
+      <FlatList
+        data={closeFriendRequests}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <FriendRequestCard
+            id={item.id}
+            user={item.user}
+            onAccept={(id) => handleCloseFriendResponse(id, true)}
+            onDecline={(id) => handleCloseFriendResponse(id, false)}
+          />
+        )}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       />
     );
@@ -282,22 +388,22 @@ export default function FriendScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark pt-10 px-5 pb-5 gap-6">
       {/* Header */}
-      <View className="px-4 pb-2">
+      <View className="">
         <View className="flex-row justify-between items-center">
-          <Text variant="title" className="font-bold">
+          <Text variant="title" className="font-semibold text-6">
             Friends
           </Text>
-          <View className="flex-row gap-2">
+          <View className="flex-row gap-4">
             <TouchableOpacity
               onPress={() => setIsSearchVisible(!isSearchVisible)}
-              className="p-2"
+              className=""
             >
-              <SearchIcon size={24} color={colors.primary[100]} />
+              <SearchIcon size={24} color={theme.icon} />
             </TouchableOpacity>
-            <TouchableOpacity className="p-2">
-              <AddIcon size={24} color={colors.primary[100]} />
+            <TouchableOpacity className="">
+              <AddIcon size={24} color={theme.icon} />
             </TouchableOpacity>
           </View>
         </View>
@@ -315,11 +421,11 @@ export default function FriendScreen() {
       </View>
 
       {/* Tabs */}
-      <View className="px-4">
+      <View className="">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8, paddingVertical: 8 }}
+          contentContainerStyle={{ gap: 10 }}
         >
           {TABS.map((tab) => (
             <Tab
@@ -328,9 +434,11 @@ export default function FriendScreen() {
               isActive={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
               badge={
-                tab.key === 'requests' 
-                  ? stats?.pendingFollowRequestsCount 
-                  : undefined
+                tab.key === 'requests'
+                  ? stats?.pendingFollowRequestsCount
+                  : tab.key === 'closeRequests'
+                    ? stats?.pendingCloseFriendRequestsCount
+                    : undefined
               }
             />
           ))}
@@ -338,7 +446,7 @@ export default function FriendScreen() {
       </View>
 
       {/* Content */}
-      <View className="flex-1 px-4">
+      <View className="flex-1">
         {renderContent()}
       </View>
     </SafeAreaView>

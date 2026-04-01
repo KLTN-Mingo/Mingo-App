@@ -110,6 +110,17 @@ export function CommentModal({
     }
   };
 
+  const handleDeleteComment = async (comment: CommentResponseDto) => {
+    if (!postId) return;
+    try {
+      await commentService.deleteComment(postId, comment.id);
+      setComments((prev) => prev.filter((c) => c.id !== comment.id));
+      onCommentCountChange?.(postId, -1);
+    } catch (error) {
+      console.warn("Cannot delete comment:", error);
+    }
+  };
+
   const formatTime = (dateStr: string) => {
     try {
       return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
@@ -153,6 +164,13 @@ export function CommentModal({
               </Text>
             )}
           </TouchableOpacity>
+          {profile?.id && item.userId === profile.id && (
+            <TouchableOpacity onPress={() => handleDeleteComment(item)}>
+              <Text variant="muted" className="text-xs text-red-400">
+                Xóa
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>

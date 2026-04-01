@@ -1,16 +1,12 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import {
-  ApiResponse,
   CreatePostRequestDto,
   FeedTab,
   PaginatedPostsDto,
   PostDetailDto,
   PostResponseDto,
+  ShareResponseDto,
 } from "@/dtos";
-import { authService } from "@/services/auth.service";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
+import { apiRequest } from "@/services/api-client";
 
 class PostService {
   private normalizePost(raw: any): PostResponseDto {
@@ -55,33 +51,11 @@ class PostService {
     } as PostResponseDto;
   }
 
-  private async getAuthHeaders(): Promise<HeadersInit> {
-    const token = await AsyncStorage.getItem("accessToken");
-    return {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    };
-  }
-
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const headers = await this.getAuthHeaders();
-
-    const response = await fetch(`${API_URL}/posts${endpoint}`, {
-      ...options,
-      headers: { ...headers, ...options.headers },
-    });
-
-    const json: ApiResponse<T> = await response.json();
-
-    if (!response.ok) {
-      await authService.handleUnauthorizedResponse(response, json.message);
-      throw new Error(json.message || "Something went wrong");
-    }
-
-    return json.data;
+    return apiRequest<T>(`/posts${endpoint}`, options);
   }
 
   // Get all posts
@@ -177,6 +151,14 @@ class PostService {
   // Unlike post
   async unlikePost(postId: string): Promise<void> {
     return this.request<void>(`/${postId}/like`, { method: "DELETE" });
+  }
+
+  // Share post
+  async sharePost(postId: string, caption?: string): Promise<ShareResponseDto | null> {
+    return this.request<ShareResponseDto | null>(`/${postId}/share`, {
+      method: "POST",
+      body: JSON.stringify({ caption }),
+    });
   }
 }
 

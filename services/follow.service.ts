@@ -1,45 +1,21 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import {
-  ApiResponse,
   FollowResponseDto,
+  FollowStatus,
   FollowStatsDto,
   PaginatedCloseFriendsDto,
+  PaginatedCloseFriendRequestsDto,
   PaginatedFollowersDto,
   PaginatedFollowingDto,
   PaginatedFollowRequestsDto,
   PaginatedFriendsDto,
+  RelationshipStatusDto,
 } from "@/dtos";
-import { authService } from "@/services/auth.service";
+import { apiRequest } from "@/services/api-client";
 
-export const API_URL =
-  process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
+const BASE_PATH = "/follow";
 
-const BASE_URL = `${API_URL}/follow`;
-
-async function fetchWithAuth<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = await AsyncStorage.getItem("accessToken");
-
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
-
-  const json: ApiResponse<T> = await response.json();
-
-  if (!response.ok) {
-    await authService.handleUnauthorizedResponse(response, json.message);
-    throw new Error(json.message || "Something went wrong");
-  }
-
-  return json.data;
+async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  return apiRequest<T>(`${BASE_PATH}${endpoint}`, options);
 }
 
 export const FollowApi = {
@@ -61,6 +37,10 @@ export const FollowApi = {
       method: "POST",
       body: JSON.stringify({ accept }),
     }),
+
+  // Cancel sent follow request
+  cancelRequest: (userId: string) =>
+    fetchWithAuth<void>(`/requests/${userId}`, { method: "DELETE" }),
 
   // Get friends list
   getFriends: (userId: string, page = 1, limit = 20) =>
@@ -111,4 +91,22 @@ export const FollowApi = {
   // Remove close friend
   removeCloseFriend: (userId: string) =>
     fetchWithAuth<void>(`/close-friend/${userId}`, { method: "DELETE" }),
+
+  getPendingCloseFriendRequests: (page = 1, limit = 20) =>
+    fetchWithAuth<PaginatedCloseFriendRequestsDto>(
+      `/close-friend/requests/pending?page=${page}&limit=${limit}`
+    ),
+
+  getRelationshipStatus: (userId: string) =>
+    fetchWithAuth<RelationshipStatusDto>(`/users/${userId}/relationship`),
+
+  respondCloseFriendRequest: (requestId: string, accept: boolean) =>
+    fetchWithAuth<FollowResponseDto>(`/close-friend/requests/${requestId}/respond`, {
+      method: "POST",
+      body: JSON.stringify({ accept }),
+    }),
+
+  // Local helper to extract follow-only unread requests
+  filterPendingFollowRequests: (requests: PaginatedFollowRequestsDto["requests"]) =>
+    requests.filter((r) => r.status === FollowStatus.PENDING),
 };

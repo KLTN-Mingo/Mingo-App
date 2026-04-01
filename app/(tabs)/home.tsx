@@ -16,12 +16,14 @@ import { Tab, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import {
   FeedTab,
+  NotificationCountDto,
   PaginationDto,
   PostResponseDto,
   UserMinimalDto,
 } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { postService } from "@/services/post.service";
+import { notificationService } from "@/services/notification.service";
 import { colors, getSemantic, getStatusColor } from "@/styles/colors";
 
 const FEED_TABS: { key: FeedTab; label: string }[] = [
@@ -42,6 +44,7 @@ export default function HomeScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
+  const [notificationCount, setNotificationCount] = useState<NotificationCountDto | null>(null);
 
   // Convert profile to UserMinimalDto for components
   const userMinimal: UserMinimalDto | null = profile
@@ -93,6 +96,18 @@ export default function HomeScreen() {
     }
   }, [profile, activeTab, fetchPosts]);
 
+  useEffect(() => {
+    const loadNotificationCount = async () => {
+      try {
+        const count = await notificationService.getNotificationCount();
+        setNotificationCount(count);
+      } catch (error) {
+        console.warn("Cannot load notification count:", error);
+      }
+    };
+    loadNotificationCount();
+  }, [activeTab, profile?.id]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchPosts(1, false, activeTab);
@@ -134,6 +149,12 @@ export default function HomeScreen() {
       prev.map((p) =>
         p.id === postId ? { ...p, commentsCount: p.commentsCount + delta } : p
       )
+    );
+  };
+
+  const handleShareChange = (postId: string, nextCount: number) => {
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, sharesCount: nextCount } : p))
     );
   };
 
@@ -212,7 +233,13 @@ export default function HomeScreen() {
                 // hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <NotificationIcon size={24} color={semantic.text} />
-                <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error-light dark:bg-error-dark border border-white dark:border-background-dark" />
+                {Boolean(notificationCount?.unread) && notificationCount!.unread > 0 && (
+                  <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full px-1 bg-error-light dark:bg-error-dark border border-white dark:border-background-dark items-center justify-center">
+                    <Text className="text-[10px] leading-[10px] text-white font-semibold">
+                      {notificationCount!.unread > 99 ? "99+" : notificationCount!.unread}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
 
@@ -251,6 +278,7 @@ export default function HomeScreen() {
             currentUser={userMinimal}
             onLikeChange={handleLikeChange}
             onCommentPress={handleCommentPress}
+            onShareChange={handleShareChange}
             onUserPress={handleUserPress}
           />
         )}

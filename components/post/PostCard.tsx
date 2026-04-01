@@ -6,6 +6,7 @@ import {
   CommentIcon,
   LikeIcon,
   LocationIcon,
+  ShareIcon,
   ThreeDotsIcon
 } from "@/components/shared/icons/Icons";
 import { Avatar, Text } from "@/components/ui";
@@ -20,6 +21,7 @@ interface PostCardProps {
   currentUser?: UserMinimalDto | null;
   onLikeChange?: (postId: string, isLiked: boolean) => void;
   onCommentPress?: (postId: string) => void;
+  onShareChange?: (postId: string, nextCount: number) => void;
   onUserPress?: (userId: string) => void;
   onMorePress?: (post: PostResponseDto) => void;
 }
@@ -29,6 +31,7 @@ export function PostCard({
   currentUser,
   onLikeChange,
   onCommentPress,
+  onShareChange,
   onUserPress,
   onMorePress,
 }: PostCardProps) {
@@ -42,6 +45,8 @@ export function PostCard({
   const [isLiked, setIsLiked] = useState(post.isLiked ?? false);
   const [likesCount, setLikesCount] = useState(post.likesCount);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [sharesCount, setSharesCount] = useState(post.sharesCount);
+  const [shareLoading, setShareLoading] = useState(false);
 
   const handleLike = async () => {
     if (likeLoading) return;
@@ -67,6 +72,23 @@ export function PostCard({
       console.error("Like error:", error);
     } finally {
       setLikeLoading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (shareLoading) return;
+    setShareLoading(true);
+    const optimistic = sharesCount + 1;
+    setSharesCount(optimistic);
+    onShareChange?.(post.id, optimistic);
+    try {
+      await postService.sharePost(post.id);
+    } catch (error) {
+      setSharesCount((prev) => Math.max(0, prev - 1));
+      onShareChange?.(post.id, Math.max(0, optimistic - 1));
+      console.error("Share error:", error);
+    } finally {
+      setShareLoading(false);
     }
   };
 
@@ -139,26 +161,26 @@ export function PostCard({
           />
           <View className="ml-3 flex-1">
             <View className="flex-row flex-wrap items-center">
-              <Text className="text-[16px] font-semibold">
+              <Text className="text-[16px] font-semibold text-text-light dark:text-text-dark">
                 {post.user?.name || "Unknown"}
               </Text>
               {renderMentions()}
             </View>
-            <Text className="mt-0.5 text-xs text-text-dark">
+            <Text className="mt-0.5 text-xs text-text-light dark:text-text-dark">
               {formatTime(post.createdAt)}
             </Text>
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => onMorePress?.(post)} className="p-2">
-          <ThreeDotsIcon size={20} color={colors.dark[500]} />
+          <ThreeDotsIcon size={20} color={theme.icon} />
         </TouchableOpacity>
       </View>
 
       {/* Content */}
       {post.contentText && (
         <View className="">
-          <Text className="text-[27px] leading-[27px] text-text-dark">
+          <Text className="text-[27px] leading-[27px] text-text-light dark:text-text-dark">
             {post.contentText}
           </Text>
         </View>
@@ -169,8 +191,8 @@ export function PostCard({
             <View className="flex-row flex-wrap items-center">
           {post.location?.name && (
             <View className="flex-row items-center">
-              <LocationIcon size={14} color={colors.dark[300]} />
-              <Text className="text-xs text-primary-100">
+              <LocationIcon size={14} color={theme.icon} />
+              <Text className="text-xs text-text-light dark:text-text-dark">
                 {post.location.name}
               </Text>
             </View>
@@ -246,6 +268,20 @@ export function PostCard({
           {post.commentsCount > 0 && (
             <Text className="text-[17px] text-text-muted-dark">
               {post.commentsCount} comments
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Share */}
+        <TouchableOpacity
+          onPress={handleShare}
+          className="flex-row items-center gap-3"
+          disabled={shareLoading}
+        >
+          <ShareIcon size={22} color={theme.icon} />
+          {sharesCount > 0 && (
+            <Text className="text-[17px] text-text-muted-dark">
+              {sharesCount} shares
             </Text>
           )}
         </TouchableOpacity>
