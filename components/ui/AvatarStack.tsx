@@ -1,6 +1,6 @@
+import { colors } from '@/styles/colors';
 import { Image, View } from 'react-native';
 import { Text } from './Text';
-import { colors } from '@/styles/colors';
 
 interface AvatarStackProps {
   avatars: string[];
@@ -36,7 +36,7 @@ export function AvatarStack({
         ))}
       </View>
       {label && (
-        <Text variant="muted" className="ml-2 text-xs">
+        <Text variant="muted" className="text-sm text-text-light dark:text-text-dark">
           {label}
         </Text>
       )}

@@ -1,43 +1,17 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import {
-  ApiResponse,
   CommentResponseDto,
   CreateCommentRequestDto,
+  CreateReplyRequestDto,
   PaginatedCommentsDto,
 } from "@/dtos";
-import { authService } from "@/services/auth.service";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
+import { apiRequest } from "@/services/api-client";
 
 class CommentService {
-  private async getAuthHeaders(): Promise<HeadersInit> {
-    const token = await AsyncStorage.getItem("accessToken");
-    return {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    };
-  }
-
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const headers = await this.getAuthHeaders();
-
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
-      headers: { ...headers, ...options.headers },
-    });
-
-    const json: ApiResponse<T> = await response.json();
-
-    if (!response.ok) {
-      await authService.handleUnauthorizedResponse(response, json.message);
-      throw new Error(json.message || "Something went wrong");
-    }
-
-    return json.data;
+    return apiRequest<T>(endpoint, options);
   }
 
   // Get comments for a post
@@ -64,23 +38,47 @@ class CommentService {
 
   // Delete a comment
   async deleteComment(postId: string, commentId: string): Promise<void> {
-    return this.request<void>(`/posts/${postId}/comments/${commentId}`, {
+    return this.request<void>(`/comments/${commentId}`, {
       method: "DELETE",
     });
   }
 
   // Like a comment
   async likeComment(postId: string, commentId: string): Promise<void> {
-    return this.request<void>(`/posts/${postId}/comments/${commentId}/like`, {
+    return this.request<void>(`/comments/${commentId}/like`, {
       method: "POST",
     });
   }
 
   // Unlike a comment
   async unlikeComment(postId: string, commentId: string): Promise<void> {
-    return this.request<void>(`/posts/${postId}/comments/${commentId}/like`, {
+    return this.request<void>(`/comments/${commentId}/like`, {
       method: "DELETE",
     });
+  }
+
+  async getCommentReplies(
+    commentId: string,
+    page = 1,
+    limit = 20
+  ): Promise<PaginatedCommentsDto> {
+    return this.request<PaginatedCommentsDto>(
+      `/comments/${commentId}/replies?page=${page}&limit=${limit}`
+    );
+  }
+
+  async createReply(
+    postId: string,
+    commentId: string,
+    payload: CreateReplyRequestDto
+  ): Promise<CommentResponseDto> {
+    return this.request<CommentResponseDto>(
+      `/posts/${postId}/comments/${commentId}/replies`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
   }
 }
 

@@ -23,7 +23,7 @@ export function Tab({
     <TouchableOpacity
       onPress={onClick}
       activeOpacity={0.8}
-      className={`px-4 py-2 rounded-[12px] ${
+      className={`px-4 py-2 rounded-full ${
         isActive
           ? "bg-primary-100"
           : "bg-surface-muted-light dark:bg-transparent border border-border-light dark:border-border-dark"
