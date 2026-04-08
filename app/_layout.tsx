@@ -16,6 +16,7 @@ import "react-native-reanimated";
 
 import { BORDER_DEFAULT, colors } from "@/constants/designTokens";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { CallProvider } from "@/context/CallContext";
 import {
   ThemeProvider as AppThemeProvider,
   useTheme,
@@ -111,12 +112,14 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <View className="flex-1 font-sans" style={{ flex: 1 }}>
-        <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
-        <AppThemeProvider>
-          <ThemedNavigation />
-        </AppThemeProvider>
-      </View>
+      <CallProvider>
+        <View className="flex-1 font-sans" style={{ flex: 1 }}>
+          <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
+          <AppThemeProvider>
+            <ThemedNavigation />
+          </AppThemeProvider>
+        </View>
+      </CallProvider>
     </AuthProvider>
   );
 }

@@ -1,51 +1,79 @@
-import React from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { TouchableOpacity, View } from "react-native";
 
-import { Icon, Text } from '@/components/ui';
-import { colors } from '@/styles/colors';
+import { Text } from "@/components/ui";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
-type TabKey = 'posts' | 'photos' | 'videos';
+type ContentTabKey = "posts" | "photos" | "videos";
 
 interface ProfileTabsProps {
-  activeTab: TabKey;
-  onTabChange: (tab: TabKey) => void;
+  activeTab: ContentTabKey;
+  onTabChange: (tab: ContentTabKey) => void;
+  onFriendPress: () => void;
 }
 
-const TABS: { key: TabKey; label: string; icon: string }[] = [
-  { key: 'posts', label: 'Posts', icon: 'square.grid.2x2' },
-  { key: 'photos', label: 'Photos', icon: 'photo' },
-  { key: 'videos', label: 'Videos', icon: 'video' },
+const TABS: {
+  key: ContentTabKey | "friend";
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  isFriendNav?: boolean;
+}[] = [
+  { key: "posts", label: "Post", icon: "grid-outline" },
+  { key: "friend", label: "Friend", icon: "people-outline", isFriendNav: true },
+  { key: "photos", label: "Image", icon: "image-outline" },
+  { key: "videos", label: "Video", icon: "videocam-outline" },
 ];
 
-export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
+export function ProfileTabs({
+  activeTab,
+  onTabChange,
+  onFriendPress,
+}: ProfileTabsProps) {
+  const colorScheme = useColorScheme() ?? "light";
+  const muted = colorScheme === "dark" ? "#A1A1AA" : "#9CA3AF";
+  const activeColor = colorScheme === "dark" ? "#FAFAFA" : "#171717";
+
   return (
-    <View className="flex-row border-b border-border-light dark:border-border-dark mt-4">
-      {TABS.map((tab) => (
-        <TouchableOpacity
-          key={tab.key}
-          onPress={() => onTabChange(tab.key)}
-          className={`flex-1 items-center py-3 ${
-            activeTab === tab.key
-              ? 'border-b-2 border-primary-400'
-              : ''
-          }`}
-        >
-          <Icon
-            name={tab.icon}
-            size={22}
-            color={activeTab === tab.key ? colors.primary[100] : colors.dark[300]}
-          />
-          <Text
-            className={`text-xs mt-1 ${
-              activeTab === tab.key
-                ? 'text-primary-400 font-semibold'
-                : 'text-text-muted-light dark:text-text-muted-dark'
-            }`}
-          >
-            {tab.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+    <View className="mt-5 px-1">
+      <View className="flex-row items-stretch border-b border-neutral-200 dark:border-neutral-800">
+        {TABS.map((tab) => {
+          const isFriend = tab.isFriendNav;
+          const active = !isFriend && activeTab === tab.key;
+
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              onPress={() => {
+                if (isFriend) onFriendPress();
+                else onTabChange(tab.key as ContentTabKey);
+              }}
+              className="flex-1 items-center pt-2 pb-2.5"
+              activeOpacity={0.65}
+            >
+              <View
+                className={`absolute bottom-0 left-2 right-2 h-[2.5px] rounded-full ${
+                  active ? "bg-neutral-900 dark:bg-white" : "bg-transparent"
+                }`}
+              />
+              <Ionicons
+                name={tab.icon}
+                size={21}
+                color={active ? activeColor : muted}
+              />
+              <Text
+                className={`text-[11px] mt-1 ${
+                  active
+                    ? "text-neutral-900 dark:text-white font-semibold"
+                    : "text-neutral-500 dark:text-neutral-400"
+                }`}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }

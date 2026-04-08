@@ -1,5 +1,4 @@
-
-import { Tabs } from "expo-router";
+import { router, Tabs } from "expo-router";
 import React from "react";
 import { View } from "react-native";
 import Svg, { Path } from "react-native-svg";
@@ -121,7 +120,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="post"
         listeners={{
-          tabPress: (e) => e.preventDefault(),
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push("/create-post");
+          },
         }}
         options={{
           title: "Đăng",

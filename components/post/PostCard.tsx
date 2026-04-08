@@ -1,13 +1,14 @@
 import { formatDistanceToNow } from "date-fns";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Dimensions, Image, TouchableOpacity, useColorScheme, View } from "react-native";
 
 import {
   CommentIcon,
   LikeIcon,
   LocationIcon,
+  SaveIcon,
   ShareIcon,
-  ThreeDotsIcon
+  ThreeDotsIcon,
 } from "@/components/shared/icons/Icons";
 import { Avatar, Text } from "@/components/ui";
 import { PostResponseDto, UserMinimalDto } from "@/dtos";
@@ -22,6 +23,7 @@ interface PostCardProps {
   onLikeChange?: (postId: string, isLiked: boolean) => void;
   onCommentPress?: (postId: string) => void;
   onShareChange?: (postId: string, nextCount: number) => void;
+  onSaveChange?: (postId: string, isSaved: boolean) => void;
   onUserPress?: (userId: string) => void;
   onMorePress?: (post: PostResponseDto) => void;
 }
@@ -32,6 +34,7 @@ export function PostCard({
   onLikeChange,
   onCommentPress,
   onShareChange,
+  onSaveChange,
   onUserPress,
   onMorePress,
 }: PostCardProps) {
@@ -47,6 +50,12 @@ export function PostCard({
   const [likeLoading, setLikeLoading] = useState(false);
   const [sharesCount, setSharesCount] = useState(post.sharesCount);
   const [shareLoading, setShareLoading] = useState(false);
+  const [isSaved, setIsSaved] = useState(post.isSaved ?? false);
+  const [saveLoading, setSaveLoading] = useState(false);
+
+  useEffect(() => {
+    setIsSaved(post.isSaved ?? false);
+  }, [post.id, post.isSaved]);
 
   const handleLike = async () => {
     if (likeLoading) return;
@@ -89,6 +98,27 @@ export function PostCard({
       console.error("Share error:", error);
     } finally {
       setShareLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!currentUser?.id || saveLoading) return;
+    setSaveLoading(true);
+    const next = !isSaved;
+    setIsSaved(next);
+    onSaveChange?.(post.id, next);
+    try {
+      if (next) {
+        await postService.savePost(post.id);
+      } else {
+        await postService.unsavePost(post.id);
+      }
+    } catch (error) {
+      setIsSaved(!next);
+      onSaveChange?.(post.id, !next);
+      console.error("Save post error:", error);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -172,9 +202,11 @@ export function PostCard({
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => onMorePress?.(post)} className="p-2">
-          <ThreeDotsIcon size={20} color={theme.icon} />
-        </TouchableOpacity>
+        {onMorePress && currentUser?.id ? (
+          <TouchableOpacity onPress={() => onMorePress(post)} className="p-2">
+            <ThreeDotsIcon size={20} color={theme.icon} />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {/* Content */}
@@ -285,6 +317,20 @@ export function PostCard({
             </Text>
           )}
         </TouchableOpacity>
+
+        {currentUser?.id ? (
+          <TouchableOpacity
+            onPress={handleSave}
+            className="flex-row items-center gap-3 ml-auto"
+            disabled={saveLoading}
+            accessibilityLabel={isSaved ? "Bỏ lưu" : "Lưu bài"}
+          >
+            <SaveIcon
+              size={22}
+              color={isSaved ? colors.primary[100] : theme.icon}
+            />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {/* Comment Input */}

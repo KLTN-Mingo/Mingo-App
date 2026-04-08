@@ -1,6 +1,12 @@
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { FlatList, RefreshControl, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  FlatList,
+  RefreshControl,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CommentModal } from "@/components/post/CommentModal";
@@ -158,8 +164,83 @@ export default function HomeScreen() {
     );
   };
 
+  const handleSaveChange = (postId: string, isSaved: boolean) => {
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, isSaved } : p))
+    );
+  };
+
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}` as any);
+  };
+
+  const handlePostMorePress = (post: PostResponseDto) => {
+    if (!profile) return;
+
+    if (post.userId === profile.id) {
+      Alert.alert("Bài viết của bạn", undefined, [
+        {
+          text: "Chỉnh sửa",
+          onPress: () =>
+            router.push({ pathname: "/create-post", params: { id: post.id } } as any),
+        },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert("Xóa bài viết?", "Hành động này không hoàn tác.", [
+              { text: "Hủy", style: "cancel" },
+              {
+                text: "Xóa",
+                style: "destructive",
+                onPress: async () => {
+                  try {
+                    await postService.deletePost(post.id);
+                    setPosts((prev) => prev.filter((p) => p.id !== post.id));
+                  } catch (e: unknown) {
+                    const msg = e instanceof Error ? e.message : "Không xóa được";
+                    Alert.alert("Lỗi", msg);
+                  }
+                },
+              },
+            ]);
+          },
+        },
+        { text: "Đóng", style: "cancel" },
+      ]);
+      return;
+    }
+
+    Alert.alert("Bài viết", undefined, [
+      {
+        text: "Không quan tâm",
+        onPress: async () => {
+          try {
+            await postService.submitFeedFeedback(
+              post.id,
+              "not_interested",
+              activeTab
+            );
+            setPosts((prev) => prev.filter((p) => p.id !== post.id));
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Không gửi được phản hồi";
+            Alert.alert("Lỗi", msg);
+          }
+        },
+      },
+      {
+        text: "Muốn xem thêm tương tự",
+        onPress: async () => {
+          try {
+            await postService.submitFeedFeedback(post.id, "see_more", activeTab);
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Không gửi được phản hồi";
+            Alert.alert("Lỗi", msg);
+          }
+        },
+      },
+      { text: "Hủy", style: "cancel" },
+    ]);
   };
 
   const handleCreatePost = () => {
@@ -279,7 +360,9 @@ export default function HomeScreen() {
             onLikeChange={handleLikeChange}
             onCommentPress={handleCommentPress}
             onShareChange={handleShareChange}
+            onSaveChange={handleSaveChange}
             onUserPress={handleUserPress}
+            onMorePress={handlePostMorePress}
           />
         )}
         ItemSeparatorComponent={() => <View className="h-4" />}

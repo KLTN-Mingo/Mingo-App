@@ -34,6 +34,8 @@ export function CommentModal({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentDraft, setEditCommentDraft] = useState("");
   const inputRef = useRef<TextInput>(null);
 
   const fetchComments = useCallback(async () => {
@@ -53,6 +55,8 @@ export function CommentModal({
     if (postId) {
       setComments([]);
       setCommentText("");
+      setEditingCommentId(null);
+      setEditCommentDraft("");
       fetchComments();
     }
   }, [postId, fetchComments]);
@@ -116,8 +120,39 @@ export function CommentModal({
       await commentService.deleteComment(postId, comment.id);
       setComments((prev) => prev.filter((c) => c.id !== comment.id));
       onCommentCountChange?.(postId, -1);
+      if (editingCommentId === comment.id) {
+        setEditingCommentId(null);
+        setEditCommentDraft("");
+      }
     } catch (error) {
       console.warn("Cannot delete comment:", error);
+    }
+  };
+
+  const handleStartEditComment = (comment: CommentResponseDto) => {
+    setEditingCommentId(comment.id);
+    setEditCommentDraft(comment.contentText);
+  };
+
+  const handleCancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditCommentDraft("");
+  };
+
+  const handleSaveEditComment = async (commentId: string) => {
+    const text = editCommentDraft.trim();
+    if (!text || !postId) return;
+    try {
+      const updated = await commentService.updateComment(commentId, {
+        contentText: text,
+      });
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, ...updated } : c))
+      );
+      setEditingCommentId(null);
+      setEditCommentDraft("");
+    } catch (error) {
+      console.warn("Cannot update comment:", error);
     }
   };
 
@@ -129,52 +164,87 @@ export function CommentModal({
     }
   };
 
-  const renderComment = ({ item }: { item: CommentResponseDto }) => (
-    <View className="flex-row px-4 py-3">
-      <Avatar
-        source={item.user?.avatar ? { uri: item.user.avatar } : undefined}
-        fallback={item.user?.name}
-        size="sm"
-      />
-      <View className="ml-3 flex-1">
-        <View className="rounded-2xl bg-surface-dark px-3 py-2">
-          <Text className="font-semibold text-sm text-text-dark">
-            {item.user?.name || "Unknown"}
-          </Text>
-          <Text className="text-sm mt-0.5 text-text-dark">{item.contentText}</Text>
-        </View>
-        <View className="flex-row items-center mt-1 gap-4 ml-1">
-          <Text variant="muted" className="text-xs">
-            {formatTime(item.createdAt)}
-          </Text>
-          <TouchableOpacity
-            onPress={() => handleLikeComment(item)}
-            className="flex-row items-center gap-1"
-          >
-            <Icon
-              name={item.isLiked ? "heart.fill" : "heart"}
-              size={13}
-              color={
-                item.isLiked ? statusColors.error.dark : colors.dark[300]
-              }
-            />
-            {item.likesCount > 0 && (
-              <Text variant="muted" className="text-xs">
-                {item.likesCount}
-              </Text>
+  const renderComment = ({ item }: { item: CommentResponseDto }) => {
+    const isEditing = editingCommentId === item.id;
+    return (
+      <View className="flex-row px-4 py-3">
+        <Avatar
+          source={item.user?.avatar ? { uri: item.user.avatar } : undefined}
+          fallback={item.user?.name}
+          size="sm"
+        />
+        <View className="ml-3 flex-1">
+          <View className="rounded-2xl bg-surface-dark px-3 py-2">
+            <Text className="font-semibold text-sm text-text-dark">
+              {item.user?.name || "Unknown"}
+            </Text>
+            {isEditing ? (
+              <TextInput
+                value={editCommentDraft}
+                onChangeText={setEditCommentDraft}
+                className="text-sm mt-1 text-text-dark border border-border-dark rounded-lg px-2 py-1.5"
+                multiline
+                maxLength={500}
+                placeholderTextColor={colors.dark[300]}
+              />
+            ) : (
+              <Text className="text-sm mt-0.5 text-text-dark">{item.contentText}</Text>
             )}
-          </TouchableOpacity>
-          {profile?.id && item.userId === profile.id && (
-            <TouchableOpacity onPress={() => handleDeleteComment(item)}>
-              <Text variant="muted" className="text-xs text-red-400">
-                Xóa
-              </Text>
-            </TouchableOpacity>
-          )}
+          </View>
+          <View className="flex-row flex-wrap items-center mt-1 gap-x-4 gap-y-1 ml-1">
+            <Text variant="muted" className="text-xs">
+              {formatTime(item.createdAt)}
+            </Text>
+            {!isEditing && (
+              <TouchableOpacity
+                onPress={() => handleLikeComment(item)}
+                className="flex-row items-center gap-1"
+              >
+                <Icon
+                  name={item.isLiked ? "heart.fill" : "heart"}
+                  size={13}
+                  color={
+                    item.isLiked ? statusColors.error.dark : colors.dark[300]
+                  }
+                />
+                {item.likesCount > 0 && (
+                  <Text variant="muted" className="text-xs">
+                    {item.likesCount}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
+            {profile?.id && item.userId === profile.id && !isEditing && (
+              <>
+                <TouchableOpacity onPress={() => handleStartEditComment(item)}>
+                  <Text variant="muted" className="text-xs text-primary-100">
+                    Sửa
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDeleteComment(item)}>
+                  <Text variant="muted" className="text-xs text-red-400">
+                    Xóa
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {isEditing && (
+              <View className="flex-row gap-3">
+                <TouchableOpacity onPress={() => handleSaveEditComment(item.id)}>
+                  <Text className="text-xs font-semibold text-primary-100">Lưu</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleCancelEditComment}>
+                  <Text variant="muted" className="text-xs">
+                    Hủy
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <Modal

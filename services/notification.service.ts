@@ -79,9 +79,9 @@ class NotificationServiceClass {
     });
   }
 
-  // Delete all notifications
-  async deleteAll(): Promise<{ count: number }> {
-    return this.request<{ count: number }>("", {
+  // Delete all notifications (Mingo: DELETE /notifications/all)
+  async deleteAll(): Promise<{ count: number } | void> {
+    return this.request<{ count: number } | void>("/all", {
       method: "DELETE",
     });
   }

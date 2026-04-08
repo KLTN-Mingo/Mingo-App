@@ -3,6 +3,7 @@ import {
   CreateCommentRequestDto,
   CreateReplyRequestDto,
   PaginatedCommentsDto,
+  UpdateCommentRequestDto,
 } from "@/dtos";
 import { apiRequest } from "@/services/api-client";
 
@@ -32,6 +33,20 @@ class CommentService {
   ): Promise<CommentResponseDto> {
     return this.request<CommentResponseDto>(`/posts/${postId}/comments`, {
       method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async getCommentById(commentId: string): Promise<CommentResponseDto> {
+    return this.request<CommentResponseDto>(`/comments/${commentId}`);
+  }
+
+  async updateComment(
+    commentId: string,
+    payload: UpdateCommentRequestDto
+  ): Promise<CommentResponseDto> {
+    return this.request<CommentResponseDto>(`/comments/${commentId}`, {
+      method: "PUT",
       body: JSON.stringify(payload),
     });
   }

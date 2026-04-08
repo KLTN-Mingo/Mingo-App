@@ -12,7 +12,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NotificationCard } from '@/components/notification';
 import { NotificationScreenSkeleton } from '@/components/skeleton';
 import { Tab, Text } from '@/components/ui';
-import { useAuth } from '@/context/AuthContext';
 import {
   NotificationCountDto,
   NotificationResponseDto,
@@ -39,7 +38,6 @@ const FILTERS: { key: FilterType; label: string }[] = [
 ];
 
 export default function NotificationScreen() {
-  const { profile } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const semantic = getSemantic(colorScheme);
   const errorColor = getStatusColor(colorScheme, 'error');
@@ -141,7 +139,7 @@ export default function NotificationScreen() {
     }
 
     // Navigate based on notification type
-    const { notificationType, postId, mediaId, actor } = notification;
+    const { notificationType, postId, actor } = notification;
 
     switch (notificationType) {
       case NotificationType.POST_LIKE:
@@ -182,6 +180,33 @@ export default function NotificationScreen() {
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
+  };
+
+  const handleDeleteNotification = (notification: NotificationResponseDto) => {
+    Alert.alert('Xóa thông báo này?', undefined, [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Xóa',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await notificationService.deleteNotification(notification.id);
+            setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
+            if (count) {
+              setCount({
+                ...count,
+                total: Math.max(0, count.total - 1),
+                unread: !notification.isRead
+                  ? Math.max(0, count.unread - 1)
+                  : count.unread,
+              });
+            }
+          } catch (error) {
+            console.error('Error deleting notification:', error);
+          }
+        },
+      },
+    ]);
   };
 
   const handleDeleteAll = () => {
@@ -279,10 +304,8 @@ export default function NotificationScreen() {
           <NotificationCard
             notification={item}
             onPress={handleNotificationPress}
+            onDelete={handleDeleteNotification}
           />
-        )}
-        ItemSeparatorComponent={() => (
-          <View className="h-px bg-border-light dark:bg-border-dark" />
         )}
         refreshControl={
           <RefreshControl

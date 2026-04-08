@@ -33,6 +33,50 @@ export async function getAuthHeaders(
   };
 }
 
+/** FormData: không set Content-Type để fetch tự thêm boundary. */
+export async function getAuthHeadersMultipart(): Promise<Record<string, string>> {
+  const token = await AsyncStorage.getItem("accessToken");
+  const h: Record<string, string> = {};
+  if (token) h.Authorization = `Bearer ${token}`;
+  return h;
+}
+
+export async function apiMultipartRequest<T>(
+  path: string,
+  formData: FormData
+): Promise<T> {
+  const headers = await getAuthHeadersMultipart();
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: formData,
+    credentials: "include",
+  });
+
+  let json: ApiEnvelope<T> = {};
+  try {
+    const text = await response.text();
+    json = text ? (JSON.parse(text) as ApiEnvelope<T>) : {};
+  } catch {
+    throw new Error("Phản hồi từ máy chủ không hợp lệ");
+  }
+
+  const message = json.message || "Something went wrong";
+  if (!response.ok) {
+    await authService.handleUnauthorizedResponse(response, message);
+    throw new Error(message);
+  }
+
+  const data = extractData<T>(json);
+  if (data === undefined) {
+    if (response.status === 204 || response.status === 205) {
+      return undefined as T;
+    }
+    return null as T;
+  }
+  return data;
+}
+
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {}

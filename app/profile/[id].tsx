@@ -1,6 +1,13 @@
-import { useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  RefreshControl,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
@@ -9,12 +16,16 @@ import { ProfileSkeleton } from "@/components/skeleton";
 import { Button, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { CloseFriendStatus, RelationshipStatusDto, UserProfileDto, UserRole } from "@/dtos";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { FollowApi } from "@/services/follow.service";
 import { userService } from "@/services/user.service";
+import { getSemantic } from "@/styles/colors";
 
 export default function UserProfileDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile: me } = useAuth();
+  const colorScheme = useColorScheme() ?? "light";
+  const semantic = getSemantic(colorScheme);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [acting, setActing] = useState(false);
@@ -86,11 +97,35 @@ export default function UserProfileDetailScreen() {
     }
   };
 
-  const followLabel = relationship?.isFollowing ? "Unfollow" : "Follow";
+  const handleBlockUser = () => {
+    if (!id || isMine) return;
+    Alert.alert(
+      "Chặn người này?",
+      "Họ sẽ không thể xem hồ sơ hoặc tương tác với bạn theo chính sách ứng dụng.",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Chặn",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await FollowApi.blockUser(id);
+              router.back();
+            } catch (e: unknown) {
+              const msg = e instanceof Error ? e.message : "Không chặn được";
+              Alert.alert("Lỗi", msg);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const followLabel = relationship?.isFollowing ? "Bỏ theo dõi" : "Theo dõi";
   const closeFriendLabel =
     relationship?.closeFriendStatus === CloseFriendStatus.ACCEPTED
-      ? "Remove close friend"
-      : "Add close friend";
+      ? "Gỡ bạn thân"
+      : "Thêm bạn thân";
 
   if (loading) return <ProfileSkeleton />;
   if (!user) {
@@ -107,9 +142,19 @@ export default function UserProfileDetailScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        <View className="px-4 py-3">
-          <Text variant="title" className="text-xl">
-            {user.name}
+        <View className="flex-row items-center px-4 pt-2 pb-1">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="arrow-back" size={24} color={semantic.text} />
+          </TouchableOpacity>
+          <Text
+            className="text-[22px] text-neutral-900 dark:text-neutral-100 font-montserrat-bold flex-1 ml-1"
+            numberOfLines={1}
+          >
+            {user.name || "Profile"}
           </Text>
         </View>
 
@@ -117,22 +162,27 @@ export default function UserProfileDetailScreen() {
         <ProfileInfo user={user} isOwnProfile={false} />
 
         {!isMine && (
-          <View className="px-4 mt-4 flex-row gap-2">
-            <Button
-              variant={relationship?.isFollowing ? "outline" : "primary"}
-              onPress={handleFollowAction}
-              disabled={acting}
-              className="flex-1"
-            >
-              {followLabel}
-            </Button>
-            <Button
-              variant="outline"
-              onPress={handleCloseFriendAction}
-              disabled={acting}
-              className="flex-1"
-            >
-              {closeFriendLabel}
+          <View className="px-4 mt-4 gap-2">
+            <View className="flex-row gap-2">
+              <Button
+                variant={relationship?.isFollowing ? "outline" : "primary"}
+                onPress={handleFollowAction}
+                disabled={acting}
+                className="flex-1"
+              >
+                {followLabel}
+              </Button>
+              <Button
+                variant="outline"
+                onPress={handleCloseFriendAction}
+                disabled={acting}
+                className="flex-1"
+              >
+                {closeFriendLabel}
+              </Button>
+            </View>
+            <Button variant="outline" onPress={handleBlockUser} disabled={acting}>
+              Chặn người dùng
             </Button>
           </View>
         )}
