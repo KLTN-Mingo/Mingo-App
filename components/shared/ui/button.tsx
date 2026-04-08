@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   View,
 } from "react-native";
-import { colors } from "@/styles/colors";
+import { BORDER_DEFAULT, colors } from "@/styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 
 interface ButtonProps {
@@ -53,7 +53,7 @@ const Button: React.FC<ButtonProps> = ({
 
   const textColor =
     fontColor ?? (isDark ? colors.dark[100] : colors.light[100]);
-  const borderColor = isDark ? "#FFFFFF" : "#000000";
+  const borderColor = isDark ? colors.light[400] : BORDER_DEFAULT;
 
   const containerStyle = [
     styles.base,

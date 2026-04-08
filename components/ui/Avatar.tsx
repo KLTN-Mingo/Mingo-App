@@ -36,9 +36,11 @@ export function Avatar({ source, fallback, size = 'md', className = '' }: Avatar
 
   return (
     <View
-      className={`rounded-full bg-primary-300 items-center justify-center ${sizeClasses[size]} ${className}`}
+      className={`rounded-full bg-primary-100 items-center justify-center ${sizeClasses[size]} ${className}`}
     >
-      <Text className={`font-bold text-white ${textSizeClasses[size]}`}>
+      <Text
+        className={`font-bold text-primary-foreground-light dark:text-primary-foreground-dark ${textSizeClasses[size]}`}
+      >
         {fallback?.charAt(0).toUpperCase() || '?'}
       </Text>
     </View>

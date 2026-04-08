@@ -181,7 +181,7 @@ const CommentMenu = ({
             <TextInput
               value={newComment}
               onChangeText={setNewComment}
-              className="border border-gray-300 rounded-lg p-2 text-sm font-mmedium"
+              className="border border-border-light dark:border-border-dark rounded-lg p-2 text-sm font-mmedium"
               placeholder="Update comment..."
             />
             <View className="flex-row mt-4">

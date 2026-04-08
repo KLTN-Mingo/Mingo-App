@@ -1,54 +1,52 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Màu dùng cho React Navigation / Expo (tương thích light & dark).
  */
 
-import { Platform } from 'react-native';
+import { Platform } from "react-native";
 
-// Cập nhật theo bảng màu dark mode mới
-const tintColorLight = '#768D85';
-const tintColorDark = '#768D85';
+import { colors } from "./designTokens";
+
+const tintColor = colors.primary[100];
 
 export const Colors = {
   light: {
-    text: '#CFBFAD',
-    background: '#1E2021',
-    tint: tintColorLight,
-    icon: '#CFBFAD',
-    tabIconDefault: '#515E5A',
-    tabIconSelected: tintColorLight,
+    text: colors.light[100],
+    background: colors.light[500],
+    tint: tintColor,
+    icon: colors.light[100],
+    tabIconDefault: colors.light[300],
+    tabIconSelected: tintColor,
   },
   dark: {
-    text: '#CFBFAD',
-    background: '#1E2021',
-    tint: tintColorDark,
-    icon: '#CFBFAD',
-    tabIconDefault: '#515E5A',
-    tabIconSelected: tintColorDark,
+    text: colors.dark[100],
+    background: colors.dark[500],
+    tint: tintColor,
+    icon: colors.dark[100],
+    tabIconDefault: colors.dark[300],
+    tabIconSelected: tintColor,
   },
 };
 
+const montserratStack =
+  "'Montserrat-Regular', 'Montserrat-Medium', system-ui, sans-serif";
+
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    sans: "Montserrat-Regular",
+    serif: "Montserrat-Regular",
+    rounded: "Montserrat-Regular",
+    mono: "monospace",
   },
   default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+    sans: "Montserrat-Regular",
+    serif: "Montserrat-Regular",
+    rounded: "Montserrat-Regular",
+    mono: "monospace",
   },
   web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+    sans: montserratStack,
+    serif: montserratStack,
+    rounded: montserratStack,
+    mono: "ui-monospace, monospace",
   },
 });

@@ -14,12 +14,14 @@ export enum CommentModerationStatus {
 
 export interface CreateCommentRequestDto {
   contentText: string;
+  source?: string;
 }
 
 export interface CreateReplyRequestDto {
   contentText: string;
   parentCommentId: string;
   originalCommentId: string;
+  source?: string;
 }
 
 export interface UpdateCommentRequestDto {

@@ -2,10 +2,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {
   AuthUserDto,
+  PaginatedPublicUsersDto,
   PublicUserDto,
   UpdateProfileRequestDto,
   UserProfileDto,
 } from "@/dtos";
+import { apiMultipartRequest } from "@/services/api-client";
 import { authService } from "@/services/auth.service";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -127,6 +129,7 @@ class UserService {
     return {
       ...raw,
       id,
+      phoneNumber: raw.phoneNumber ?? "",
       role: raw.role ?? "user",
       twoFactorEnabled: Boolean(raw.twoFactorEnabled),
       isActive: raw.isActive !== false,
@@ -141,7 +144,20 @@ class UserService {
     };
   }
 
-  // Get current user profile from stored session + /users/:id
+  /** BE upload avatar/background: `{ avatar?, backgroundUrl?, user }` trong `data` */
+  private profileFromUploadPayload(data: unknown): UserProfileDto {
+    const o = data as Record<string, unknown> | null;
+    const inner =
+      o && typeof o === "object" && o.user !== undefined
+        ? (o.user as Record<string, unknown>)
+        : (data as Record<string, unknown>);
+    return this.normalizeUserProfile(inner);
+  }
+
+  /**
+   * GET /users/me — hồ sơ đầy đủ (private).
+   * Fallback: GET /users/:id (public) + session, rồi dữ liệu tối thiểu từ storage.
+   */
   async getCurrentUser(): Promise<UserProfileDto> {
     const storedUser = await authService.getStoredUser();
 
@@ -150,18 +166,26 @@ class UserService {
     }
 
     try {
-      const publicUser = await this.getUserById(storedUser.id);
-      return this.mapPublicToProfile(publicUser, storedUser);
+      const me = await this.request<UserProfileDto>("/me");
+      const normalized = this.normalizeUserProfile(me);
+      return {
+        ...normalized,
+        phoneNumber: normalized.phoneNumber || storedUser.phoneNumber || "",
+      };
     } catch {
-      // Keep UI usable even when profile endpoint is unstable.
-      return this.normalizeUserProfile({
-        id: storedUser.id,
-        phoneNumber: storedUser.phoneNumber,
-        name: storedUser.name,
-        avatar: storedUser.avatar,
-        role: storedUser.role,
-        verified: storedUser.verified,
-      });
+      try {
+        const publicUser = await this.getUserById(storedUser.id);
+        return this.mapPublicToProfile(publicUser, storedUser);
+      } catch {
+        return this.normalizeUserProfile({
+          id: storedUser.id,
+          phoneNumber: storedUser.phoneNumber,
+          name: storedUser.name,
+          avatar: storedUser.avatar,
+          role: storedUser.role,
+          verified: storedUser.verified,
+        });
+      }
     }
   }
 
@@ -170,14 +194,135 @@ class UserService {
     return this.request<PublicUserDto>(`/${userId}`);
   }
 
-  // Update current user profile
+  /**
+   * PUT /users/me — body: name?, bio?, avatar?, backgroundUrl?, dateOfBirth?, gender?
+   */
   async updateProfile(
     payload: UpdateProfileRequestDto
   ): Promise<UserProfileDto> {
-    return this.request<UserProfileDto>("/me", {
+    const data = await this.request<UserProfileDto>("/me", {
       method: "PUT",
       body: JSON.stringify(payload),
     });
+    return this.normalizeUserProfile(data);
+  }
+
+  /** POST /users/me/avatar — multipart field `avatar` (ảnh) */
+  async uploadAvatar(asset: {
+    uri: string;
+    fileName: string;
+    mimeType: string;
+  }): Promise<UserProfileDto> {
+    const form = new FormData();
+    form.append("avatar", {
+      uri: asset.uri,
+      name: asset.fileName,
+      type: asset.mimeType,
+    } as unknown as Blob);
+    const raw = await apiMultipartRequest<Record<string, unknown>>(
+      "/users/me/avatar",
+      form
+    );
+    if (raw == null) {
+      throw new Error("Không nhận được dữ liệu hợp lệ");
+    }
+    return this.profileFromUploadPayload(raw);
+  }
+
+  /** POST /users/me/background — multipart field `background` (ảnh) */
+  async uploadBackground(asset: {
+    uri: string;
+    fileName: string;
+    mimeType: string;
+  }): Promise<UserProfileDto> {
+    const form = new FormData();
+    form.append("background", {
+      uri: asset.uri,
+      name: asset.fileName,
+      type: asset.mimeType,
+    } as unknown as Blob);
+    const raw = await apiMultipartRequest<Record<string, unknown>>(
+      "/users/me/background",
+      form
+    );
+    if (raw == null) {
+      throw new Error("Không nhận được dữ liệu hợp lệ");
+    }
+    return this.profileFromUploadPayload(raw);
+  }
+
+  /** GET /users?search=&page=&limit= (Mingo) */
+  async searchUsers(
+    query: string,
+    page = 1,
+    limit = 20
+  ): Promise<PaginatedPublicUsersDto> {
+    const params = new URLSearchParams({
+      search: query.trim(),
+      page: String(page),
+      limit: String(limit),
+    });
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_URL}/users?${params.toString()}`, {
+      headers,
+    });
+    let json: Record<string, unknown> = {};
+    try {
+      const text = await response.text();
+      json = text ? JSON.parse(text) : {};
+    } catch {
+      throw new Error("Phản hồi từ máy chủ không hợp lệ");
+    }
+    const message = this.extractErrorMessage(json);
+    if (!response.ok) {
+      await authService.handleUnauthorizedResponse(response, message);
+      throw new Error(message);
+    }
+    const extracted = this.extractData<unknown>(json);
+    const root = (extracted ?? json) as unknown;
+    let rawUsers: unknown[] = [];
+    if (Array.isArray(root)) {
+      rawUsers = root;
+    } else if (root && typeof root === "object") {
+      const o = root as Record<string, unknown>;
+      rawUsers = Array.isArray(o.data)
+        ? (o.data as unknown[])
+        : Array.isArray(o.users)
+          ? (o.users as unknown[])
+          : [];
+    }
+    if (rawUsers.length === 0 && Array.isArray(json.data)) {
+      rawUsers = json.data as unknown[];
+    }
+    const users = (rawUsers as PublicUserDto[]).map((u: any) => ({
+      id: u.id ?? u._id?.toString?.() ?? "",
+      name: u.name,
+      bio: u.bio,
+      avatar: u.avatar,
+      backgroundUrl: u.backgroundUrl,
+      gender: u.gender,
+      verified: Boolean(u.verified),
+      onlineStatus: Boolean(u.onlineStatus),
+      followersCount: Number(u.followersCount) || 0,
+      followingCount: Number(u.followingCount) || 0,
+      postsCount: Number(u.postsCount) || 0,
+      createdAt: u.createdAt ?? new Date().toISOString(),
+    }));
+    const pSource =
+      root && typeof root === "object"
+        ? (root as Record<string, unknown>).pagination
+        : undefined;
+    const p = (pSource as Record<string, unknown>) ??
+      (json.pagination as Record<string, unknown>) ??
+      {};
+    const pagination = {
+      page: Number(p.page ?? page),
+      limit: Number(p.limit ?? limit),
+      total: Number(p.total ?? users.length),
+      totalPages: Number(p.totalPages ?? 1),
+      hasMore: Boolean(p.hasMore ?? false),
+    };
+    return { users, pagination };
   }
 }
 

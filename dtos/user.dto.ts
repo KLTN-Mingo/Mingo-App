@@ -1,3 +1,5 @@
+import type { PaginationDto } from "./common.dto";
+
 // ─── Enums ─────────────────────────────────────────────────────────────────────
 
 export enum Gender {
@@ -100,4 +102,10 @@ export enum Gender {
     postsCount: number;
     lastLogin?: string;
     createdAt: string;
+  }
+
+  /** GET /users?search= — Mingo */
+  export interface PaginatedPublicUsersDto {
+    users: PublicUserDto[];
+    pagination: PaginationDto;
   }

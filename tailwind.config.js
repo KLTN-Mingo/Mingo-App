@@ -10,35 +10,51 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Primary accent từ bảng màu dark mode
         primary: {
-          100: "#768D85", // main accent
+          50: "#768D85",
+          100: "#768D85",
+          200: "#768D85",
+          300: "#768D85",
+          400: "#768D85",
+          500: "#768D85",
+          600: "#768D85",
+          700: "#768D85",
+          800: "#768D85",
+          900: "#768D85",
+          /** Chữ trên nền primary */
+          foreground: {
+            light: "#FFFFFF",
+            dark: "#EFE7DF",
+          },
         },
-        // Nền chính của app (toàn màn)
         background: {
-          light: "#1E2021", // không dùng light mode nữa nhưng giữ để class cũ không lỗi
+          light: "#FFFFFF",
           dark: "#1E2021",
         },
-        // Nền của card / surface
         surface: {
-          light: "#252525",
+          light: "#FFFFFF",
+          dark: "#2D2F2F",
+        },
+        "surface-muted": {
+          light: "#F2F2F2",
           dark: "#252525",
         },
-        // Màu chữ
+        input: {
+          light: "#FFFFFF",
+          dark: "#2D2F2F",
+        },
         text: {
-          light: "#CFBFAD",
-          dark: "#CFBFAD",
+          light: "#1E2021",
+          dark: "#EFE7DF",
           muted: {
             light: "#515E5A",
             dark: "#515E5A",
           },
         },
-        // Viền
         border: {
-          light: "#2D2F2F",
-          dark: "#2D2F2F",
+          light: "#CCCCCC",
+          dark: "#CCCCCC",
         },
-        // Status colors giữ nguyên để reuse
         success: {
           light: "#22C55E",
           dark: "#4ADE80",
@@ -56,6 +72,10 @@ module.exports = {
           dark: "#60A5FA",
         },
       },
+      borderColor: {
+        "pill-light": "#CCCCCC",
+        "pill-dark": "#CCCCCC",
+      },
       fontFamily: {
         sans: ["Montserrat-Regular"],
         thin: ["Montserrat-Thin"],
@@ -67,6 +87,9 @@ module.exports = {
         extrabold: ["Montserrat-ExtraBold"],
         black: ["Montserrat-Black"],
         josefin: ["JosefinSans-SemiBold"],
+        /** Logo / brand — @expo-google-fonts/jost */
+        jost: ["Jost_600SemiBold"],
+        "jost-bold": ["Jost_700Bold"],
       },
       borderRadius: {
         "4xl": "2rem",

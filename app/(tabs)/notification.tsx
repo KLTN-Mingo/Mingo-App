@@ -12,7 +12,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NotificationCard } from '@/components/notification';
 import { NotificationScreenSkeleton } from '@/components/skeleton';
 import { Tab, Text } from '@/components/ui';
-import { useAuth } from '@/context/AuthContext';
 import {
   NotificationCountDto,
   NotificationResponseDto,
@@ -25,6 +24,8 @@ import {
   TrashIcon,
 } from '@/components/shared/icons/Icons';
 import { notificationService } from '@/services/notification.service';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { colors, getSemantic, getStatusColor } from '@/styles/colors';
 
 type FilterType = 'all' | 'unread' | 'follow' | 'like' | 'comment';
 
@@ -37,7 +38,9 @@ const FILTERS: { key: FilterType; label: string }[] = [
 ];
 
 export default function NotificationScreen() {
-  const { profile } = useAuth();
+  const colorScheme = useColorScheme() ?? 'light';
+  const semantic = getSemantic(colorScheme);
+  const errorColor = getStatusColor(colorScheme, 'error');
   const [notifications, setNotifications] = useState<NotificationResponseDto[]>([]);
   const [pagination, setPagination] = useState<PaginationDto | null>(null);
   const [count, setCount] = useState<NotificationCountDto | null>(null);
@@ -100,6 +103,12 @@ export default function NotificationScreen() {
     fetchNotifications(1);
   }, [fetchNotifications]);
 
+  useEffect(() => {
+    notificationService.markAllAsSeen().catch((error) => {
+      console.warn("Cannot mark notifications as seen:", error);
+    });
+  }, []);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchNotifications(1);
@@ -130,7 +139,7 @@ export default function NotificationScreen() {
     }
 
     // Navigate based on notification type
-    const { notificationType, entityId, postId, mediaId, commentId, actor } = notification;
+    const { notificationType, postId, actor } = notification;
 
     switch (notificationType) {
       case NotificationType.POST_LIKE:
@@ -138,6 +147,16 @@ export default function NotificationScreen() {
       case NotificationType.POST_SHARE:
       case NotificationType.POST_MENTION:
         if (postId) router.push(`/post/${postId}` as any);
+        break;
+      case NotificationType.MEDIA_LIKE:
+      case NotificationType.MEDIA_COMMENT:
+      case NotificationType.MEDIA_SHARE:
+      case NotificationType.COMMENT_LIKE:
+      case NotificationType.COMMENT_REPLY:
+      case NotificationType.COMMENT_MENTION:
+        if (postId) {
+          router.push(`/post/${postId}` as any);
+        }
         break;
       case NotificationType.FOLLOW_REQUEST:
       case NotificationType.FOLLOW_ACCEPTED:
@@ -161,6 +180,33 @@ export default function NotificationScreen() {
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
+  };
+
+  const handleDeleteNotification = (notification: NotificationResponseDto) => {
+    Alert.alert('Xóa thông báo này?', undefined, [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Xóa',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await notificationService.deleteNotification(notification.id);
+            setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
+            if (count) {
+              setCount({
+                ...count,
+                total: Math.max(0, count.total - 1),
+                unread: !notification.isRead
+                  ? Math.max(0, count.unread - 1)
+                  : count.unread,
+              });
+            }
+          } catch (error) {
+            console.error('Error deleting notification:', error);
+          }
+        },
+      },
+    ]);
   };
 
   const handleDeleteAll = () => {
@@ -218,11 +264,11 @@ export default function NotificationScreen() {
           >
             <CircleTickIcon
               size={24}
-              color={count && count.unread > 0 ? '#768D85' : '#9CA3AF'}
+              color={count && count.unread > 0 ? colors.primary[100] : semantic.placeholder}
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleDeleteAll} className="p-2">
-            <TrashIcon size={24} color="#EF4444" />
+            <TrashIcon size={24} color={errorColor} />
           </TouchableOpacity>
         </View>
       </View>
@@ -258,24 +304,22 @@ export default function NotificationScreen() {
           <NotificationCard
             notification={item}
             onPress={handleNotificationPress}
+            onDelete={handleDeleteNotification}
           />
-        )}
-        ItemSeparatorComponent={() => (
-          <View className="h-px bg-border-light dark:bg-border-dark" />
         )}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#768D85']}
-            tintColor="#768D85"
+            colors={[colors.primary[100]]}
+            tintColor={colors.primary[100]}
           />
         }
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
-            <NotificationIcon size={64} color="#9CA3AF" />
+            <NotificationIcon size={64} color={semantic.placeholder} />
             <Text variant="muted" className="mt-4 text-center">
               Không có thông báo nào
             </Text>

@@ -32,7 +32,7 @@
 //         (colorScheme === "dark" ? colors.dark[300] : colors.light[700]), // Conditionally set background color
 //       borderRadius: borderRadius,
 //       borderWidth: borderWidth,
-//       borderColor: borderColor || (colorScheme === "dark" ? "#444" : "#ccc"), // Default border color
+//       borderColor: borderColor || (colorScheme === "dark" ? colors.dark[300] : colors.light[300]), // Default border color
 //       padding: padding,
 //     },
 //     input: {
@@ -51,7 +51,7 @@
 //         value={value}
 //         onChangeText={onChangeText}
 //         placeholder={placeholder}
-//         placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
+//         placeholderTextColor={colorScheme === "dark" ? colors.dark[300] : colors.light[300]}
 //         secureTextEntry={secureTextEntry}
 //         style={styles.input}
 //         onSubmitEditing={onSubmit}
@@ -72,7 +72,7 @@ import {
   DimensionValue,
 } from "react-native";
 import { useTheme } from "../../../context/ThemeContext";
-import { colors } from "../../../styles/colors";
+import { BORDER_DEFAULT, colors, getSemantic } from "../../../styles/colors";
 
 interface MyInputProps extends TextInputProps {
   width?: DimensionValue;
@@ -116,17 +116,19 @@ const MyInput: React.FC<MyInputProps> = ({
         (colorScheme === "dark" ? colors.dark[500] : colors.light[500]),
       borderRadius,
       borderWidth,
-      borderColor: borderColor ?? "#ccc",
+      borderColor: borderColor ?? BORDER_DEFAULT,
       paddingHorizontal: 12,
       justifyContent: "center",
     },
     input: {
       color: colorScheme === "dark" ? colors.dark[100] : colors.light[100],
       fontSize: fontSize ?? 14,
-      fontFamily: fontFamily ?? "System",
+      fontFamily: fontFamily ?? "Montserrat-Regular",
       flex: 1,
     },
   });
+
+  const placeholderTextColor = getSemantic(colorScheme).placeholder;
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -134,7 +136,7 @@ const MyInput: React.FC<MyInputProps> = ({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
+        placeholderTextColor={placeholderTextColor}
         secureTextEntry={secureTextEntry}
         onSubmitEditing={onSubmitEditing}
         style={[styles.input, inputStyle]}

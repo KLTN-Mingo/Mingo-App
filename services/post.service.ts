@@ -1,17 +1,27 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import {
-  ApiResponse,
   CreatePostRequestDto,
   FeedTab,
   PaginatedPostsDto,
   PostDetailDto,
   PostResponseDto,
+  ShareResponseDto,
+  UpdatePostRequestDto,
 } from "@/dtos";
-import { authService } from "@/services/auth.service";
+import { PaginationDto } from "@/dtos/common.dto";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
+/** Góp ý feed — Mingo doc + một số BE cũ */
+export type FeedFeedbackType =
+  | "hide"
+  | "not_interested"
+  | "see_more"
+  | "like"
+  | "skip"
+  | "interested"
+  | "seen";
+import { apiMultipartRequest, apiRequest } from "@/services/api-client";
 
+/** Ký tự không hiển thị: backend yêu cầu contentText khi chưa có media trong JSON (upload media sau). */
+const MEDIA_ONLY_PLACEHOLDER = "\u2060";
 class PostService {
   private normalizePost(raw: any): PostResponseDto {
     const postId = raw?.id ?? raw?._id?.toString?.() ?? String(raw?._id ?? "");
@@ -49,44 +59,35 @@ class PostService {
       commentsCount: Number(raw?.commentsCount ?? 0),
       sharesCount: Number(raw?.sharesCount ?? 0),
       savesCount: Number(raw?.savesCount ?? 0),
+      isSaved: Boolean(raw?.isSaved),
       viewsCount: Number(raw?.viewsCount ?? 0),
       createdAt: raw?.createdAt ?? new Date().toISOString(),
       updatedAt: raw?.updatedAt ?? raw?.createdAt ?? new Date().toISOString(),
     } as PostResponseDto;
   }
 
-  private async getAuthHeaders(): Promise<HeadersInit> {
-    const token = await AsyncStorage.getItem("accessToken");
-    return {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    };
+  /**
+   * Chỉ giữ bài do `userId` đăng — dùng khi BE `GET /posts?userId=` chưa lọc và trả cả danh sách.
+   */
+  filterPostsForUser(
+    posts: PostResponseDto[],
+    userId: string
+  ): PostResponseDto[] {
+    const target = String(userId ?? "").trim();
+    if (!target) return posts;
+    return posts.filter((p) => {
+      const fromPost = String(p.userId ?? "").trim();
+      if (fromPost && fromPost === target) return true;
+      const fromNested = String(p.user?.id ?? "").trim();
+      return fromNested === target;
+    });
   }
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const headers = await this.getAuthHeaders();
-
-    const response = await fetch(`${API_URL}/posts${endpoint}`, {
-      ...options,
-      headers: { ...headers, ...options.headers },
-    });
-
-    const json: ApiResponse<T> = await response.json();
-
-    if (!response.ok) {
-      await authService.handleUnauthorizedResponse(response, json.message);
-      throw new Error(json.message || "Something went wrong");
-    }
-
-    return json.data;
-  }
-
-  // Get all posts
-  async getAllPosts(): Promise<PostResponseDto[]> {
-    return this.request<PostResponseDto[]>("");
+    return apiRequest<T>(`/posts${endpoint}`, options);
   }
 
   // Get feed posts by tab (explore/friends)
@@ -153,10 +154,76 @@ class PostService {
     });
   }
 
+  /**
+   * Upload ảnh/video sau khi đã tạo post (multipart).
+   * Contract Mingo: POST /api/posts/:postId/media — field `files` (lặp lại mỗi file), optional `caption`, `orderIndex`.
+   */
+  async uploadPostMedia(
+    postId: string,
+    assets: {
+      uri: string;
+      fileName: string;
+      mimeType: string;
+    }[],
+    options?: { caption?: string; orderIndex?: number }
+  ): Promise<unknown> {
+    if (assets.length === 0) return undefined;
+
+    const fileField =
+      process.env.EXPO_PUBLIC_POST_MEDIA_FIELD?.trim() || "files";
+
+    const form = new FormData();
+    for (const a of assets) {
+      form.append(fileField, {
+        uri: a.uri,
+        name: a.fileName,
+        type: a.mimeType,
+      } as unknown as Blob);
+    }
+    if (options?.caption != null && options.caption !== "") {
+      form.append("caption", options.caption);
+    }
+    form.append("orderIndex", String(options?.orderIndex ?? 0));
+
+    return apiMultipartRequest<unknown>(
+      `/posts/${encodeURIComponent(postId)}/media`,
+      form
+    );
+  }
+
+  /** Tạo bài rồi upload file local (RN) theo luồng hai bước của Mingo API. */
+  async createPostWithLocalMedia(
+    payload: CreatePostRequestDto,
+    localAssets: {
+      uri: string;
+      fileName: string;
+      mimeType: string;
+    }[]
+  ): Promise<PostDetailDto> {
+    const hasMedia = localAssets.length > 0;
+    const text = payload.contentText?.trim() ?? "";
+    const body: CreatePostRequestDto = {
+      ...payload,
+      mediaFiles: undefined,
+      contentText:
+        text.length > 0
+          ? payload.contentText
+          : hasMedia
+            ? MEDIA_ONLY_PLACEHOLDER
+            : payload.contentText,
+    };
+
+    const created = await this.createPost(body);
+    if (hasMedia) {
+      await this.uploadPostMedia(created.id, localAssets);
+    }
+    return this.getPostById(created.id);
+  }
+
   // Update post
   async updatePost(
     postId: string,
-    payload: { contentText?: string; visibility?: string }
+    payload: UpdatePostRequestDto
   ): Promise<PostDetailDto> {
     return this.request<PostDetailDto>(`/${postId}`, {
       method: "PUT",
@@ -177,6 +244,103 @@ class PostService {
   // Unlike post
   async unlikePost(postId: string): Promise<void> {
     return this.request<void>(`/${postId}/like`, { method: "DELETE" });
+  }
+
+  // Share post
+  async sharePost(
+    postId: string,
+    options?: { caption?: string; sharedTo?: "feed" | "message" | "external" }
+  ): Promise<ShareResponseDto | null> {
+    return this.request<ShareResponseDto | null>(`/${postId}/share`, {
+      method: "POST",
+      body: JSON.stringify({
+        sharedTo: options?.sharedTo ?? "feed",
+        caption: options?.caption,
+      }),
+    });
+  }
+
+  async getAllPosts(
+    page = 1,
+    limit = 20,
+    query?: { userId?: string; visibility?: string }
+  ): Promise<PaginatedPostsDto> {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (query?.userId) params.set("userId", query.userId);
+    if (query?.visibility) params.set("visibility", query.visibility);
+    const raw = await this.request<any>(`?${params.toString()}`);
+    return this.normalizePaginatedPosts(raw, page, limit);
+  }
+
+  private normalizePaginatedPosts(
+    raw: any,
+    page: number,
+    limit: number
+  ): PaginatedPostsDto {
+    const rawPosts = Array.isArray(raw?.posts)
+      ? raw.posts
+      : Array.isArray(raw?.data)
+        ? raw.data
+        : Array.isArray(raw)
+          ? raw
+          : [];
+    const posts = rawPosts.map((item: any) => this.normalizePost(item));
+    const rawPagination = raw?.pagination ?? {};
+    const pagination: PaginationDto = {
+      page: Number(rawPagination.page ?? page),
+      limit: Number(rawPagination.limit ?? limit),
+      total: Number(rawPagination.total ?? posts.length),
+      totalPages: Number(rawPagination.totalPages ?? 1),
+      hasMore: Boolean(rawPagination.hasMore ?? false),
+    };
+    return { posts, pagination };
+  }
+
+  async savePost(postId: string, collectionName?: string): Promise<void> {
+    return this.request<void>(`/${postId}/save`, {
+      method: "POST",
+      body: JSON.stringify({ collectionName }),
+    });
+  }
+
+  async unsavePost(postId: string): Promise<void> {
+    return this.request<void>(`/${postId}/save`, { method: "DELETE" });
+  }
+
+  async getSavedPosts(page = 1, limit = 20): Promise<PaginatedPostsDto> {
+    const raw = await this.request<any>(
+      `/saved?page=${page}&limit=${limit}`
+    );
+    return this.normalizePaginatedPosts(raw, page, limit);
+  }
+
+  async getPostStats(postId: string): Promise<Record<string, number>> {
+    return this.request<Record<string, number>>(
+      `/${encodeURIComponent(postId)}/stats`
+    );
+  }
+
+  async submitFeedFeedback(
+    postId: string,
+    feedbackType: FeedFeedbackType,
+    tab?: FeedTab
+  ): Promise<unknown> {
+    return this.request<unknown>("/feed/feedback", {
+      method: "POST",
+      body: JSON.stringify({ postId, feedbackType, tab }),
+    });
+  }
+
+  async getFeedMetrics(
+    days = 7,
+    tab?: FeedTab
+  ): Promise<Record<string, unknown>> {
+    const q = new URLSearchParams({ days: String(days) });
+    if (tab) q.set("tab", tab);
+    return this.request<Record<string, unknown>>(`/feed/metrics?${q}`);
   }
 }
 

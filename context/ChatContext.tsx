@@ -1,52 +1,45 @@
-// "use client";
-// import { ResponseGroupMessageDTO } from "@/dtos/MessageDTO";
-// import { createContext, useContext, useState } from "react";
-// export interface LatestMessage {
-//   senderName: string;
-//   content: string;
-//   createAt: string;
-//   boxId: string;
-// }
+"use client";
 
-// // Tạo kiểu cho context
-// interface ChatContextType {
-//   messages: ResponseGroupMessageDTO[];
-//   setMessages: React.Dispatch<React.SetStateAction<ResponseGroupMessageDTO[]>>;
-//   isOnlineChat: Record<string, boolean>;
-//   setIsOnlineChat: React.Dispatch<
-//     React.SetStateAction<Record<string, boolean>>
-//   >;
-// }
+import { ChatConversationDto } from "@/dtos";
+import React, { createContext, ReactNode, useContext, useState } from "react";
 
-// // Tạo context
-// const ChatContext = createContext<ChatContextType | undefined>(undefined);
+interface ChatContextType {
+  conversations: ChatConversationDto[];
+  setConversations: React.Dispatch<
+    React.SetStateAction<ChatConversationDto[]>
+  >;
+  filteredConversations: ChatConversationDto[];
+  setFilteredConversations: React.Dispatch<
+    React.SetStateAction<ChatConversationDto[]>
+  >;
+}
 
-// // Provider component
-// export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
-//   children,
-// }) => {
-//   const [messages, setMessages] = useState<ResponseGroupMessageDTO[]>([]); // Mảng tin nhắn
-//   const [isOnlineChat, setIsOnlineChat] = useState<Record<string, boolean>>({});
+const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-//   return (
-//     <ChatContext.Provider
-//       value={{
-//         messages,
-//         setMessages,
-//         isOnlineChat,
-//         setIsOnlineChat,
-//       }}
-//     >
-//       {children}
-//     </ChatContext.Provider>
-//   );
-// };
+export function ChatProvider({ children }: { children: ReactNode }) {
+  const [conversations, setConversations] = useState<ChatConversationDto[]>([]);
+  const [filteredConversations, setFilteredConversations] = useState<
+    ChatConversationDto[]
+  >([]);
 
-// // Hook để sử dụng context
-// export const useChatContext = (): ChatContextType => {
-//   const context = useContext(ChatContext);
-//   if (!context) {
-//     throw new Error("useChatContext must be used within a ChatProvider");
-//   }
-//   return context;
-// };
+  return (
+    <ChatContext.Provider
+      value={{
+        conversations,
+        setConversations,
+        filteredConversations,
+        setFilteredConversations,
+      }}
+    >
+      {children}
+    </ChatContext.Provider>
+  );
+}
+
+export function useChatContext(): ChatContextType {
+  const context = useContext(ChatContext);
+  if (!context) {
+    throw new Error("useChatContext must be used within a ChatProvider");
+  }
+  return context;
+}

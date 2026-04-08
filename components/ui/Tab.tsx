@@ -1,5 +1,5 @@
-import { TouchableOpacity } from 'react-native';
-import { Text } from './Text';
+import { TouchableOpacity } from "react-native";
+import { Text } from "./Text";
 
 interface TabProps {
   content: string;
@@ -9,32 +9,35 @@ interface TabProps {
   className?: string;
 }
 
-export function Tab({ 
-  content, 
-  isActive = false, 
-  onClick, 
+/**
+ * Chip / tab ngang (Requests, Friends, …) theo mockup dark & light.
+ */
+export function Tab({
+  content,
+  isActive = false,
+  onClick,
   badge,
-  className = '' 
+  className = "",
 }: TabProps) {
   return (
     <TouchableOpacity
       onPress={onClick}
       activeOpacity={0.8}
       className={`px-4 py-2 rounded-full ${
-        isActive 
-          ? 'bg-primary-400' 
-          : 'bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark'
+        isActive
+          ? "bg-primary-100"
+          : "bg-surface-muted-light dark:bg-transparent border border-border-light dark:border-border-dark"
       } ${className}`}
     >
-      <Text 
-        className={`font-medium ${
-          isActive 
-            ? 'text-white' 
-            : 'text-text-light dark:text-text-dark'
+      <Text
+        className={`font-medium text-base ${
+          isActive
+            ? "text-primary-foreground-light dark:text-primary-foreground-dark"
+            : "text-text-light dark:text-text-dark"
         }`}
       >
         {content}
-        {badge !== undefined && badge > 0 && ` (${badge})`}
+        {badge !== undefined && badge > 0 ? ` (${badge})` : ""}
       </Text>
     </TouchableOpacity>
   );

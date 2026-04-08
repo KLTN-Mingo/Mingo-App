@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { MediaStream, RTCView } from "react-native-webrtc";
+import { BORDER_DEFAULT } from "@/styles/colors";
 
 interface VideoContainerProps {
   stream: MediaStream | null;
@@ -44,7 +45,7 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: BORDER_DEFAULT,
   },
 });
 
