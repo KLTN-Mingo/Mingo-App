@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Input, Text } from '@/components/ui';
+import { ActionInput, Button, Text } from '@/components/ui';
 import { ArrowIcon } from '@/components/shared/icons/Icons';
 import { colors } from '@/styles/colors';
 
@@ -86,7 +86,7 @@ export default function ForgotPasswordScreen() {
               <Text variant="muted" className="mb-1">
                 Phone Number <Text className="text-red-500">*</Text>
               </Text>
-              <Input
+              <ActionInput
                 placeholder="Nhập số điện thoại"
                 value={phoneNumber}
                 onChangeText={(text) => {

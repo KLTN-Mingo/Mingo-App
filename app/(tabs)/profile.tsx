@@ -2,9 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
-  Modal,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
@@ -14,29 +14,29 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CommentModal } from "@/components/post/CommentModal";
 import { PostCard } from "@/components/post/PostCard";
+import { ProfileBioEditModal } from "@/components/profile/ProfileBioEditModal";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfo } from "@/components/profile/ProfileInfo";
+import { ProfileSettingsModal } from "@/components/profile/ProfileSettingsModal";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import {
   ImageIcon,
-  LogoutIcon,
   MovieIcon,
-  PenIcon,
   PostIcon,
-  ReportIcon,
-  SaveIcon,
-  SettingsIcon,
   VideoIcon,
 } from "@/components/shared/icons/Icons";
+import { EmptyStateScreen } from "@/components/shared/ui/empty-state-screen";
 import { ProfileSkeleton } from "@/components/skeleton";
-import { Text } from "@/components/ui";
+import { Button, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import { PostResponseDto, UserMinimalDto, UserProfileDto } from "@/dtos";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { postService } from "@/services/post.service";
 import { userService } from "@/services/user.service";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { colors, getSemantic, getStatusColor } from "@/styles/colors";
-import { useTheme } from "@/context/ThemeContext";
+import { authUserFromProfile } from "@/utils/authUserFromProfile";
+import { pickProfileImage } from "@/utils/profileMediaPicker";
 
 type TabKey = "posts" | "photos" | "videos";
 
@@ -54,6 +54,11 @@ export default function ProfileScreen() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
+  const [bioModalVisible, setBioModalVisible] = useState(false);
+  const [bioDraft, setBioDraft] = useState("");
+  const [bioSaving, setBioSaving] = useState(false);
+  const [uploadAvatarBusy, setUploadAvatarBusy] = useState(false);
+  const [uploadBackgroundBusy, setUploadBackgroundBusy] = useState(false);
 
   const fetchData = useCallback(async () => {
     setProfileError(null);
@@ -62,12 +67,8 @@ export default function ProfileScreen() {
       setUserProfile(userData);
 
       try {
-        const postsData = await postService.getAllPosts(1, 50, {
-          userId: userData.id,
-        });
-        setPosts(
-          postService.filterPostsForUser(postsData.posts, userData.id)
-        );
+        const userPosts = await postService.fetchAllUserPosts(userData.id);
+        setPosts(userPosts);
       } catch (postError) {
         console.warn("Cannot load posts on profile:", postError);
       }
@@ -128,13 +129,82 @@ export default function ProfileScreen() {
     router.push("/edit-profile" as any);
   };
 
+  const handleEditAvatar = async () => {
+    if (!userProfile || uploadAvatarBusy) return;
+    const asset = await pickProfileImage({ aspect: [1, 1] });
+    if (!asset) return;
+    setUploadAvatarBusy(true);
+    try {
+      const updated = await userService.uploadAvatar({
+        uri: asset.uri,
+        fileName: asset.fileName ?? `avatar_${Date.now()}.jpg`,
+        mimeType: asset.mimeType ?? "image/jpeg",
+      });
+      setProfile(authUserFromProfile(updated));
+      setUserProfile(updated);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Không tải được ảnh";
+      Alert.alert("Lỗi", msg);
+    } finally {
+      setUploadAvatarBusy(false);
+    }
+  };
+
+  const handleEditBackground = async () => {
+    if (!userProfile || uploadBackgroundBusy) return;
+    const asset = await pickProfileImage({ aspect: [16, 9] });
+    if (!asset) return;
+    setUploadBackgroundBusy(true);
+    try {
+      const updated = await userService.uploadBackground({
+        uri: asset.uri,
+        fileName: asset.fileName ?? `cover_${Date.now()}.jpg`,
+        mimeType: asset.mimeType ?? "image/jpeg",
+      });
+      setProfile(authUserFromProfile(updated));
+      setUserProfile(updated);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Không tải được ảnh";
+      Alert.alert("Lỗi", msg);
+    } finally {
+      setUploadBackgroundBusy(false);
+    }
+  };
+
+  const handleEditBio = () => {
+    if (!userProfile) return;
+    setBioDraft(userProfile.bio ?? "");
+    setBioModalVisible(true);
+  };
+
+  const handleSaveBio = async () => {
+    if (!userProfile || bioSaving) return;
+    const trimmed = bioDraft.trim();
+    if (trimmed.length > 500) {
+      Alert.alert("Lỗi", "Giới thiệu tối đa 500 ký tự.");
+      return;
+    }
+    setBioSaving(true);
+    try {
+      const updated = await userService.updateProfile({ bio: trimmed });
+      setProfile(authUserFromProfile(updated));
+      setUserProfile(updated);
+      setBioModalVisible(false);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Không lưu được";
+      Alert.alert("Lỗi", msg);
+    } finally {
+      setBioSaving(false);
+    }
+  };
+
   const userMinimal: UserMinimalDto | null = userProfile
     ? {
-        id: userProfile.id,
-        name: userProfile.name,
-        avatar: userProfile.avatar,
-        verified: userProfile.verified,
-      }
+      id: userProfile.id,
+      name: userProfile.name,
+      avatar: userProfile.avatar,
+      verified: userProfile.verified,
+    }
     : null;
 
   const handleUserPress = (userId: string) => {
@@ -180,7 +250,8 @@ export default function ProfileScreen() {
     switch (activeTab) {
       case "posts":
         return posts.length > 0 ? (
-          posts.map((post) => (
+          <View className="flex-1 gap-4">
+            { posts.map((post) => (
             <PostCard
               key={post.id}
               post={post}
@@ -190,12 +261,12 @@ export default function ProfileScreen() {
                   prev.map((p) =>
                     p.id === postId
                       ? {
-                          ...p,
-                          isLiked,
-                          likesCount: isLiked
-                            ? p.likesCount + 1
-                            : p.likesCount - 1,
-                        }
+                        ...p,
+                        isLiked,
+                        likesCount: isLiked
+                          ? p.likesCount + 1
+                          : p.likesCount - 1,
+                      }
                       : p
                   )
                 );
@@ -216,7 +287,8 @@ export default function ProfileScreen() {
               onUserPress={handleUserPress}
               onMorePress={handlePostMorePress}
             />
-          ))
+          ))}
+          </View>
         ) : (
           <View className="items-center justify-center py-20">
             <PostIcon size={48} color={semantic.placeholder} />
@@ -226,7 +298,7 @@ export default function ProfileScreen() {
           </View>
         );
 
-      case "photos":
+      case "photos": {
         const photos = posts
           .flatMap((p) => p.media || [])
           .filter((m) => m.mediaType === "image");
@@ -255,8 +327,9 @@ export default function ProfileScreen() {
             </Text>
           </View>
         );
+      }
 
-      case "videos":
+      case "videos": {
         const videos = posts
           .flatMap((p) => p.media || [])
           .filter((m) => m.mediaType === "video");
@@ -290,6 +363,7 @@ export default function ProfileScreen() {
             </Text>
           </View>
         );
+      }
 
       default:
         return null;
@@ -315,21 +389,16 @@ export default function ProfileScreen() {
     };
 
     return (
-      <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4">
-        <ReportIcon size={48} color={errorColor} />
-        <Text className="mt-4 text-center">
-          {profileError || "Không tải được thông tin cá nhân"}
-        </Text>
-        <TouchableOpacity
-          onPress={handleRetry}
-          className="mt-4 bg-primary-400 px-6 py-3 rounded-xl w-48 items-center"
-        >
-          <Text className="text-white font-semibold">Thử lại</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleGoToLogin} className="mt-3 px-6 py-3">
-          <Text className="text-primary-400 font-semibold">Đăng nhập lại</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      <EmptyStateScreen
+        title="Không tải được thông tin"
+        subtitle={
+          profileError || "Không thể tải hồ sơ của bạn. Vui lòng thử lại."
+        }
+        actions={[
+          { label: "Thử lại", onPress: handleRetry, variant: "primary" },
+          { label: "Đăng nhập lại", onPress: handleGoToLogin, variant: "ghost" },
+        ]}
+      />
     );
   }
 
@@ -341,7 +410,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-neutral-100 dark:bg-background-dark"
+      className="flex-1 bg-background-light dark:bg-background-dark px-5 py-8"
       edges={["top"]}
     >
       <ScrollView
@@ -349,12 +418,15 @@ export default function ProfileScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-          colors={[colors.primary[100]]}
-          tintColor={colors.primary[100]}
+            colors={[colors.primary[100]]}
+            tintColor={colors.primary[100]}
           />
         }
         showsVerticalScrollIndicator={false}
+        className="gap-6"
+        contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
       >
+        {/* Error banner */}
         {profileError && (
           <TouchableOpacity
             onPress={handleRetryFromBanner}
@@ -368,10 +440,11 @@ export default function ProfileScreen() {
             </Text>
           </TouchableOpacity>
         )}
-        {/* Thanh trên: tên + menu (giống mockup) */}
-        <View className="flex-row items-center justify-between px-4 pt-3 pb-2">
+
+        {/* Tên và menu */}
+        <View className="flex-row items-center justify-between">
           <Text
-            className="text-[22px] text-neutral-900 dark:text-neutral-100 font-montserrat-bold flex-1 mr-2"
+            className="text-7 text-text-light dark:text-text-dark font-bold flex-1 mr-2"
             numberOfLines={1}
           >
             {userProfile.name || "Profile"}
@@ -389,125 +462,93 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <ProfileHeader
-          user={userProfile}
-          onEditBackground={handleEditProfile}
-          onEditAvatar={handleEditProfile}
-          onEditBio={handleEditProfile}
-        />
-
-        <ProfileInfo user={userProfile} />
-
-        <View className="px-4 mt-5">
-          <TouchableOpacity
-            onPress={handleEditProfile}
-            className="py-3.5 rounded-full bg-white dark:bg-neutral-800 items-center border border-neutral-200/80 dark:border-neutral-700"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
-              elevation: 1,
-            }}
-          >
-            <Text className="font-semibold text-[15px] text-neutral-800 dark:text-neutral-100">
-              Edit profile
-            </Text>
-          </TouchableOpacity>
+        {/* Avatar và background */}
+        <View className="relative">
+          {(uploadAvatarBusy || uploadBackgroundBusy) && (
+            <View className="absolute inset-0 z-10 rounded-3xl bg-black/25 items-center justify-center pointer-events-none">
+              <ActivityIndicator size="large" color={colors.light[400]} />
+            </View>
+          )}
+          <ProfileHeader
+            user={userProfile}
+            onEditBackground={handleEditBackground}
+            onEditAvatar={handleEditAvatar}
+            onEditBio={handleEditBio}
+          />
         </View>
 
+        {/* Thông tin cá nhân */}
+        <ProfileInfo user={userProfile} />
+
+        {/* Button chỉnh sửa hồ sơ */}
+        <Button
+          variant="outline"
+          size="lg"
+          onPress={handleEditProfile}
+          className="rounded-full py-3.5"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.04,
+            shadowRadius: 4,
+            elevation: 1,
+          }}
+        >
+          Edit profile
+        </Button>
+
+        {/* Tab chứa post, ảnh, video */}
         <ProfileTabs
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onFriendPress={() => router.push("/(tabs)/friend" as any)}
         />
 
-        <View className="min-h-[200px] px-2 pb-28">{renderTabContent()}</View>
+        <View className="min-h-[200px] px-2">{renderTabContent()}</View>
       </ScrollView>
 
-      {/* Settings Modal */}
-      <Modal
+      {/* Modal chỉnh sửa hồ sơ */}
+      <ProfileSettingsModal
         visible={settingsVisible}
-        animationType="slide"
-        transparent
         onRequestClose={() => setSettingsVisible(false)}
-      >
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-background-light dark:bg-background-dark rounded-t-3xl">
-            <View className="items-center py-3">
-              <View className="w-10 h-1 bg-border-light dark:bg-border-dark rounded-full" />
-            </View>
+        onEditProfile={() => {
+          setSettingsVisible(false);
+          handleEditProfile();
+        }}
+        onOpenSavedPosts={() => {
+          setSettingsVisible(false);
+          router.push("/saved-posts" as any);
+        }}
+        onOpenAccountSettings={() => {
+          setSettingsVisible(false);
+        }}
+        themeToggleLabel={
+          themeColorScheme === "dark"
+            ? "Switch to Light"
+            : "Switch to Dark"
+        }
+        onToggleTheme={toggleColorScheme}
+        logoutIconColor={errorColor}
+        onLogout={() => {
+          setSettingsVisible(false);
+          handleLogout();
+        }}
+      />
 
-            <Text variant="subtitle" className="text-center py-2">
-              Settings
-            </Text>
-
-            <TouchableOpacity
-              onPress={() => {
-                setSettingsVisible(false);
-                handleEditProfile();
-              }}
-              className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
-            >
-              <PenIcon size={22} color={colors.primary[100]} />
-              <Text className="ml-3">Edit Profile</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setSettingsVisible(false);
-                router.push("/saved-posts" as any);
-              }}
-              className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
-            >
-              <SaveIcon size={22} color={colors.primary[100]} />
-              <Text className="ml-3">Đã lưu</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setSettingsVisible(false);
-                // Navigate to settings
-              }}
-              className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
-            >
-              <SettingsIcon size={22} color={colors.primary[100]} />
-              <Text className="ml-3">Account Settings</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                toggleColorScheme();
-              }}
-              className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
-            >
-              <Text className="flex-1 ml-3 font-semibold text-text-dark dark:text-text-light">
-                {themeColorScheme === "dark"
-                  ? "Switch to Light"
-                  : "Switch to Dark"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setSettingsVisible(false);
-                handleLogout();
-              }}
-              className="flex-row items-center px-4 py-4 border-b border-border-light dark:border-border-dark"
-            >
-              <LogoutIcon size={22} color={errorColor} />
-              <Text className="ml-3 text-red-500">Logout</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setSettingsVisible(false)}
-              className="items-center py-4 mb-6"
-            >
-              <Text variant="muted">Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {/* Modal chỉnh sửa bio */}
+      <ProfileBioEditModal
+        visible={bioModalVisible}
+        value={bioDraft}
+        onChangeText={setBioDraft}
+        saving={bioSaving}
+        onRequestClose={() => {
+          if (!bioSaving) setBioModalVisible(false);
+        }}
+        onCancel={() => {
+          if (!bioSaving) setBioModalVisible(false);
+        }}
+        onSave={handleSaveBio}
+      />
 
       <CommentModal
         postId={commentPostId}

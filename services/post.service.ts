@@ -22,6 +22,9 @@ import { apiMultipartRequest, apiRequest } from "@/services/api-client";
 
 /** Ký tự không hiển thị: backend yêu cầu contentText khi chưa có media trong JSON (upload media sau). */
 const MEDIA_ONLY_PLACEHOLDER = "\u2060";
+
+/** BE `GET /users/:id/posts` giới hạn `limit` (thường ≤ 20). */
+const USER_POSTS_PAGE_LIMIT = 20;
 class PostService {
   private normalizePost(raw: any): PostResponseDto {
     const postId = raw?.id ?? raw?._id?.toString?.() ?? String(raw?._id ?? "");
@@ -275,6 +278,42 @@ class PostService {
     return this.normalizePaginatedPosts(raw, page, limit);
   }
 
+  /**
+   * GET /api/users/:userId/posts — bài theo user (phân trang; BE giới hạn limit, vd. ≤ 20).
+   */
+  async getUserPosts(
+    userId: string,
+    page = 1,
+    limit = USER_POSTS_PAGE_LIMIT
+  ): Promise<PaginatedPostsDto> {
+    const safeLimit = Math.min(Math.max(limit, 1), USER_POSTS_PAGE_LIMIT);
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(safeLimit),
+    });
+    const raw = await apiRequest<any>(
+      `/users/${encodeURIComponent(userId)}/posts?${params}`
+    );
+    return this.normalizePaginatedPosts(raw, page, safeLimit);
+  }
+
+  /** Gom các trang từ `getUserPosts` — tránh GET /posts toàn cục rồi lọc theo user. */
+  async fetchAllUserPosts(userId: string): Promise<PostResponseDto[]> {
+    const out: PostResponseDto[] = [];
+    let page = 1;
+    for (;;) {
+      const { posts, pagination } = await this.getUserPosts(
+        userId,
+        page,
+        USER_POSTS_PAGE_LIMIT
+      );
+      out.push(...posts);
+      if (!pagination.hasMore || posts.length === 0) break;
+      page += 1;
+    }
+    return out;
+  }
+
   private normalizePaginatedPosts(
     raw: any,
     page: number,
@@ -289,12 +328,23 @@ class PostService {
           : [];
     const posts = rawPosts.map((item: any) => this.normalizePost(item));
     const rawPagination = raw?.pagination ?? {};
+    const pageNum = Number(rawPagination.page ?? page);
+    const limitNum = Number(rawPagination.limit ?? limit);
+    const total = Number(rawPagination.total ?? posts.length);
+    const totalPages = Number(
+      rawPagination.totalPages ??
+        Math.max(1, Math.ceil(total / Math.max(limitNum, 1)))
+    );
+    const hasMore =
+      typeof rawPagination.hasMore === "boolean"
+        ? rawPagination.hasMore
+        : pageNum < totalPages;
     const pagination: PaginationDto = {
-      page: Number(rawPagination.page ?? page),
-      limit: Number(rawPagination.limit ?? limit),
-      total: Number(rawPagination.total ?? posts.length),
-      totalPages: Number(rawPagination.totalPages ?? 1),
-      hasMore: Boolean(rawPagination.hasMore ?? false),
+      page: pageNum,
+      limit: limitNum,
+      total,
+      totalPages,
+      hasMore,
     };
     return { posts, pagination };
   }

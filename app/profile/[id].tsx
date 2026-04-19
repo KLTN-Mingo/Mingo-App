@@ -13,9 +13,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfo } from "@/components/profile/ProfileInfo";
 import { ProfileSkeleton } from "@/components/skeleton";
+import { EmptyStateScreen } from "@/components/shared/ui/empty-state-screen";
 import { Button, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
-import { CloseFriendStatus, RelationshipStatusDto, UserProfileDto, UserRole } from "@/dtos";
+import {
+  CloseFriendStatus,
+  PublicUserDto,
+  RelationshipStatusDto,
+  UserProfileDto,
+} from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { FollowApi } from "@/services/follow.service";
 import { userService } from "@/services/user.service";
@@ -38,19 +44,14 @@ export default function UserProfileDetailScreen() {
     if (!id) return;
     try {
       const [rawUser, rel] = await Promise.all([
-        userService.getUserById(id),
+        isMine ? userService.getCurrentUser() : userService.getUserById(id),
         isMine ? Promise.resolve(null) : FollowApi.getRelationshipStatus(id),
       ]);
-      setUser({
-        ...(rawUser as any),
-        id: (rawUser as any).id,
-        phoneNumber: "",
-        role: UserRole.USER,
-        twoFactorEnabled: false,
-        isActive: true,
-        isBlocked: false,
-        updatedAt: (rawUser as any).updatedAt ?? new Date().toISOString(),
-      });
+      setUser(
+        isMine
+          ? (rawUser as UserProfileDto)
+          : userService.mapPublicUserToProfileView(rawUser as PublicUserDto)
+      );
       setRelationship(rel as RelationshipStatusDto | null);
     } finally {
       setLoading(false);
@@ -130,9 +131,17 @@ export default function UserProfileDetailScreen() {
   if (loading) return <ProfileSkeleton />;
   if (!user) {
     return (
-      <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center">
-        <Text>Không tìm thấy hồ sơ người dùng</Text>
-      </SafeAreaView>
+      <EmptyStateScreen
+        title="Không tìm thấy hồ sơ"
+        subtitle="Người dùng này có thể không tồn tại hoặc đã bị gỡ."
+        actions={[
+          {
+            label: "Quay lại",
+            onPress: () => router.back(),
+            variant: "primary",
+          },
+        ]}
+      />
     );
   }
 

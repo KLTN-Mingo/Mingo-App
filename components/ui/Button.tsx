@@ -24,7 +24,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   secondary:
     "bg-surface-muted-light dark:bg-surface-muted-dark active:opacity-80",
   outline:
-    "bg-surface-muted-light dark:bg-transparent border border-border-light dark:border-border-dark active:opacity-80",
+    "bg-component-light dark:bg-component-dark border border-border-light dark:border-border-dark active:opacity-80",
   ghost:
     "bg-transparent active:bg-surface-muted-light dark:active:bg-surface-muted-dark",
   danger: "bg-red-100 dark:bg-red-900 active:opacity-80",

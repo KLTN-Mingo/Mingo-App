@@ -7,7 +7,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { CommentModal } from "@/components/post/CommentModal";
 import { PostCard } from "@/components/post/PostCard";
@@ -15,8 +18,8 @@ import {
   NotificationIcon,
   PostIcon,
   ReportIcon,
-  SearchIcon
 } from "@/components/shared/icons/Icons";
+import { SearchBarTrigger } from "@/components/shared/ui/search-bar";
 import { HomeSkeleton } from "@/components/skeleton";
 import { Tab, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
@@ -37,8 +40,12 @@ const FEED_TABS: { key: FeedTab; label: string }[] = [
   { key: "friends", label: "Bạn bè" },
 ];
 
+/** Khoảng đệm dưới khi tab bar nổi (BAR_HEIGHT + offset) — khớp app/(tabs)/_layout */
+const TAB_BAR_FLOAT_RESERVE = 64 + 20 + 20;
+
 export default function HomeScreen() {
   const { profile, logout, setProfile } = useAuth();
+  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? "light";
   const semantic = getSemantic(colorScheme);
   const errorColor = getStatusColor(colorScheme, "error");
@@ -272,7 +279,11 @@ export default function HomeScreen() {
     };
 
     return (
-      <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4">
+      <SafeAreaView
+        className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4"
+        edges={["top", "left", "right"]}
+        style={{ paddingBottom: TAB_BAR_FLOAT_RESERVE + insets.bottom }}
+      >
         <ReportIcon size={48} color={errorColor} />
         <Text className="mt-4 text-center">{error}</Text>
         <TouchableOpacity
@@ -324,21 +335,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Thanh search (mở màn tìm kiếm) */}
-            <TouchableOpacity
-              onPress={handleSearch}
-              activeOpacity={0.85}
-              className="flex-row items-center mt-1 px-4 py-3 rounded-[20px] bg-input-light dark:bg-input-dark"
-            >
-              {/* <LocationPinIcon size={22} color={semantic.textMuted} /> */}
-              <Text
-                variant="muted"
-                className="flex-1 text-[16px] h-[20px] text-text-muted-light dark:text-text-muted-dark"
-              >
-                Tìm kiếm bài viết, người dùng...
-              </Text>
-              <SearchIcon size={22} color={semantic.textMuted} />
-            </TouchableOpacity>
+            <SearchBarTrigger onPress={handleSearch} />
 
             {/* Feed Tabs */}
             <View className="flex-row gap-2">

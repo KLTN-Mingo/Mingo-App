@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
 import { FriendCard } from '@/components/friend/FriendCard';
 import { FriendRequestCard } from '@/components/friend/FriendRequestCard';
@@ -16,7 +17,7 @@ import {
   SearchIcon,
 } from '@/components/shared/icons/Icons';
 import { FriendListSkeleton, FriendRequestListSkeleton } from '@/components/skeleton';
-import { Button, Input, Tab, Text } from '@/components/ui';
+import { ActionInput, Button, Tab, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import {
   CloseFriendDto,
@@ -402,15 +403,13 @@ export default function FriendScreen() {
             >
               <SearchIcon size={24} color={theme.icon} />
             </TouchableOpacity>
-            <TouchableOpacity className="">
-              <AddIcon size={24} color={theme.icon} />
-            </TouchableOpacity>
           </View>
         </View>
 
         {/* Search Bar */}
         {isSearchVisible && (
-          <Input
+          <ActionInput
+            surface="component"
             placeholder="Search friends..."
             value={searchQuery}
             onChangeText={setSearchQuery}

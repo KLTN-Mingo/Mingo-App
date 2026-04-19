@@ -3,16 +3,13 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import {
-  ArrowIcon,
-  SearchIcon,
-} from "@/components/shared/icons/Icons";
+import { ArrowIcon } from "@/components/shared/icons/Icons";
+import { SearchBarInput } from "@/components/shared/ui/search-bar";
 import { Avatar, Text } from "@/components/ui";
 import { getSemantic } from "@/constants/designTokens";
 import { PublicUserDto } from "@/dtos";
@@ -68,19 +65,14 @@ export default function SearchScreen() {
         <TouchableOpacity onPress={() => router.back()} className="p-2">
           <ArrowIcon size={22} color={sem.text} />
         </TouchableOpacity>
-        <View className="flex-1 flex-row items-center px-3 py-2 rounded-full bg-input-light dark:bg-input-dark">
-          <SearchIcon size={20} color={sem.textMuted} />
-          <TextInput
-            className="flex-1 ml-2 font-regular text-base text-text-light dark:text-text-dark py-0"
-            placeholder="Tìm người dùng (tên)..."
-            placeholderTextColor={sem.placeholder}
-            value={query}
-            onChangeText={setQuery}
-            autoFocus
-            autoCorrect={false}
-            returnKeyType="search"
-          />
-        </View>
+        <SearchBarInput
+          placeholder="Tìm người dùng (tên)..."
+          value={query}
+          onChangeText={setQuery}
+          autoFocus
+          autoCorrect={false}
+          returnKeyType="search"
+        />
       </View>
 
       {loading && (

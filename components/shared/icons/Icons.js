@@ -245,7 +245,7 @@ const PlusIcon = ({ size = 50, color = "currentColor" }) => (
   </Svg>
 );
 
-const MicroIcon = ({ size = 24, color = "currentColor", onClick }) => (
+const MicroIcon = ({ size = 24, color = "currentColor", onClick = undefined }) => (
   <Svg
     width={size}
     height={size}

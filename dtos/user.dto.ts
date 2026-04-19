@@ -3,16 +3,16 @@ import type { PaginationDto } from "./common.dto";
 // ─── Enums ─────────────────────────────────────────────────────────────────────
 
 export enum Gender {
-    MALE = 'male',
-    FEMALE = 'female',
-    OTHER = 'other',
-  }
-  
-  export enum UserRole {
-    USER = 'user',
-    ADMIN = 'admin',
-    MODERATOR = 'moderator',
-  }
+  MALE = "male",
+  FEMALE = "female",
+  OTHER = "other",
+  PREFER_NOT_TO_SAY = "prefer_not_to_say",
+}
+
+export enum UserRole {
+  USER = "user",
+  ADMIN = "admin",
+}
   
   // ─── Request DTOs ──────────────────────────────────────────────────────────────
   
@@ -21,6 +21,11 @@ export enum Gender {
     bio?: string;
     avatar?: string;
     backgroundUrl?: string;
+    relationship?: string;
+    hobby?: string[];
+    work?: string;
+    currentAddress?: string;
+    hometown?: string;
     dateOfBirth?: string;
     gender?: Gender;
   }
@@ -51,6 +56,12 @@ export enum Gender {
     bio?: string;
     avatar?: string;
     backgroundUrl?: string;
+    relationship?: string;
+    hobby?: string[];
+    work?: string;
+    currentAddress?: string;
+    hometown?: string;
+    dateOfBirth?: string;
     gender?: Gender;
     verified: boolean;
     onlineStatus: boolean;
@@ -58,6 +69,7 @@ export enum Gender {
     followingCount: number;
     postsCount: number;
     createdAt: string;
+    updatedAt?: string;
   }
   
   /** Profile đầy đủ - dùng cho /me */
@@ -69,6 +81,11 @@ export enum Gender {
     bio?: string;
     avatar?: string;
     backgroundUrl?: string;
+    relationship?: string;
+    hobby?: string[];
+    work?: string;
+    currentAddress?: string;
+    hometown?: string;
     dateOfBirth?: string;
     gender?: Gender;
     role: UserRole;
@@ -83,6 +100,14 @@ export enum Gender {
     lastLogin?: string;
     createdAt: string;
     updatedAt: string;
+  }
+
+  /** GET /users/:userId/stats */
+  export interface UserStatsDto {
+    totalPosts: number;
+    totalFriends: number;
+    totalReportsReceived: number;
+    totalReportsMade: number;
   }
   
   /** Summary - dùng trong danh sách (admin) */

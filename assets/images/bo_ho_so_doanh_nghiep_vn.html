@@ -1,0 +1,427 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman:ital,wght@0,400;0,700;1,400&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Times New Roman', Times, serif; }
+  .nav-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 0 16px; border-bottom: 1px solid var(--color-border-tertiary); margin-bottom: 16px; }
+  .nav-btn { padding: 6px 12px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); cursor: pointer; background: var(--color-background-secondary); color: var(--color-text-secondary); font-family: inherit; transition: all 0.15s; }
+  .nav-btn.active { background: #185FA5; color: white; border-color: #185FA5; }
+  .doc { display: none; background: white; border: 1px solid #ccc; max-width: 720px; margin: 0 auto; padding: 40px 50px; font-size: 13.5px; line-height: 1.7; color: #111; min-height: 900px; }
+  .doc.active { display: block; }
+  .doc-header-state { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; }
+  .doc-title-center { text-align: center; margin: 24px 0 8px; }
+  .doc-title-center h2 { font-size: 15px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+  .doc-title-center p { font-size: 12px; font-style: italic; }
+  .doc-title-center .so-hieu { font-size: 12px; margin-top: 4px; }
+  .section-title { font-weight: 700; text-transform: uppercase; margin: 18px 0 8px; font-size: 13px; }
+  .field-row { display: flex; gap: 0; margin-bottom: 6px; }
+  .field-label { min-width: 210px; font-weight: normal; }
+  .field-value { border-bottom: 1px dotted #555; flex: 1; padding-left: 6px; }
+  .table-doc { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12.5px; }
+  .table-doc th, .table-doc td { border: 1px solid #333; padding: 5px 8px; }
+  .table-doc th { background: #e8e8e8; text-align: center; font-weight: 700; }
+  .table-doc td { text-align: center; }
+  .table-doc td:nth-child(2) { text-align: left; }
+  .signature-block { display: flex; justify-content: space-between; margin-top: 40px; }
+  .sig-box { text-align: center; width: 200px; }
+  .sig-box .sig-title { font-weight: 700; font-size: 13px; }
+  .sig-box .sig-name { margin-top: 60px; font-weight: 700; font-size: 13px; }
+  .sig-box .sig-sub { font-style: italic; font-size: 12px; }
+  .stamp-area { width: 80px; height: 80px; border: 2px dashed #888; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #888; margin: 10px auto; }
+  .divider { border: none; border-top: 1px solid #999; margin: 16px 0; }
+  .indent { padding-left: 24px; }
+  .bold { font-weight: 700; }
+  .italic { font-style: italic; }
+  .center { text-align: center; }
+  .right { text-align: right; }
+  .small { font-size: 12px; }
+  .watermark-note { font-size: 11px; color: #888; text-align: center; margin-top: 24px; font-style: italic; }
+  .red-text { color: #c00; }
+  .logo-area { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .logo-box { width: 50px; height: 50px; background: #185FA5; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 10px; border-radius: 4px; }
+  .cic-score { display: flex; align-items: center; gap: 16px; margin: 12px 0; }
+  .score-circle { width: 80px; height: 80px; border-radius: 50%; border: 4px solid #185FA5; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+  .score-number { font-size: 24px; font-weight: 700; color: #185FA5; }
+  .score-label { font-size: 10px; color: #555; }
+  .rating-bar { display: flex; gap: 3px; margin: 8px 0; }
+  .rating-block { height: 12px; border-radius: 2px; }
+</style>
+
+<div class="nav-bar">
+  <button class="nav-btn active" onclick="showDoc('phaplydoanhnghiep')">Pháp lý DN</button>
+  <button class="nav-btn" onclick="showDoc('bctc')">BCTC</button>
+  <button class="nav-btn" onclick="showDoc('giaytophoplegal')">Giấy tờ PL</button>
+  <button class="nav-btn" onclick="showDoc('hopdong')">Hợp đồng GD</button>
+  <button class="nav-btn" onclick="showDoc('taisanbaodam')">Tài sản Bảo đảm</button>
+  <button class="nav-btn" onclick="showDoc('quantri')">Quản trị DN</button>
+  <button class="nav-btn" onclick="showDoc('cic')">Báo cáo CIC</button>
+  <button class="nav-btn" onclick="showDoc('kehoach')">Kế hoạch KD</button>
+</div>
+
+<!-- 1. HỒ SƠ PHÁP LÝ DOANH NGHIỆP -->
+<div class="doc active" id="phaplydoanhnghiep">
+  <div class="doc-header-state">
+    <div><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><span style="text-decoration:underline;font-size:12px">Độc lập – Tự do – Hạnh phúc</span></div>
+    <div class="right small">Số: <b>01/ĐKDN-2024</b><br>Hà Nội, ngày 15 tháng 01 năm 2024</div>
+  </div>
+  <div class="doc-title-center">
+    <h2>Giấy Chứng Nhận Đăng Ký Doanh Nghiệp</h2>
+    <p>Công ty Cổ phần</p>
+    <div class="so-hieu">Mã số doanh nghiệp: <b>0109876543</b></div>
+  </div>
+  <hr class="divider">
+  <div class="section-title">Thông tin doanh nghiệp</div>
+  <div class="field-row"><span class="field-label">Tên công ty (tiếng Việt):</span><span class="field-value"><b>CÔNG TY CỔ PHẦN ĐẦU TƯ VÀ PHÁT TRIỂN ABC</b></span></div>
+  <div class="field-row"><span class="field-label">Tên công ty (tiếng Anh):</span><span class="field-value">ABC INVESTMENT AND DEVELOPMENT JOINT STOCK COMPANY</span></div>
+  <div class="field-row"><span class="field-label">Tên viết tắt:</span><span class="field-value">ABC JSC</span></div>
+  <div class="field-row"><span class="field-label">Địa chỉ trụ sở chính:</span><span class="field-value">Số 25, Phố Láng Hạ, Phường Thành Công, Quận Ba Đình, TP. Hà Nội</span></div>
+  <div class="field-row"><span class="field-label">Điện thoại:</span><span class="field-value">024.3856.7890</span></div>
+  <div class="field-row"><span class="field-label">Vốn điều lệ:</span><span class="field-value"><b>50.000.000.000 đồng</b> (Năm mươi tỷ đồng chẵn)</span></div>
+  <div class="field-row"><span class="field-label">Người đại diện theo pháp luật:</span><span class="field-value"><b>Nguyễn Văn An</b> – Chức vụ: Tổng Giám đốc</span></div>
+  <div class="field-row"><span class="field-label">Ngày đăng ký lần đầu:</span><span class="field-value">15/01/2018</span></div>
+  <div class="field-row"><span class="field-label">Đăng ký thay đổi lần thứ:</span><span class="field-value">5 – Ngày 15/01/2024</span></div>
+  <div class="section-title" style="margin-top:16px">Ngành nghề kinh doanh chính</div>
+  <table class="table-doc">
+    <tr><th>STT</th><th>Tên ngành</th><th>Mã ngành</th><th>Ghi chú</th></tr>
+    <tr><td>1</td><td>Xây dựng nhà để ở và nhà không để ở</td><td>4100</td><td>Ngành chính</td></tr>
+    <tr><td>2</td><td>Hoạt động kinh doanh bất động sản</td><td>6810</td><td></td></tr>
+    <tr><td>3</td><td>Hoạt động tư vấn quản lý</td><td>7020</td><td></td></tr>
+    <tr><td>4</td><td>Cho thuê máy móc, thiết bị</td><td>7730</td><td></td></tr>
+  </table>
+  <div class="signature-block">
+    <div class="sig-box">
+      <div class="sig-title">NGƯỜI ĐẠI DIỆN THEO PHÁP LUẬT</div>
+      <div class="sig-sub italic">(Ký, ghi rõ họ tên)</div>
+      <div class="stamp-area">Con dấu</div>
+      <div class="sig-name">NGUYỄN VĂN AN</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-title">TRƯỞNG PHÒNG ĐĂNG KÝ KINH DOANH</div>
+      <div class="sig-sub italic">(Ký, ghi rõ họ tên)</div>
+      <div class="stamp-area">Dấu Sở KH&ĐT</div>
+      <div class="sig-name">TRẦN THỊ BÍCH</div>
+    </div>
+  </div>
+  <p class="watermark-note">* Giấy tờ mẫu minh họa – Không có giá trị pháp lý *</p>
+</div>
+
+<!-- 2. BÁO CÁO TÀI CHÍNH -->
+<div class="doc" id="bctc">
+  <div class="doc-header-state">
+    <div><b>CÔNG TY CỔ PHẦN ĐẦU TƯ VÀ PHÁT TRIỂN ABC</b><br><span class="small">Mã số DN: 0109876543</span></div>
+    <div class="right small">Năm tài chính kết thúc: 31/12/2023</div>
+  </div>
+  <div class="doc-title-center">
+    <h2>Báo Cáo Tài Chính</h2>
+    <p>Năm tài chính 2023 (đã được kiểm toán)</p>
+    <p class="small">Đơn vị tính: Triệu đồng (VNĐ)</p>
+  </div>
+  <hr class="divider">
+  <div class="bold" style="margin:12px 0 6px">BẢNG CÂN ĐỐI KẾ TOÁN tại ngày 31/12/2023</div>
+  <table class="table-doc">
+    <tr><th>Chỉ tiêu</th><th style="text-align:right">Năm 2023</th><th style="text-align:right">Năm 2022</th></tr>
+    <tr><td colspan="3" class="bold" style="background:#f0f0f0">A. TÀI SẢN NGẮN HẠN</td></tr>
+    <tr><td>I. Tiền và các khoản tương đương tiền</td><td style="text-align:right">12.450</td><td style="text-align:right">9.820</td></tr>
+    <tr><td>II. Đầu tư tài chính ngắn hạn</td><td style="text-align:right">5.000</td><td style="text-align:right">3.500</td></tr>
+    <tr><td>III. Các khoản phải thu ngắn hạn</td><td style="text-align:right">28.760</td><td style="text-align:right">24.300</td></tr>
+    <tr><td>IV. Hàng tồn kho</td><td style="text-align:right">35.200</td><td style="text-align:right">31.400</td></tr>
+    <tr><td>V. Tài sản ngắn hạn khác</td><td style="text-align:right">2.100</td><td style="text-align:right">1.850</td></tr>
+    <tr><td class="bold">Cộng tài sản ngắn hạn</td><td style="text-align:right" class="bold">83.510</td><td style="text-align:right" class="bold">70.870</td></tr>
+    <tr><td colspan="3" class="bold" style="background:#f0f0f0">B. TÀI SẢN DÀI HẠN</td></tr>
+    <tr><td>I. Tài sản cố định</td><td style="text-align:right">45.300</td><td style="text-align:right">42.100</td></tr>
+    <tr><td>II. Bất động sản đầu tư</td><td style="text-align:right">120.000</td><td style="text-align:right">115.000</td></tr>
+    <tr><td>III. Đầu tư tài chính dài hạn</td><td style="text-align:right">15.000</td><td style="text-align:right">12.000</td></tr>
+    <tr><td class="bold">Cộng tài sản dài hạn</td><td style="text-align:right" class="bold">180.300</td><td style="text-align:right" class="bold">169.100</td></tr>
+    <tr><td class="bold" style="background:#d0dff0">TỔNG CỘNG TÀI SẢN</td><td style="text-align:right;background:#d0dff0" class="bold">263.810</td><td style="text-align:right;background:#d0dff0" class="bold">239.970</td></tr>
+    <tr><td colspan="3" class="bold" style="background:#f0f0f0">NGUỒN VỐN</td></tr>
+    <tr><td>I. Nợ phải trả</td><td style="text-align:right">145.310</td><td style="text-align:right">135.470</td></tr>
+    <tr><td>II. Vốn chủ sở hữu</td><td style="text-align:right">118.500</td><td style="text-align:right">104.500</td></tr>
+    <tr><td class="bold" style="background:#d0dff0">TỔNG CỘNG NGUỒN VỐN</td><td style="text-align:right;background:#d0dff0" class="bold">263.810</td><td style="text-align:right;background:#d0dff0" class="bold">239.970</td></tr>
+  </table>
+  <div class="bold" style="margin:16px 0 6px">KẾT QUẢ HOẠT ĐỘNG KINH DOANH năm 2023</div>
+  <table class="table-doc">
+    <tr><th>Chỉ tiêu</th><th style="text-align:right">Năm 2023</th><th style="text-align:right">Năm 2022</th></tr>
+    <tr><td>1. Doanh thu bán hàng và cung cấp dịch vụ</td><td style="text-align:right">215.400</td><td style="text-align:right">189.600</td></tr>
+    <tr><td>2. Các khoản giảm trừ doanh thu</td><td style="text-align:right">(2.100)</td><td style="text-align:right">(1.800)</td></tr>
+    <tr><td class="bold">3. Doanh thu thuần</td><td style="text-align:right" class="bold">213.300</td><td style="text-align:right" class="bold">187.800</td></tr>
+    <tr><td>4. Giá vốn hàng bán</td><td style="text-align:right">(158.700)</td><td style="text-align:right">(142.300)</td></tr>
+    <tr><td class="bold">5. Lợi nhuận gộp</td><td style="text-align:right" class="bold">54.600</td><td style="text-align:right" class="bold">45.500</td></tr>
+    <tr><td>6. Chi phí bán hàng</td><td style="text-align:right">(12.300)</td><td style="text-align:right">(10.800)</td></tr>
+    <tr><td>7. Chi phí quản lý doanh nghiệp</td><td style="text-align:right">(8.500)</td><td style="text-align:right">(7.200)</td></tr>
+    <tr><td class="bold" style="background:#d0dff0">8. LỢI NHUẬN TRƯỚC THUẾ</td><td style="text-align:right;background:#d0dff0" class="bold">28.450</td><td style="text-align:right;background:#d0dff0" class="bold">23.100</td></tr>
+    <tr><td>9. Chi phí thuế TNDN</td><td style="text-align:right">(5.690)</td><td style="text-align:right">(4.620)</td></tr>
+    <tr><td class="bold" style="background:#d0dff0">10. LỢI NHUẬN SAU THUẾ</td><td style="text-align:right;background:#d0dff0" class="bold">22.760</td><td style="text-align:right;background:#d0dff0" class="bold">18.480</td></tr>
+  </table>
+  <div class="signature-block">
+    <div class="sig-box"><div class="sig-title">KẾ TOÁN TRƯỞNG</div><div class="stamp-area" style="width:60px;height:60px;border-radius:0"></div><div class="sig-name">LÊ THỊ HOA</div></div>
+    <div class="sig-box"><div class="sig-title">TỔNG GIÁM ĐỐC</div><div class="stamp-area">Con dấu</div><div class="sig-name">NGUYỄN VĂN AN</div></div>
+  </div>
+  <p class="watermark-note">* Giấy tờ mẫu minh họa – Không có giá trị pháp lý *</p>
+</div>
+
+<!-- 3. GIẤY TỜ PHÁP LÝ -->
+<div class="doc" id="giaytophoplegal">
+  <div class="doc-header-state">
+    <div><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><span style="text-decoration:underline;font-size:12px">Độc lập – Tự do – Hạnh phúc</span></div>
+    <div class="right small">Hà Nội, ngày 10 tháng 03 năm 2024</div>
+  </div>
+  <div class="doc-title-center">
+    <h2>Giấy Ủy Quyền</h2>
+    <p class="so-hieu">Số: 15/GUQ-ABC/2024</p>
+  </div>
+  <hr class="divider">
+  <p style="margin-bottom:10px">Căn cứ Bộ luật Dân sự năm 2015;</p>
+  <p style="margin-bottom:10px">Căn cứ Luật Doanh nghiệp số 59/2020/QH14;</p>
+  <p style="margin-bottom:16px">Căn cứ Điều lệ Công ty Cổ phần Đầu tư và Phát triển ABC;</p>
+  <div class="section-title">I. Bên ủy quyền (Bên A)</div>
+  <div class="field-row"><span class="field-label">Họ và tên:</span><span class="field-value"><b>NGUYỄN VĂN AN</b></span></div>
+  <div class="field-row"><span class="field-label">Chức vụ:</span><span class="field-value">Tổng Giám đốc – Công ty CP ĐT&PT ABC</span></div>
+  <div class="field-row"><span class="field-label">CCCD số:</span><span class="field-value">034 089 012 345</span></div>
+  <div class="field-row"><span class="field-label">Địa chỉ:</span><span class="field-value">25 Láng Hạ, Ba Đình, Hà Nội</span></div>
+  <div class="section-title">II. Bên được ủy quyền (Bên B)</div>
+  <div class="field-row"><span class="field-label">Họ và tên:</span><span class="field-value"><b>PHẠM THỊ MINH</b></span></div>
+  <div class="field-row"><span class="field-label">Chức vụ:</span><span class="field-value">Trưởng phòng Pháp chế</span></div>
+  <div class="field-row"><span class="field-label">CCCD số:</span><span class="field-value">036 092 034 567</span></div>
+  <div class="section-title">III. Nội dung ủy quyền</div>
+  <p class="indent" style="margin-bottom:8px">Bên A ủy quyền cho Bên B thực hiện các công việc sau:</p>
+  <p class="indent">1. Thay mặt Công ty ký kết các hợp đồng kinh tế có giá trị dưới <b>5.000.000.000 đồng</b> (Năm tỷ đồng);</p>
+  <p class="indent">2. Làm việc với các cơ quan nhà nước, tổ chức tín dụng liên quan đến hoạt động của Công ty;</p>
+  <p class="indent">3. Ký kết các văn bản, giấy tờ trong phạm vi được ủy quyền.</p>
+  <div class="section-title">IV. Thời hạn ủy quyền</div>
+  <p class="indent">Từ ngày <b>10/03/2024</b> đến ngày <b>10/03/2025</b></p>
+  <p style="margin-top:10px" class="italic small">Giấy ủy quyền này được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản.</p>
+  <div class="signature-block">
+    <div class="sig-box"><div class="sig-title">BÊN ĐƯỢC ỦY QUYỀN</div><div class="sig-sub italic">(Ký, ghi rõ họ tên)</div><div style="height:55px"></div><div class="sig-name">PHẠM THỊ MINH</div></div>
+    <div class="sig-box"><div class="sig-title">BÊN ỦY QUYỀN</div><div class="sig-sub italic">(Ký, đóng dấu)</div><div class="stamp-area">Con dấu</div><div class="sig-name">NGUYỄN VĂN AN</div></div>
+  </div>
+  <p class="watermark-note">* Giấy tờ mẫu minh họa – Không có giá trị pháp lý *</p>
+</div>
+
+<!-- 4. HỢP ĐỒNG GIAO DỊCH -->
+<div class="doc" id="hopdong">
+  <div class="doc-header-state">
+    <div><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><span style="text-decoration:underline;font-size:12px">Độc lập – Tự do – Hạnh phúc</span></div>
+    <div class="right small">Hà Nội, ngày 20 tháng 02 năm 2024</div>
+  </div>
+  <div class="doc-title-center">
+    <h2>Hợp Đồng Tín Dụng</h2>
+    <p class="so-hieu">Số: 2024/HĐTD-NH/001</p>
+  </div>
+  <hr class="divider">
+  <p style="margin-bottom:8px">Căn cứ Bộ Luật Dân sự số 91/2015/QH13 ngày 24/11/2015;</p>
+  <p style="margin-bottom:8px">Căn cứ Luật các Tổ chức tín dụng số 47/2010/QH12;</p>
+  <p style="margin-bottom:16px">Căn cứ nhu cầu và khả năng của hai bên;</p>
+  <div class="section-title">Điều 1. Các bên tham gia hợp đồng</div>
+  <p class="bold indent">BÊN CHO VAY (Bên A): NGÂN HÀNG TMCP NGOẠI THƯƠNG VIỆT NAM (VIETCOMBANK)</p>
+  <p class="indent small">Địa chỉ: 198 Trần Quang Khải, Hoàn Kiếm, Hà Nội &nbsp;|&nbsp; MST: 0100112437-001</p>
+  <p class="indent small">Người đại diện: Ông Ngô Trí Long – Giám đốc Chi nhánh Hà Nội</p>
+  <p class="bold indent" style="margin-top:10px">BÊN VAY (Bên B): CÔNG TY CP ĐẦU TƯ VÀ PHÁT TRIỂN ABC</p>
+  <p class="indent small">Địa chỉ: 25 Láng Hạ, Ba Đình, Hà Nội &nbsp;|&nbsp; MST: 0109876543</p>
+  <p class="indent small">Người đại diện: Ông Nguyễn Văn An – Tổng Giám đốc</p>
+  <div class="section-title">Điều 2. Nội dung vay vốn</div>
+  <div class="field-row"><span class="field-label">Mục đích vay:</span><span class="field-value">Bổ sung vốn lưu động phục vụ hoạt động kinh doanh</span></div>
+  <div class="field-row"><span class="field-label">Số tiền vay:</span><span class="field-value"><b>30.000.000.000 đồng</b> (Ba mươi tỷ đồng)</span></div>
+  <div class="field-row"><span class="field-label">Thời hạn vay:</span><span class="field-value">24 tháng kể từ ngày giải ngân</span></div>
+  <div class="field-row"><span class="field-label">Lãi suất:</span><span class="field-value"><b>9,5%/năm</b> – điều chỉnh 6 tháng/lần theo quy định</span></div>
+  <div class="field-row"><span class="field-label">Lãi suất quá hạn:</span><span class="field-value">150% lãi suất trong hạn tại thời điểm quá hạn</span></div>
+  <div class="field-row"><span class="field-label">Hình thức trả nợ:</span><span class="field-value">Trả gốc đều hàng quý, trả lãi hàng tháng</span></div>
+  <div class="field-row"><span class="field-label">Tài sản bảo đảm:</span><span class="field-value">QSDĐ và TSGT tại 48 Nguyễn Chí Thanh, Đống Đa, Hà Nội</span></div>
+  <div class="section-title">Điều 3. Quyền và nghĩa vụ các bên</div>
+  <p class="indent">3.1. Bên B có nghĩa vụ sử dụng vốn vay đúng mục đích, trả nợ gốc và lãi đúng hạn.</p>
+  <p class="indent">3.2. Bên A có quyền kiểm tra hoạt động kinh doanh và tình hình tài chính của Bên B.</p>
+  <p class="indent">3.3. Trường hợp vi phạm, Bên A có quyền thu hồi nợ trước hạn.</p>
+  <div class="signature-block">
+    <div class="sig-box"><div class="sig-title">BÊN VAY (B)</div><div class="stamp-area">Con dấu ABC</div><div class="sig-name">NGUYỄN VĂN AN</div><div class="sig-sub">Tổng Giám đốc</div></div>
+    <div class="sig-box"><div class="sig-title">BÊN CHO VAY (A)</div><div class="stamp-area">Dấu VCB</div><div class="sig-name">NGÔ TRÍ LONG</div><div class="sig-sub">Giám đốc Chi nhánh</div></div>
+  </div>
+  <p class="watermark-note">* Giấy tờ mẫu minh họa – Không có giá trị pháp lý *</p>
+</div>
+
+<!-- 5. TÀI SẢN BẢO ĐẢM -->
+<div class="doc" id="taisanbaodam">
+  <div class="doc-header-state">
+    <div><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><span style="text-decoration:underline;font-size:12px">Độc lập – Tự do – Hạnh phúc</span></div>
+    <div class="right small">Hà Nội, ngày 20 tháng 02 năm 2024</div>
+  </div>
+  <div class="doc-title-center">
+    <h2>Hợp Đồng Thế Chấp Tài Sản</h2>
+    <p class="so-hieu">Số: 2024/HĐTC-NH/001</p>
+    <p class="small italic">Để bảo đảm thực hiện nghĩa vụ theo HĐTD số 2024/HĐTD-NH/001</p>
+  </div>
+  <hr class="divider">
+  <div class="section-title">I. Thông tin tài sản thế chấp</div>
+  <div class="field-row"><span class="field-label">Loại tài sản:</span><span class="field-value">Quyền sử dụng đất và tài sản gắn liền với đất</span></div>
+  <div class="field-row"><span class="field-label">Địa chỉ thửa đất:</span><span class="field-value">Số 48 Nguyễn Chí Thanh, Phường Láng Thượng, Đống Đa, Hà Nội</span></div>
+  <div class="field-row"><span class="field-label">Diện tích đất:</span><span class="field-value">520 m²</span></div>
+  <div class="field-row"><span class="field-label">Mục đích sử dụng:</span><span class="field-value">Đất thương mại dịch vụ</span></div>
+  <div class="field-row"><span class="field-label">Thời hạn sử dụng:</span><span class="field-value">Đến ngày 30/12/2050</span></div>
+  <div class="field-row"><span class="field-label">Số GCN QSDĐ:</span><span class="field-value">BT 012345 (cấp ngày 15/5/2010)</span></div>
+  <div class="field-row"><span class="field-label">Tài sản gắn liền:</span><span class="field-value">Tòa nhà văn phòng 8 tầng, diện tích sàn 3.800 m²</span></div>
+  <div class="section-title">II. Định giá tài sản bảo đảm</div>
+  <table class="table-doc">
+    <tr><th>Nội dung</th><th>Giá trị (triệu đồng)</th><th>Ghi chú</th></tr>
+    <tr><td>Giá trị quyền sử dụng đất</td><td>45.000</td><td>Theo giá thị trường</td></tr>
+    <tr><td>Giá trị tài sản trên đất</td><td>18.500</td><td>Theo báo cáo thẩm định</td></tr>
+    <tr><td class="bold">TỔNG GIÁ TRỊ TÀI SẢN</td><td class="bold">63.500</td><td>Tại ngày 01/02/2024</td></tr>
+    <tr><td>Tỷ lệ cho vay/TSĐB</td><td colspan="2">47% (dưới ngưỡng 70% quy định)</td></tr>
+  </table>
+  <div class="section-title">III. Đơn vị thẩm định giá</div>
+  <p class="indent">Công ty TNHH Thẩm định giá Sài Gòn – Chứng thư số: SGV-2024-HN-0089</p>
+  <p class="indent small italic">Ngày thẩm định: 01/02/2024 – Hiệu lực: 12 tháng</p>
+  <div class="signature-block">
+    <div class="sig-box"><div class="sig-title">BÊN THẾ CHẤP</div><div class="stamp-area">Con dấu ABC</div><div class="sig-name">NGUYỄN VĂN AN</div></div>
+    <div class="sig-box"><div class="sig-title">BÊN NHẬN THẾ CHẤP</div><div class="stamp-area">Dấu VCB</div><div class="sig-name">NGÔ TRÍ LONG</div></div>
+  </div>
+  <p class="small italic center" style="margin-top:10px">Hợp đồng đã được công chứng tại Văn phòng Công chứng Đống Đa – Số CC: 1245/2024</p>
+  <p class="watermark-note">* Giấy tờ mẫu minh họa – Không có giá trị pháp lý *</p>
+</div>
+
+<!-- 6. QUẢN TRỊ DOANH NGHIỆP -->
+<div class="doc" id="quantri">
+  <div class="doc-header-state">
+    <div><b>CÔNG TY CỔ PHẦN ĐẦU TƯ VÀ PHÁT TRIỂN ABC</b></div>
+    <div class="right small">Số: 05/NQ-HĐQT/2024<br>Hà Nội, 05/01/2024</div>
+  </div>
+  <div class="doc-title-center">
+    <h2>Nghị Quyết Hội Đồng Quản Trị</h2>
+    <p>Về việc phê duyệt kế hoạch vay vốn năm 2024</p>
+  </div>
+  <hr class="divider">
+  <div class="bold" style="margin-bottom:8px">HỘI ĐỒNG QUẢN TRỊ CÔNG TY CỔ PHẦN ĐẦU TƯ VÀ PHÁT TRIỂN ABC</div>
+  <p>Căn cứ Điều lệ Công ty; Căn cứ Nghị quyết ĐHĐCĐ thường niên năm 2024;</p>
+  <p style="margin-bottom:14px">Căn cứ Tờ trình của Ban Điều hành về kế hoạch vay vốn;</p>
+  <div class="section-title">Điều 1. Phê duyệt kế hoạch vay vốn</div>
+  <p class="indent">HĐQT nhất trí <b>phê duyệt kế hoạch vay vốn tín dụng</b> tại Ngân hàng TMCP Ngoại thương Việt Nam (Vietcombank) với các điều kiện sau:</p>
+  <table class="table-doc" style="margin-top:10px">
+    <tr><th>Nội dung</th><th>Chi tiết</th></tr>
+    <tr><td>Số tiền vay</td><td>30.000.000.000 đồng (Ba mươi tỷ đồng)</td></tr>
+    <tr><td>Mục đích</td><td>Bổ sung vốn lưu động</td></tr>
+    <tr><td>Thời hạn</td><td>24 tháng</td></tr>
+    <tr><td>Lãi suất tối đa chấp thuận</td><td>11%/năm</td></tr>
+    <tr><td>Tài sản bảo đảm</td><td>QSDĐ 48 Nguyễn Chí Thanh, Đống Đa</td></tr>
+  </table>
+  <div class="section-title">Điều 2. Ủy quyền ký kết</div>
+  <p class="indent">Ủy quyền cho Tổng Giám đốc <b>Nguyễn Văn An</b> ký kết toàn bộ hợp đồng, văn bản liên quan đến khoản vay nêu trên.</p>
+  <div class="section-title">Điều 3. Kết quả biểu quyết</div>
+  <table class="table-doc">
+    <tr><th>Thành viên HĐQT</th><th>Chức vụ</th><th>Đồng ý</th><th>Không đồng ý</th></tr>
+    <tr><td>Nguyễn Văn An</td><td>Chủ tịch HĐQT</td><td>✓</td><td></td></tr>
+    <tr><td>Trần Minh Khoa</td><td>Thành viên</td><td>✓</td><td></td></tr>
+    <tr><td>Lê Thị Thu Hà</td><td>Thành viên độc lập</td><td>✓</td><td></td></tr>
+    <tr><td>Phạm Đức Hùng</td><td>Thành viên</td><td>✓</td><td></td></tr>
+    <tr><td class="bold">Tỷ lệ thông qua</td><td colspan="3" class="bold">100% số phiếu hợp lệ</td></tr>
+  </table>
+  <div class="signature-block">
+    <div class="sig-box"><div class="sig-title">CHỦ TỊCH HỘI ĐỒNG QUẢN TRỊ</div><div class="stamp-area">Con dấu</div><div class="sig-name">NGUYỄN VĂN AN</div></div>
+  </div>
+  <p class="watermark-note">* Giấy tờ mẫu minh họa – Không có giá trị pháp lý *</p>
+</div>
+
+<!-- 7. BÁO CÁO CIC -->
+<div class="doc" id="cic">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div class="logo-area">
+      <div class="logo-box" style="font-size:9px;text-align:center;padding:4px">NGÂN HÀNG<br>NHÀ NƯỚC<br>VN</div>
+      <div><div class="bold" style="font-size:13px">TRUNG TÂM THÔNG TIN TÍN DỤNG QUỐC GIA</div><div class="small">Credit Information Center – CIC</div></div>
+    </div>
+    <div class="right small">Ngày xuất: <b>15/03/2024</b><br>Mã tra cứu: CIC-2024-HN-456789</div>
+  </div>
+  <div class="doc-title-center"><h2>Báo Cáo Thông Tin Tín Dụng Doanh Nghiệp</h2></div>
+  <hr class="divider">
+  <div class="section-title">I. Thông tin nhận dạng</div>
+  <div class="field-row"><span class="field-label">Tên tổ chức:</span><span class="field-value"><b>CÔNG TY CP ĐẦU TƯ VÀ PHÁT TRIỂN ABC</b></span></div>
+  <div class="field-row"><span class="field-label">Mã số thuế:</span><span class="field-value">0109876543</span></div>
+  <div class="field-row"><span class="field-label">Người đại diện PL:</span><span class="field-value">Nguyễn Văn An (CCCD: 034089012345)</span></div>
+  <div class="field-row"><span class="field-label">Ngày cung cấp thông tin:</span><span class="field-value">15/03/2024</span></div>
+  <div class="section-title">II. Xếp hạng tín dụng</div>
+  <div class="cic-score">
+    <div class="score-circle"><span class="score-number">A</span><span class="score-label">Xếp hạng</span></div>
+    <div>
+      <div class="bold" style="color:#185FA5">Mức độ rủi ro: THẤP</div>
+      <div class="small" style="margin-top:4px">Điểm tín dụng: <b>82/100</b></div>
+      <div class="rating-bar" style="margin-top:8px">
+        <div class="rating-block" style="width:32px;background:#e24b4a"></div>
+        <div class="rating-block" style="width:32px;background:#ef9f27"></div>
+        <div class="rating-block" style="width:32px;background:#97c459"></div>
+        <div class="rating-block" style="width:48px;background:#185FA5;outline:2px solid #185FA5"></div>
+        <div class="rating-block" style="width:32px;background:#d0d0d0"></div>
+      </div>
+      <div class="small" style="color:#666">D &nbsp;&nbsp; C &nbsp;&nbsp; B &nbsp;&nbsp; <b>A</b> &nbsp;&nbsp; AA</div>
+    </div>
+  </div>
+  <div class="section-title">III. Tổng hợp dư nợ tín dụng</div>
+  <table class="table-doc">
+    <tr><th>Tổ chức tín dụng</th><th>Loại khoản vay</th><th>Dư nợ (tr.đ)</th><th>Nhóm nợ</th><th>Trạng thái</th></tr>
+    <tr><td>Vietcombank – CN HN</td><td>Ngắn hạn VLĐ</td><td>15.000</td><td style="color:green">Nhóm 1</td><td style="color:green">Bình thường</td></tr>
+    <tr><td>BIDV – CN Thăng Long</td><td>Trung hạn ĐT</td><td>22.500</td><td style="color:green">Nhóm 1</td><td style="color:green">Bình thường</td></tr>
+    <tr><td>MB Bank</td><td>Ngắn hạn VLĐ</td><td>8.000</td><td style="color:green">Nhóm 1</td><td style="color:green">Bình thường</td></tr>
+    <tr><td class="bold">TỔNG DƯ NỢ</td><td></td><td class="bold">45.500</td><td colspan="2" class="bold">Toàn bộ Nhóm 1</td></tr>
+  </table>
+  <div class="section-title">IV. Lịch sử tín dụng 36 tháng gần nhất</div>
+  <p class="indent">– Không có nợ quá hạn từ ngày 15/03/2021 đến nay</p>
+  <p class="indent">– Không có nợ xấu (nhóm 3, 4, 5) trong lịch sử</p>
+  <p class="indent">– Tổng số lần trả nợ đúng hạn: <b>36/36</b> kỳ</p>
+  <p class="indent">– Không có tranh chấp tín dụng tại tòa án</p>
+  <div class="section-title">V. Kết luận</div>
+  <p class="indent bold" style="color:#185FA5">Khách hàng có lịch sử tín dụng tốt, đủ điều kiện xem xét cấp tín dụng mới.</p>
+  <p class="watermark-note">Thông tin chỉ có giá trị tại ngày xuất báo cáo. * Mẫu minh họa *</p>
+</div>
+
+<!-- 8. KẾ HOẠCH KINH DOANH -->
+<div class="doc" id="kehoach">
+  <div class="doc-header-state">
+    <div><b>CÔNG TY CỔ PHẦN ĐẦU TƯ VÀ PHÁT TRIỂN ABC</b></div>
+    <div class="right small">Hà Nội, tháng 01/2024</div>
+  </div>
+  <div class="doc-title-center">
+    <h2>Kế Hoạch Kinh Doanh</h2>
+    <p>Năm 2024 – 2026</p>
+    <p class="small italic">Phiên bản: v2.0 (Đã được HĐQT phê duyệt theo NQ số 03/NQ-HĐQT/2024)</p>
+  </div>
+  <hr class="divider">
+  <div class="section-title">I. Tóm tắt doanh nghiệp</div>
+  <p class="indent">Công ty CP ĐT&PT ABC được thành lập năm 2018, hoạt động trong lĩnh vực xây dựng và kinh doanh bất động sản tại khu vực Hà Nội và các tỉnh phía Bắc. Sau 6 năm hoạt động, Công ty đã hoàn thành 12 dự án với tổng giá trị trên <b>800 tỷ đồng</b>.</p>
+  <div class="section-title">II. Phân tích thị trường</div>
+  <p class="indent">Thị trường bất động sản thương mại Hà Nội dự kiến tăng trưởng 12-15%/năm giai đoạn 2024-2026. Nhu cầu văn phòng hạng A và B đang phục hồi mạnh sau đại dịch với tỷ lệ lấp đầy đạt 88%.</p>
+  <div class="section-title">III. Mục tiêu kinh doanh</div>
+  <table class="table-doc">
+    <tr><th>Chỉ tiêu</th><th>Năm 2024</th><th>Năm 2025</th><th>Năm 2026</th></tr>
+    <tr><td>Doanh thu (tỷ đồng)</td><td>250</td><td>290</td><td>340</td></tr>
+    <tr><td>Lợi nhuận trước thuế (tỷ)</td><td>32</td><td>40</td><td>52</td></tr>
+    <tr><td>Biên lợi nhuận gộp</td><td>26%</td><td>28%</td><td>30%</td></tr>
+    <tr><td>Số dự án triển khai</td><td>4</td><td>5</td><td>6</td></tr>
+    <tr><td>Nhân sự (người)</td><td>280</td><td>320</td><td>380</td></tr>
+  </table>
+  <div class="section-title">IV. Kế hoạch sử dụng vốn vay</div>
+  <table class="table-doc">
+    <tr><th>Hạng mục</th><th>Số tiền (tỷ đồng)</th><th>Tỷ trọng</th></tr>
+    <tr><td>Vốn lưu động thi công dự án Tây Hồ</td><td>15</td><td>50%</td></tr>
+    <tr><td>Mua vật liệu xây dựng dự án Hà Đông</td><td>9</td><td>30%</td></tr>
+    <tr><td>Chi phí quản lý và vận hành</td><td>6</td><td>20%</td></tr>
+    <tr><td class="bold">TỔNG CỘNG</td><td class="bold">30</td><td class="bold">100%</td></tr>
+  </table>
+  <div class="section-title">V. Phân tích dòng tiền trả nợ</div>
+  <p class="indent">Dòng tiền từ hoạt động kinh doanh năm 2024 dự kiến đạt <b>42 tỷ đồng</b>, đủ khả năng trả lãi và gốc hàng kỳ (khoảng 16,5 tỷ/năm cho khoản vay 30 tỷ). Hệ số DSCR dự kiến: <b>2,5 lần</b>.</p>
+  <div class="section-title">VI. Rủi ro và biện pháp kiểm soát</div>
+  <table class="table-doc">
+    <tr><th>Rủi ro</th><th>Mức độ</th><th>Biện pháp</th></tr>
+    <tr><td>Lãi suất tăng</td><td style="color:orange">Trung bình</td><td>Cố định lãi suất giai đoạn đầu</td></tr>
+    <tr><td>Thị trường BĐS chậm</td><td style="color:orange">Trung bình</td><td>Đa dạng hóa phân khúc khách hàng</td></tr>
+    <tr><td>Chi phí vật liệu tăng</td><td style="color:green">Thấp</td><td>Hợp đồng cung ứng dài hạn</td></tr>
+    <tr><td>Pháp lý dự án</td><td style="color:green">Thấp</td><td>Kiểm tra pháp lý trước đầu tư</td></tr>
+  </table>
+  <div class="signature-block">
+    <div class="sig-box"><div class="sig-title">GIÁM ĐỐC TÀI CHÍNH</div><div style="height:50px"></div><div class="sig-name">VŨ MINH TÂN</div></div>
+    <div class="sig-box"><div class="sig-title">TỔNG GIÁM ĐỐC</div><div class="stamp-area">Con dấu</div><div class="sig-name">NGUYỄN VĂN AN</div></div>
+  </div>
+  <p class="watermark-note">* Giấy tờ mẫu minh họa – Không có giá trị pháp lý *</p>
+</div>
+
+<script>
+function showDoc(id) {
+  document.querySelectorAll('.doc').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>

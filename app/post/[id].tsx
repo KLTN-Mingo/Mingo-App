@@ -384,7 +384,7 @@ export default function PostDetailScreen() {
     >
       {/* Header */}
       <View className="flex-row items-center px-4 py-3 bg-surface-dark border-b border-border-dark">
-        <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
+        <TouchableOpacity onPress={() => router.replace("/(tabs)/home" as any)} className="mr-3 p-1">
           <ArrowIcon size={22} color={colors.dark[100]} />
         </TouchableOpacity>
         <Text className="font-semibold text-lg text-text-dark">Bài viết</Text>

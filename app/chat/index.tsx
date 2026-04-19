@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChatListItem } from "@/components/chat";
 import { ArrowIcon } from "@/components/shared/icons/Icons";
-import { Input, Text } from "@/components/ui";
+import { ActionInput, Text } from "@/components/ui";
 import { useChatList } from "@/hooks/use-chat-list";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { colors, getSemantic } from "@/styles/colors";
@@ -87,7 +87,8 @@ export default function ChatListScreen() {
             }}
           >
             <View style={{ flex: 1 }}>
-              <Input
+              <ActionInput
+                surface="component"
                 placeholder="Search"
                 value={searchText}
                 onChangeText={handleSearchChange}

@@ -39,6 +39,16 @@ module.exports = {
           light: "#F2F2F2",
           dark: "#252525",
         },
+        /** Nền block: trắng (light) / #252525 (dark) */
+        sheet: {
+          light: "#FFFFFF",
+          dark: "#252525",
+        },
+        /** Nền component: #F1F4F3 (light) / #2D2F2F (dark) */
+        component: {
+          light: "#F1F4F3",
+          dark: "#2D2F2F",
+        },
         input: {
           light: "#FFFFFF",
           dark: "#2D2F2F",
