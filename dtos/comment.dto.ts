@@ -36,7 +36,8 @@ export interface GetRepliesQueryDto extends PaginationParams {}
 
 export interface CommentResponseDto {
   id: string;
-  postId: string;
+  postId?: string | null;
+  mediaId?: string | null;
   userId: string;
   user?: UserMinimalDto;
   contentText: string;

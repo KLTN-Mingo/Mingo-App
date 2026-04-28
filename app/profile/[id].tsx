@@ -101,20 +101,20 @@ export default function UserProfileDetailScreen() {
   const handleBlockUser = () => {
     if (!id || isMine) return;
     Alert.alert(
-      "Chặn người này?",
-      "Họ sẽ không thể xem hồ sơ hoặc tương tác với bạn theo chính sách ứng dụng.",
+      "Block this user?",
+      "They will not be able to view your profile or interact with you according to the app policy.",
       [
-        { text: "Hủy", style: "cancel" },
+        { text: "Cancel", style: "cancel" },
         {
-          text: "Chặn",
+          text: "Block",
           style: "destructive",
           onPress: async () => {
             try {
               await FollowApi.blockUser(id);
               router.back();
             } catch (e: unknown) {
-              const msg = e instanceof Error ? e.message : "Không chặn được";
-              Alert.alert("Lỗi", msg);
+              const msg = e instanceof Error ? e.message : "Cannot block";
+              Alert.alert("Error", msg);
             }
           },
         },
@@ -122,21 +122,21 @@ export default function UserProfileDetailScreen() {
     );
   };
 
-  const followLabel = relationship?.isFollowing ? "Bỏ theo dõi" : "Theo dõi";
+  const followLabel = relationship?.isFollowing ? "Unfollow" : "Follow";
   const closeFriendLabel =
     relationship?.closeFriendStatus === CloseFriendStatus.ACCEPTED
-      ? "Gỡ bạn thân"
-      : "Thêm bạn thân";
+      ? "Remove best friend"
+      : "Add best friend";
 
   if (loading) return <ProfileSkeleton />;
   if (!user) {
     return (
       <EmptyStateScreen
-        title="Không tìm thấy hồ sơ"
-        subtitle="Người dùng này có thể không tồn tại hoặc đã bị gỡ."
+        title="Profile not found"
+        subtitle="This user may not exist or has been removed."
         actions={[
           {
-            label: "Quay lại",
+            label: "Go back",
             onPress: () => router.back(),
             variant: "primary",
           },

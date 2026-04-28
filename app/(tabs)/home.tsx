@@ -8,17 +8,17 @@ import {
   View,
 } from "react-native";
 import {
-  SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { CommentModal } from "@/components/post/CommentModal";
 import { PostCard } from "@/components/post/PostCard";
 import {
   NotificationIcon,
-  PostIcon,
   ReportIcon,
 } from "@/components/shared/icons/Icons";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { SearchBarTrigger } from "@/components/shared/ui/search-bar";
 import { HomeSkeleton } from "@/components/skeleton";
 import { Tab, Text } from "@/components/ui";
@@ -31,8 +31,8 @@ import {
   UserMinimalDto,
 } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { postService } from "@/services/post.service";
 import { notificationService } from "@/services/notification.service";
+import { postService } from "@/services/post.service";
 import { colors, getSemantic, getStatusColor } from "@/styles/colors";
 
 const FEED_TABS: { key: FeedTab; label: string }[] = [
@@ -185,42 +185,54 @@ export default function HomeScreen() {
     if (!profile) return;
 
     if (post.userId === profile.id) {
-      Alert.alert("Bài viết của bạn", undefined, [
+      Alert.alert("Your post", undefined, [
         {
-          text: "Chỉnh sửa",
+          text: "Edit",
           onPress: () =>
             router.push({ pathname: "/create-post", params: { id: post.id } } as any),
         },
         {
-          text: "Xóa",
+          text: "Delete",
           style: "destructive",
           onPress: () => {
-            Alert.alert("Xóa bài viết?", "Hành động này không hoàn tác.", [
-              { text: "Hủy", style: "cancel" },
+            Alert.alert("Delete post?", "This action cannot be undone.", [
+              { text: "Cancel", style: "cancel" },
               {
-                text: "Xóa",
+                text: "Delete",
                 style: "destructive",
                 onPress: async () => {
                   try {
                     await postService.deletePost(post.id);
                     setPosts((prev) => prev.filter((p) => p.id !== post.id));
                   } catch (e: unknown) {
-                    const msg = e instanceof Error ? e.message : "Không xóa được";
-                    Alert.alert("Lỗi", msg);
+                    const msg = e instanceof Error ? e.message : "Cannot delete";
+                    Alert.alert("Error", msg);
                   }
                 },
               },
             ]);
           },
         },
-        { text: "Đóng", style: "cancel" },
+        { text: "Close", style: "cancel" },
       ]);
       return;
     }
 
-    Alert.alert("Bài viết", undefined, [
+    Alert.alert("Post", undefined, [
       {
-        text: "Không quan tâm",
+        text: "Hide post",
+        onPress: async () => {
+          try {
+            await postService.submitFeedFeedback(post.id, "hide", activeTab);
+            setPosts((prev) => prev.filter((p) => p.id !== post.id));
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
+          }
+        },
+      },
+      {
+        text: "Not interested",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(
@@ -230,28 +242,24 @@ export default function HomeScreen() {
             );
             setPosts((prev) => prev.filter((p) => p.id !== post.id));
           } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Không gửi được phản hồi";
-            Alert.alert("Lỗi", msg);
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
           }
         },
       },
       {
-        text: "Muốn xem thêm tương tự",
+        text: "See more like this",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(post.id, "see_more", activeTab);
           } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Không gửi được phản hồi";
-            Alert.alert("Lỗi", msg);
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
           }
         },
       },
-      { text: "Hủy", style: "cancel" },
+      { text: "Cancel", style: "cancel" },
     ]);
-  };
-
-  const handleCreatePost = () => {
-    router.push("/create-post" as any);
   };
 
   const handleSearch = () => {
@@ -259,7 +267,7 @@ export default function HomeScreen() {
   };
 
   const handleNotifications = () => {
-    router.push("/(tabs)/notification" as any);
+    router.push("/notification" as any);
   };
 
   // Loading state
@@ -279,9 +287,8 @@ export default function HomeScreen() {
     };
 
     return (
-      <SafeAreaView
-        className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4"
-        edges={["top", "left", "right"]}
+      <ScreenContainer
+        className="items-center justify-center px-4"
         style={{ paddingBottom: TAB_BAR_FLOAT_RESERVE + insets.bottom }}
       >
         <ReportIcon size={48} color={errorColor} />
@@ -294,14 +301,12 @@ export default function HomeScreen() {
             Đăng nhập lại
           </Text>
         </TouchableOpacity>
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
-  return (
-    <SafeAreaView
-      className="flex-1 px-5 py-8"
-      edges={["top"]}
+    return (
+    <ScreenContainer
     >
       <FlatList
         data={posts}
@@ -374,23 +379,22 @@ export default function HomeScreen() {
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-20">
-            <PostIcon size={48} color={semantic.placeholder} />
-            <Text variant="muted" className="mt-4">
-              {activeTab === "explore"
-                ? "Chưa có bài viết để khám phá"
-                : "Chưa có bài viết từ bạn bè"}
-            </Text>
-          </View>
+          <EmptyState
+            title={
+              activeTab === "explore"
+                ? "No posts to explore"
+                : "No posts from friends"
+            }
+          />
         }
         ListFooterComponent={
           loadingMore ? (
             <View className="py-4 items-center">
-              <Text variant="muted">Đang tải thêm...</Text>
+              <Text variant="muted">Loading more...</Text>
             </View>
           ) : null
         }
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       />
 
@@ -399,6 +403,6 @@ export default function HomeScreen() {
         onClose={() => setCommentPostId(null)}
         onCommentCountChange={handleCommentCountChange}
       />
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }

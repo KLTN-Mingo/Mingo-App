@@ -193,7 +193,7 @@ export function ProfileInfo({
             
 
             {rows.length > 0 ? (
-              <View className="gap-4">
+              <View className="gap-4 ">
                 {rows.map((r) => (
                   <InfoRow key={r.key} icon={r.icon}>
                     {r.node}

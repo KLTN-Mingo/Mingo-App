@@ -10,8 +10,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { CommentModal } from "@/components/post/CommentModal";
 import { PostCard } from "@/components/post/PostCard";
 import { ProfileBioEditModal } from "@/components/profile/ProfileBioEditModal";
@@ -20,15 +21,13 @@ import { ProfileInfo } from "@/components/profile/ProfileInfo";
 import { ProfileSettingsModal } from "@/components/profile/ProfileSettingsModal";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import {
-  ImageIcon,
-  MovieIcon,
-  PostIcon,
   VideoIcon,
 } from "@/components/shared/icons/Icons";
 import { EmptyStateScreen } from "@/components/shared/ui/empty-state-screen";
 import { ProfileSkeleton } from "@/components/skeleton";
 import { Button, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { PostResponseDto, UserMinimalDto, UserProfileDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -42,6 +41,7 @@ type TabKey = "posts" | "photos" | "videos";
 
 export default function ProfileScreen() {
   const { profile, setProfile, logout } = useAuth();
+  const { count } = useNotification();
   const colorScheme = useColorScheme() ?? "light";
   const semantic = getSemantic(colorScheme);
   const errorColor = getStatusColor(colorScheme, "error");
@@ -75,7 +75,7 @@ export default function ProfileScreen() {
     } catch (error: any) {
       console.warn("Cannot load profile:", error);
 
-      setProfileError(error?.message || "Không tải được thông tin cá nhân");
+      setProfileError(error?.message || "Cannot load profile info");
 
       // Fallback: dùng profile từ AuthContext để vẫn hiển thị được.
       if (profile) {
@@ -113,10 +113,10 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
-      { text: "Hủy", style: "cancel" },
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: "Đăng xuất",
+        text: "Logout",
         style: "destructive",
         onPress: async () => {
           await logout();
@@ -143,8 +143,8 @@ export default function ProfileScreen() {
       setProfile(authUserFromProfile(updated));
       setUserProfile(updated);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Không tải được ảnh";
-      Alert.alert("Lỗi", msg);
+      const msg = e instanceof Error ? e.message : "Cannot upload image";
+      Alert.alert("Error", msg);
     } finally {
       setUploadAvatarBusy(false);
     }
@@ -164,8 +164,8 @@ export default function ProfileScreen() {
       setProfile(authUserFromProfile(updated));
       setUserProfile(updated);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Không tải được ảnh";
-      Alert.alert("Lỗi", msg);
+      const msg = e instanceof Error ? e.message : "Cannot upload image";
+      Alert.alert("Error", msg);
     } finally {
       setUploadBackgroundBusy(false);
     }
@@ -181,7 +181,7 @@ export default function ProfileScreen() {
     if (!userProfile || bioSaving) return;
     const trimmed = bioDraft.trim();
     if (trimmed.length > 500) {
-      Alert.alert("Lỗi", "Giới thiệu tối đa 500 ký tự.");
+      Alert.alert("Error", "Bio must be 500 characters or less.");
       return;
     }
     setBioSaving(true);
@@ -191,8 +191,8 @@ export default function ProfileScreen() {
       setUserProfile(updated);
       setBioModalVisible(false);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Không lưu được";
-      Alert.alert("Lỗi", msg);
+      const msg = e instanceof Error ? e.message : "Cannot save";
+      Alert.alert("Error", msg);
     } finally {
       setBioSaving(false);
     }
@@ -214,35 +214,35 @@ export default function ProfileScreen() {
   const handlePostMorePress = (post: PostResponseDto) => {
     if (!userProfile || post.userId !== userProfile.id) return;
 
-    Alert.alert("Bài viết của bạn", undefined, [
+    Alert.alert("Your post", undefined, [
       {
-        text: "Chỉnh sửa",
+        text: "Edit",
         onPress: () =>
           router.push({ pathname: "/create-post", params: { id: post.id } } as any),
       },
       {
-        text: "Xóa",
+        text: "Delete",
         style: "destructive",
         onPress: () => {
-          Alert.alert("Xóa bài viết?", "Hành động này không hoàn tác.", [
-            { text: "Hủy", style: "cancel" },
+          Alert.alert("Delete post?", "This action cannot be undone.", [
+            { text: "Cancel", style: "cancel" },
             {
-              text: "Xóa",
+              text: "Delete",
               style: "destructive",
               onPress: async () => {
                 try {
                   await postService.deletePost(post.id);
                   setPosts((prev) => prev.filter((p) => p.id !== post.id));
                 } catch (e: unknown) {
-                  const msg = e instanceof Error ? e.message : "Không xóa được";
-                  Alert.alert("Lỗi", msg);
+                  const msg = e instanceof Error ? e.message : "Cannot delete";
+                  Alert.alert("Error", msg);
                 }
               },
             },
           ]);
         },
       },
-      { text: "Đóng", style: "cancel" },
+      { text: "Close", style: "cancel" },
     ]);
   };
 
@@ -290,12 +290,7 @@ export default function ProfileScreen() {
           ))}
           </View>
         ) : (
-          <View className="items-center justify-center py-20">
-            <PostIcon size={48} color={semantic.placeholder} />
-            <Text variant="muted" className="mt-4">
-              No posts yet
-            </Text>
-          </View>
+          <EmptyState title="No posts yet" />
         );
 
       case "photos": {
@@ -320,12 +315,7 @@ export default function ProfileScreen() {
             ))}
           </View>
         ) : (
-          <View className="items-center justify-center py-20">
-            <ImageIcon size={48} color={semantic.placeholder} />
-            <Text variant="muted" className="mt-4">
-              No photos yet
-            </Text>
-          </View>
+          <EmptyState title="No photos yet" />
         );
       }
 
@@ -356,12 +346,7 @@ export default function ProfileScreen() {
             ))}
           </View>
         ) : (
-          <View className="items-center justify-center py-20">
-            <MovieIcon size={48} color={semantic.placeholder} />
-            <Text variant="muted" className="mt-4">
-              No videos yet
-            </Text>
-          </View>
+          <EmptyState title="No videos yet" />
         );
       }
 
@@ -390,13 +375,13 @@ export default function ProfileScreen() {
 
     return (
       <EmptyStateScreen
-        title="Không tải được thông tin"
+        title="Cannot load profile"
         subtitle={
-          profileError || "Không thể tải hồ sơ của bạn. Vui lòng thử lại."
+          profileError || "Unable to load your profile. Please try again."
         }
         actions={[
-          { label: "Thử lại", onPress: handleRetry, variant: "primary" },
-          { label: "Đăng nhập lại", onPress: handleGoToLogin, variant: "ghost" },
+          { label: "Retry", onPress: handleRetry, variant: "primary" },
+          { label: "Login again", onPress: handleGoToLogin, variant: "ghost" },
         ]}
       />
     );
@@ -409,23 +394,19 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-background-light dark:bg-background-dark px-5 py-8"
-      edges={["top"]}
-    >
-      <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.primary[100]]}
-            tintColor={colors.primary[100]}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-        className="gap-6"
-        contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
-      >
+      <ScreenContainer className="gap-6">
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[colors.primary[100]]}
+              tintColor={colors.primary[100]}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
+        >
         {/* Error banner */}
         {profileError && (
           <TouchableOpacity
@@ -433,15 +414,15 @@ export default function ProfileScreen() {
             className="mx-4 mt-2 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex-row items-center justify-between"
           >
             <Text className="flex-1 text-amber-800 dark:text-amber-200 text-sm">
-              Không tải được thông tin mới nhất. Nhấn để thử lại.
+              Cannot load latest info. Tap to retry.
             </Text>
             <Text className="text-primary-400 font-semibold text-sm">
-              Thử lại
+              Retry
             </Text>
           </TouchableOpacity>
         )}
 
-        {/* Tên và menu */}
+        {/* Name and menu */}
         <View className="flex-row items-center justify-between">
           <Text
             className="text-7 text-text-light dark:text-text-dark font-bold flex-1 mr-2"
@@ -449,6 +430,13 @@ export default function ProfileScreen() {
           >
             {userProfile.name || "Profile"}
           </Text>
+          {/* <TouchableOpacity
+            onPress={() => router.push("/notification" as any)}
+            className="p-2 -mr-1"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <NotificationBadge size="sm" unreadCount={count.unread} />
+          </TouchableOpacity> */}
           <TouchableOpacity
             onPress={() => setSettingsVisible(true)}
             className="p-2 -mr-1"
@@ -563,6 +551,6 @@ export default function ProfileScreen() {
           );
         }}
       />
-    </SafeAreaView>
+      </ScreenContainer>
   );
 }

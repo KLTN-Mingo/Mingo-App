@@ -52,21 +52,21 @@ class CommentService {
   }
 
   // Delete a comment
-  async deleteComment(postId: string, commentId: string): Promise<void> {
+  async deleteComment(commentId: string): Promise<void> {
     return this.request<void>(`/comments/${commentId}`, {
       method: "DELETE",
     });
   }
 
   // Like a comment
-  async likeComment(postId: string, commentId: string): Promise<void> {
+  async likeComment(commentId: string): Promise<void> {
     return this.request<void>(`/comments/${commentId}/like`, {
       method: "POST",
     });
   }
 
   // Unlike a comment
-  async unlikeComment(postId: string, commentId: string): Promise<void> {
+  async unlikeComment(commentId: string): Promise<void> {
     return this.request<void>(`/comments/${commentId}/like`, {
       method: "DELETE",
     });

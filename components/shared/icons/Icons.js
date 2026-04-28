@@ -1029,6 +1029,97 @@ const LocationIcon = ({ size = 24, color = "currentColor" }) => (
     />
   </Svg>
 );
+
+const ArrowLeftIcon = ({ size = 24, color = "currentColor" }) => (
+  <Svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      fill={color}
+      d="M19 12H5m0 0l7 7m-7-7l7-7"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const ActivityIcon = ({ size = 24, color = "currentColor" }) => (
+  <Svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      fill={color}
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const LockIcon = ({ size = 24, color = "currentColor" }) => (
+  <Svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      fill={color}
+      d="M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Zm-7 6a2 2 0 1 1 0-4a2 2 0 0 1 0 4m0 2a4 4 0 0 0-4 4v1h8v-1a4 4 0 0 0-4-4"
+    />
+  </Svg>
+);
+
+const SunIcon = ({ size = 24, color = "currentColor" }) => (
+  <Svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      fill={color}
+      d="M12 17a5 5 0 1 0 0-10a5 5 0 0 0 0 10M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const MoonIcon = ({ size = 24, color = "currentColor" }) => (
+  <Svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      fill={color}
+      d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 const AddIcon = ({ size = 24, color = "black" }) => {
   return (
     <Svg
@@ -1316,4 +1407,9 @@ export {
   CircleFillIcon,
   LogoutIcon,
   LocationIcon,
+  ArrowLeftIcon,
+  ActivityIcon,
+  LockIcon,
+  SunIcon,
+  MoonIcon,
 };

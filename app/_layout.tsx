@@ -1,25 +1,26 @@
 import "@/global.css";
-import { useFonts } from "expo-font";
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useEffect, useMemo, useState } from "react";
-import { View } from "react-native";
+import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import { useEffect, useMemo } from "react";
+import { View } from "react-native";
 import "react-native-reanimated";
 
 import { BORDER_DEFAULT, colors } from "@/constants/designTokens";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { CallProvider } from "@/context/CallContext";
 import {
+  NotificationProvider,
+} from "@/context/NotificationContext";
+import {
   ThemeProvider as AppThemeProvider,
   useTheme,
 } from "@/context/ThemeContext";
-import CustomTabBar from "@/components/ui/CustomTabBar";
 import { Stack } from "expo-router";
 
 SplashScreen.preventAutoHideAsync();
@@ -76,10 +77,9 @@ function ThemedNavigation() {
   return (
     <ThemeProvider value={navigationTheme}>
       <Stack
-        screenOptions={{
-          headerTitleStyle: { fontFamily: "Montserrat-SemiBold" },
-          headerBackTitleStyle: { fontFamily: "Montserrat-Regular" },
-        }}
+       screenOptions={{
+        headerShown: false,
+      }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -116,14 +116,26 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <CallProvider>
-        <View className="flex-1 font-sans" style={{ flex: 1 }}>
-          <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
-          <AppThemeProvider>
-            <ThemedNavigation />
-          </AppThemeProvider>
-        </View>
-      </CallProvider>
+      <NotificationProviderWrapper>
+        <CallProvider>
+          <View className="flex-1 font-sans" style={{ flex: 1 }}>
+            <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
+            <AppThemeProvider>
+              <ThemedNavigation />
+            </AppThemeProvider>
+          </View>
+        </CallProvider>
+      </NotificationProviderWrapper>
     </AuthProvider>
+  );
+}
+
+function NotificationProviderWrapper({ children }: { children: React.ReactNode }) {
+  const { profile } = useAuth();
+
+  return (
+    <NotificationProvider userId={profile?.id}>
+      {children}
+    </NotificationProvider>
   );
 }

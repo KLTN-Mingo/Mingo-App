@@ -19,7 +19,7 @@ export function ProfileHobbyChip({ label }: ProfileHobbyChipProps) {
     colorScheme === "dark" ? "rgba(229, 231, 235, 0.95)" : "#404040";
 
   return (
-    <View className="flex-row items-center gap-1.5 rounded-full px-4 py-3 bg-input-light dark:bg-input-dark">
+    <View className="flex-row items-center gap-1.5 rounded-full px-4 py-3 bg-component-light dark:bg-component-dark">
       <Icon size={16} color={iconColor} />
       <Text className="text-[13px] text-text-light dark:text-text-dark">
         {canonical}

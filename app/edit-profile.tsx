@@ -1,4 +1,4 @@
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -6,10 +6,11 @@ import {
   ScrollView,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import HobbySelector from "@/components/shared/ui/hobby-selector";
 import { Button, InfoInput, Text } from "@/components/ui";
+import { PageHeader } from "@/components/ui/PageHeader";
 import {
   ADDRESS_SUGGESTIONS,
   RELATIONSHIP_OPTIONS,
@@ -143,27 +144,19 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-background-light dark:bg-background-dark"
-      edges={["bottom"]}
-    >
-      <Stack.Screen
-        options={{
-          title: "Thông tin hồ sơ",
-          headerBackTitle: "Quay lại",
-        }}
-      />
-      {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.primary[100]} />
-        </View>
-      ) : (
-        <ScrollView
-          className="flex-1 px-4 pt-2"
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 32 }}
-        >
-          <View className="gap-2">
+      <ScreenContainer className="gap-4">
+        <PageHeader title="Chỉnh sửa hồ sơ" />
+        {loading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator color={colors.primary[100]} />
+          </View>
+        ) : (
+          <ScrollView
+            className="flex-1"
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 32 }}
+          >
+            <View className="gap-2">
             <InfoInput
               label="Họ và tên"
               required
@@ -245,8 +238,8 @@ export default function EditProfileScreen() {
           <Button className="mt-8" onPress={handleSave} loading={saving}>
             Lưu thay đổi
           </Button>
-        </ScrollView>
-      )}
-    </SafeAreaView>
+          </ScrollView>
+        )}
+      </ScreenContainer>
   );
 }

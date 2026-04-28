@@ -32,7 +32,7 @@ export function Tab({
       <Text
         className={`font-medium text-base ${
           isActive
-            ? "text-primary-foreground-light dark:text-primary-foreground-dark"
+            ? "text-[#EFE7DF]"
             : "text-text-light dark:text-text-dark"
         }`}
       >

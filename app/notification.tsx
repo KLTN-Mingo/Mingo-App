@@ -7,50 +7,61 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ScreenContainer } from '@/components/containers/ScreenContainer';
+import { EmptyState } from '@/components/shared/ui/EmptyState';
 import { NotificationCard } from '@/components/notification';
-import { NotificationScreenSkeleton } from '@/components/skeleton';
-import { Tab, Text } from '@/components/ui';
-import {
-  NotificationCountDto,
-  NotificationResponseDto,
-  NotificationType,
-  PaginationDto,
-} from '@/dtos';
 import {
   CircleTickIcon,
-  NotificationIcon,
   TrashIcon,
 } from '@/components/shared/icons/Icons';
-import { notificationService } from '@/services/notification.service';
+import { NotificationScreenSkeleton } from '@/components/skeleton';
+import { Tab, Text } from '@/components/ui';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { useNotification } from '@/context/NotificationContext';
+import {
+  NotificationResponseDto,
+  NotificationType,
+} from '@/dtos';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { notificationService } from '@/services/notification.service';
 import { colors, getSemantic, getStatusColor } from '@/styles/colors';
 
 type FilterType = 'all' | 'unread' | 'follow' | 'like' | 'comment';
 
 const FILTERS: { key: FilterType; label: string }[] = [
-  { key: 'all', label: 'Tất cả' },
-  { key: 'unread', label: 'Chưa đọc' },
-  { key: 'follow', label: 'Theo dõi' },
-  { key: 'like', label: 'Lượt thích' },
-  { key: 'comment', label: 'Bình luận' },
+  { key: 'all', label: 'All' },
+  { key: 'unread', label: 'Unread' },
+  { key: 'follow', label: 'Follow' },
+  { key: 'like', label: 'Like' },
+  { key: 'comment', label: 'Comment' },
 ];
 
 export default function NotificationScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const semantic = getSemantic(colorScheme);
   const errorColor = getStatusColor(colorScheme, 'error');
-  const [notifications, setNotifications] = useState<NotificationResponseDto[]>([]);
-  const [pagination, setPagination] = useState<PaginationDto | null>(null);
-  const [count, setCount] = useState<NotificationCountDto | null>(null);
+  const {
+    count,
+    notifications,
+    isLoading: contextLoading,
+    markAsRead,
+    markAllAsSeen,
+    refreshNotifications,
+    removeNotification,
+    updateCount,
+  } = useNotification();
+
+  const [pagination, setPagination] = useState({ page: 1, hasMore: true });
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [filteredNotifications, setFilteredNotifications] = useState<NotificationResponseDto[]>([]);
+  const [localLoading, setLocalLoading] = useState(true);
 
   const fetchNotifications = useCallback(
     async (page: number = 1, append: boolean = false) => {
+      setLocalLoading(true);
       try {
         let type: NotificationType | undefined;
         let isRead: boolean | undefined;
@@ -77,37 +88,45 @@ export default function NotificationScreen() {
           isRead
         );
 
-        if (append) {
-          setNotifications((prev) => [...prev, ...result.notifications]);
+        if (result && result.notifications) {
+          setFilteredNotifications(
+            append
+              ? (prev: NotificationResponseDto[]) => [...prev, ...result.notifications]
+              : result.notifications
+          );
+          setPagination({
+            page: result.pagination?.page ?? 1,
+            hasMore: result.pagination?.hasMore ?? false,
+          });
         } else {
-          setNotifications(result.notifications);
+          setFilteredNotifications([]);
+          setPagination({ page: 1, hasMore: false });
         }
-        setPagination(result.pagination);
-
-        // Get count
-        const countData = await notificationService.getNotificationCount();
-        setCount(countData);
       } catch (error) {
         console.error('Error fetching notifications:', error);
+        setFilteredNotifications([]);
+        setPagination({ page: 1, hasMore: false });
       } finally {
-        setLoading(false);
         setRefreshing(false);
         setLoadingMore(false);
+        setLocalLoading(false);
       }
     },
     [activeFilter]
   );
 
   useEffect(() => {
-    setLoading(true);
     fetchNotifications(1);
   }, [fetchNotifications]);
 
   useEffect(() => {
-    notificationService.markAllAsSeen().catch((error) => {
-      console.warn("Cannot mark notifications as seen:", error);
-    });
-  }, []);
+    // Mark all as seen when screen opens
+    markAllAsSeen();
+  }, [markAllAsSeen]);
+
+  useEffect(() => {
+    setFilteredNotifications(notifications);
+  }, [notifications]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -115,28 +134,14 @@ export default function NotificationScreen() {
   };
 
   const onLoadMore = () => {
-    if (loadingMore || !pagination?.hasMore) return;
+    if (loadingMore || !pagination.hasMore) return;
     setLoadingMore(true);
     fetchNotifications(pagination.page + 1, true);
   };
 
   const handleNotificationPress = async (notification: NotificationResponseDto) => {
     // Mark as read
-    if (!notification.isRead) {
-      try {
-        await notificationService.markAsRead(notification.id);
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === notification.id ? { ...n, isRead: true } : n
-          )
-        );
-        if (count) {
-          setCount({ ...count, unread: Math.max(0, count.unread - 1) });
-        }
-      } catch (error) {
-        console.error('Error marking notification as read:', error);
-      }
-    }
+    await markAsRead(notification.id);
 
     // Navigate based on notification type
     const { notificationType, postId, actor } = notification;
@@ -173,34 +178,30 @@ export default function NotificationScreen() {
   const handleMarkAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      if (count) {
-        setCount({ ...count, unread: 0 });
-      }
+      const newCount = { ...count, unread: 0 };
+      updateCount(newCount);
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
   };
 
   const handleDeleteNotification = (notification: NotificationResponseDto) => {
-    Alert.alert('Xóa thông báo này?', undefined, [
-      { text: 'Hủy', style: 'cancel' },
+    Alert.alert('Delete this notification?', undefined, [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Xóa',
+        text: 'Delete',
         style: 'destructive',
         onPress: async () => {
           try {
             await notificationService.deleteNotification(notification.id);
-            setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
-            if (count) {
-              setCount({
-                ...count,
-                total: Math.max(0, count.total - 1),
-                unread: !notification.isRead
-                  ? Math.max(0, count.unread - 1)
-                  : count.unread,
-              });
-            }
+            removeNotification(notification.id);
+            updateCount({
+              ...count,
+              total: Math.max(0, count.total - 1),
+              unread: !notification.isRead
+                ? Math.max(0, count.unread - 1)
+                : count.unread,
+            });
           } catch (error) {
             console.error('Error deleting notification:', error);
           }
@@ -211,18 +212,17 @@ export default function NotificationScreen() {
 
   const handleDeleteAll = () => {
     Alert.alert(
-      'Xóa tất cả thông báo',
-      'Bạn có chắc chắn muốn xóa tất cả thông báo?',
+      'Delete all notifications',
+      'Are you sure you want to delete all notifications?',
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Xóa',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
               await notificationService.deleteAll();
-              setNotifications([]);
-              setCount({ total: 0, unread: 0, unseen: 0 });
+              updateCount({ total: 0, unread: 0, unseen: 0 });
             } catch (error) {
               console.error('Error deleting all notifications:', error);
             }
@@ -232,108 +232,98 @@ export default function NotificationScreen() {
     );
   };
 
-  if (loading) {
+  if (localLoading) {
     return <NotificationScreenSkeleton />;
   }
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-background-light dark:bg-background-dark"
-      edges={['top']}
-    >
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3">
-        <View className="flex-row items-center gap-2">
-          <Text variant="title" className="text-xl">
-            Thông báo
-          </Text>
-          {count && count.unread > 0 && (
-            <View className="bg-primary-500 rounded-full px-2 py-0.5">
-              <Text className="text-white text-xs font-semibold">
-                {count.unread > 99 ? '99+' : count.unread}
-              </Text>
-            </View>
-          )}
-        </View>
+      <ScreenContainer className="gap-4">
+        <PageHeader title="Notifications" />
 
-        <View className="flex-row gap-2">
+        {/* Actions row */}
+        <View className="flex-row items-center justify-end gap-2">
           <TouchableOpacity
             onPress={handleMarkAllAsRead}
             className="p-2"
-            disabled={!count || count.unread === 0}
+            disabled={count.unread === 0}
           >
             <CircleTickIcon
-              size={24}
-              color={count && count.unread > 0 ? colors.primary[100] : semantic.placeholder}
+              size={22}
+              color={count.unread > 0 ? colors.primary[100] : semantic.placeholder}
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleDeleteAll} className="p-2">
-            <TrashIcon size={24} color={errorColor} />
+            <TrashIcon size={22} color={errorColor} />
           </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Filter Tabs */}
-      <View className="px-4 pb-2">
+        {/* Unread count badge */}
+        {count.unread > 0 && (
+          <View className="self-start">
+            <View className="bg-primary-100 rounded-full px-3 py-1">
+              <Text className="text-white text-xs font-semibold">
+                {count.unread > 99 ? '99+' : count.unread} unread
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Filter Tabs */}
+        <View>
+          <FlatList
+            data={FILTERS}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.key}
+            contentContainerStyle={{ gap: 8 }}
+            renderItem={({ item }) => (
+              <Tab
+                content={item.label}
+                isActive={activeFilter === item.key}
+                onClick={() => setActiveFilter(item.key)}
+                badge={
+                  item.key === 'unread' && count.unread
+                    ? count.unread
+                    : undefined
+                }
+              />
+            )}
+          />
+        </View>
+
+        {/* Notification List */}
         <FlatList
-          data={FILTERS}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item.key}
-          contentContainerStyle={{ gap: 8 }}
+          data={filteredNotifications}
+          keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <Tab
-              content={item.label}
-              isActive={activeFilter === item.key}
-              onClick={() => setActiveFilter(item.key)}
-              badge={
-                item.key === 'unread' && count?.unread
-                  ? count.unread
-                  : undefined
-              }
+            <NotificationCard
+              notification={item}
+              onPress={handleNotificationPress}
+              onDelete={handleDeleteNotification}
             />
           )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[colors.primary[100]]}
+              tintColor={colors.primary[100]}
+            />
+          }
+          onEndReached={onLoadMore}
+          onEndReachedThreshold={0.5}
+          ListEmptyComponent={
+              <EmptyState title="No notifications" />
+          }
+          ListFooterComponent={
+            loadingMore ? (
+              <View className="py-4 items-center">
+                <Text variant="muted">Loading more...</Text>
+              </View>
+            ) : null
+          }
+          showsVerticalScrollIndicator={false}
         />
-      </View>
-
-      {/* Notification List */}
-      <FlatList
-        data={notifications}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <NotificationCard
-            notification={item}
-            onPress={handleNotificationPress}
-            onDelete={handleDeleteNotification}
-          />
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.primary[100]]}
-            tintColor={colors.primary[100]}
-          />
-        }
-        onEndReached={onLoadMore}
-        onEndReachedThreshold={0.5}
-        ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-20">
-            <NotificationIcon size={64} color={semantic.placeholder} />
-            <Text variant="muted" className="mt-4 text-center">
-              Không có thông báo nào
-            </Text>
-          </View>
-        }
-        ListFooterComponent={
-          loadingMore ? (
-            <View className="py-4 items-center">
-              <Text variant="muted">Đang tải thêm...</Text>
-            </View>
-          ) : null
-        }
-        showsVerticalScrollIndicator={false}
-      />
-    </SafeAreaView>
+      </ScreenContainer>
   );
 }
