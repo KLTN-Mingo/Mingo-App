@@ -7,16 +7,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { CommentModal } from "@/components/post/CommentModal";
 import { PostCard } from "@/components/post/PostCard";
 import {
   NotificationIcon,
-  PostIcon,
   ReportIcon,
-  SearchIcon
 } from "@/components/shared/icons/Icons";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
+import { SearchBarTrigger } from "@/components/shared/ui/search-bar";
 import { HomeSkeleton } from "@/components/skeleton";
 import { Tab, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
@@ -28,8 +31,8 @@ import {
   UserMinimalDto,
 } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { postService } from "@/services/post.service";
 import { notificationService } from "@/services/notification.service";
+import { postService } from "@/services/post.service";
 import { colors, getSemantic, getStatusColor } from "@/styles/colors";
 
 const FEED_TABS: { key: FeedTab; label: string }[] = [
@@ -37,8 +40,12 @@ const FEED_TABS: { key: FeedTab; label: string }[] = [
   { key: "friends", label: "Bạn bè" },
 ];
 
+/** Khoảng đệm dưới khi tab bar nổi (BAR_HEIGHT + offset) — khớp app/(tabs)/_layout */
+const TAB_BAR_FLOAT_RESERVE = 64 + 20 + 20;
+
 export default function HomeScreen() {
   const { profile, logout, setProfile } = useAuth();
+  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? "light";
   const semantic = getSemantic(colorScheme);
   const errorColor = getStatusColor(colorScheme, "error");
@@ -178,42 +185,54 @@ export default function HomeScreen() {
     if (!profile) return;
 
     if (post.userId === profile.id) {
-      Alert.alert("Bài viết của bạn", undefined, [
+      Alert.alert("Your post", undefined, [
         {
-          text: "Chỉnh sửa",
+          text: "Edit",
           onPress: () =>
             router.push({ pathname: "/create-post", params: { id: post.id } } as any),
         },
         {
-          text: "Xóa",
+          text: "Delete",
           style: "destructive",
           onPress: () => {
-            Alert.alert("Xóa bài viết?", "Hành động này không hoàn tác.", [
-              { text: "Hủy", style: "cancel" },
+            Alert.alert("Delete post?", "This action cannot be undone.", [
+              { text: "Cancel", style: "cancel" },
               {
-                text: "Xóa",
+                text: "Delete",
                 style: "destructive",
                 onPress: async () => {
                   try {
                     await postService.deletePost(post.id);
                     setPosts((prev) => prev.filter((p) => p.id !== post.id));
                   } catch (e: unknown) {
-                    const msg = e instanceof Error ? e.message : "Không xóa được";
-                    Alert.alert("Lỗi", msg);
+                    const msg = e instanceof Error ? e.message : "Cannot delete";
+                    Alert.alert("Error", msg);
                   }
                 },
               },
             ]);
           },
         },
-        { text: "Đóng", style: "cancel" },
+        { text: "Close", style: "cancel" },
       ]);
       return;
     }
 
-    Alert.alert("Bài viết", undefined, [
+    Alert.alert("Post", undefined, [
       {
-        text: "Không quan tâm",
+        text: "Hide post",
+        onPress: async () => {
+          try {
+            await postService.submitFeedFeedback(post.id, "hide", activeTab);
+            setPosts((prev) => prev.filter((p) => p.id !== post.id));
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
+          }
+        },
+      },
+      {
+        text: "Not interested",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(
@@ -223,28 +242,24 @@ export default function HomeScreen() {
             );
             setPosts((prev) => prev.filter((p) => p.id !== post.id));
           } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Không gửi được phản hồi";
-            Alert.alert("Lỗi", msg);
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
           }
         },
       },
       {
-        text: "Muốn xem thêm tương tự",
+        text: "See more like this",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(post.id, "see_more", activeTab);
           } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Không gửi được phản hồi";
-            Alert.alert("Lỗi", msg);
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
           }
         },
       },
-      { text: "Hủy", style: "cancel" },
+      { text: "Cancel", style: "cancel" },
     ]);
-  };
-
-  const handleCreatePost = () => {
-    router.push("/create-post" as any);
   };
 
   const handleSearch = () => {
@@ -252,7 +267,7 @@ export default function HomeScreen() {
   };
 
   const handleNotifications = () => {
-    router.push("/(tabs)/notification" as any);
+    router.push("/notification" as any);
   };
 
   // Loading state
@@ -272,7 +287,10 @@ export default function HomeScreen() {
     };
 
     return (
-      <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4">
+      <ScreenContainer
+        className="items-center justify-center px-4"
+        style={{ paddingBottom: TAB_BAR_FLOAT_RESERVE + insets.bottom }}
+      >
         <ReportIcon size={48} color={errorColor} />
         <Text className="mt-4 text-center">{error}</Text>
         <TouchableOpacity
@@ -283,14 +301,12 @@ export default function HomeScreen() {
             Đăng nhập lại
           </Text>
         </TouchableOpacity>
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
-  return (
-    <SafeAreaView
-      className="flex-1 px-5 py-8"
-      edges={["top"]}
+    return (
+    <ScreenContainer
     >
       <FlatList
         data={posts}
@@ -324,21 +340,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Thanh search (mở màn tìm kiếm) */}
-            <TouchableOpacity
-              onPress={handleSearch}
-              activeOpacity={0.85}
-              className="flex-row items-center mt-1 px-4 py-3 rounded-[20px] bg-input-light dark:bg-input-dark"
-            >
-              {/* <LocationPinIcon size={22} color={semantic.textMuted} /> */}
-              <Text
-                variant="muted"
-                className="flex-1 text-[16px] h-[20px] text-text-muted-light dark:text-text-muted-dark"
-              >
-                Tìm kiếm bài viết, người dùng...
-              </Text>
-              <SearchIcon size={22} color={semantic.textMuted} />
-            </TouchableOpacity>
+            <SearchBarTrigger onPress={handleSearch} />
 
             {/* Feed Tabs */}
             <View className="flex-row gap-2">
@@ -377,23 +379,22 @@ export default function HomeScreen() {
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-20">
-            <PostIcon size={48} color={semantic.placeholder} />
-            <Text variant="muted" className="mt-4">
-              {activeTab === "explore"
-                ? "Chưa có bài viết để khám phá"
-                : "Chưa có bài viết từ bạn bè"}
-            </Text>
-          </View>
+          <EmptyState
+            title={
+              activeTab === "explore"
+                ? "No posts to explore"
+                : "No posts from friends"
+            }
+          />
         }
         ListFooterComponent={
           loadingMore ? (
             <View className="py-4 items-center">
-              <Text variant="muted">Đang tải thêm...</Text>
+              <Text variant="muted">Loading more...</Text>
             </View>
           ) : null
         }
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       />
 
@@ -402,6 +403,6 @@ export default function HomeScreen() {
         onClose={() => setCommentPostId(null)}
         onCommentCountChange={handleCommentCountChange}
       />
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }

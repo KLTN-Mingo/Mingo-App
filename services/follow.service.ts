@@ -16,8 +16,8 @@ import { PaginationDto } from "@/dtos/common.dto";
 import { UserMinimalDto } from "@/dtos/user.dto";
 import { apiRequest } from "@/services/api-client";
 
-/** Base path theo Mingo BE guide: `/api/follows` */
-const BASE = "/follows";
+/** Base path khớp BE: `GET /api/follow/...` (vd. `/requests/pending`) */
+const BASE = "/follow";
 
 async function fetchFollow<T>(path: string, options: RequestInit = {}): Promise<T> {
   return apiRequest<T>(`${BASE}${path}`, options);
@@ -255,12 +255,12 @@ export const FollowApi = {
 
   getFriends: async (userId: string, page = 1, limit = 20) => {
     const raw = await fetchFollow<unknown>(
-      `/friends/${encodeURIComponent(userId)}?page=${page}&limit=${limit}`
+      `/${encodeURIComponent(userId)}/friends?page=${page}&limit=${limit}`
     );
     return normalizeFriends(raw);
   },
 
-  /** Danh sách bạn thân của user đăng nhập — guide: GET /follows/close-friends */
+  /** Danh sách bạn thân — GET /api/follow/close-friends (hoặc /:userId/close-friends) */
   getCloseFriends: async (_userId?: string, page = 1, limit = 20) => {
     const raw = await fetchFollow<unknown>(
       `/close-friends?page=${page}&limit=${limit}`
@@ -270,14 +270,14 @@ export const FollowApi = {
 
   getFollowers: async (userId: string, page = 1, limit = 20) => {
     const raw = await fetchFollow<unknown>(
-      `/followers/${encodeURIComponent(userId)}?page=${page}&limit=${limit}`
+      `/${encodeURIComponent(userId)}/followers?page=${page}&limit=${limit}`
     );
     return normalizeFollowers(raw);
   },
 
   getFollowing: async (userId: string, page = 1, limit = 20) => {
     const raw = await fetchFollow<unknown>(
-      `/following/${encodeURIComponent(userId)}?page=${page}&limit=${limit}`
+      `/${encodeURIComponent(userId)}/following?page=${page}&limit=${limit}`
     );
     return normalizeFollowing(raw);
   },

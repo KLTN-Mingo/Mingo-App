@@ -1,13 +1,10 @@
 import "@/global.css";
-
-import { Jost_600SemiBold, Jost_700Bold } from "@expo-google-fonts/jost";
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo } from "react";
@@ -18,9 +15,13 @@ import { BORDER_DEFAULT, colors } from "@/constants/designTokens";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { CallProvider } from "@/context/CallContext";
 import {
+  NotificationProvider,
+} from "@/context/NotificationContext";
+import {
   ThemeProvider as AppThemeProvider,
   useTheme,
 } from "@/context/ThemeContext";
+import { Stack } from "expo-router";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -76,10 +77,9 @@ function ThemedNavigation() {
   return (
     <ThemeProvider value={navigationTheme}>
       <Stack
-        screenOptions={{
-          headerTitleStyle: { fontFamily: "Montserrat-SemiBold" },
-          headerBackTitleStyle: { fontFamily: "Montserrat-Regular" },
-        }}
+       screenOptions={{
+        headerShown: false,
+      }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -87,6 +87,12 @@ function ThemedNavigation() {
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}
         />
+        <Stack.Screen name="create-post" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="post/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="profile/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="search" options={{ presentation: 'card' }} />
+        <Stack.Screen name="edit-profile" options={{ presentation: 'card' }} />
+        <Stack.Screen name="chat/index" options={{ presentation: 'card' }} />
       </Stack>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
     </ThemeProvider>
@@ -106,20 +112,30 @@ export default function RootLayout() {
     "Montserrat-Black": require("@/assets/fonts/Montserrat-Black.ttf"),
     "Montserrat-Italic": require("@/assets/fonts/Montserrat-Italic.ttf"),
     "JosefinSans-SemiBold": require("@/assets/fonts/JosefinSans-SemiBold.ttf"),
-    Jost_600SemiBold,
-    Jost_700Bold,
   });
 
   return (
     <AuthProvider>
-      <CallProvider>
-        <View className="flex-1 font-sans" style={{ flex: 1 }}>
-          <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
-          <AppThemeProvider>
-            <ThemedNavigation />
-          </AppThemeProvider>
-        </View>
-      </CallProvider>
+      <NotificationProviderWrapper>
+        <CallProvider>
+          <View className="flex-1 font-sans" style={{ flex: 1 }}>
+            <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
+            <AppThemeProvider>
+              <ThemedNavigation />
+            </AppThemeProvider>
+          </View>
+        </CallProvider>
+      </NotificationProviderWrapper>
     </AuthProvider>
+  );
+}
+
+function NotificationProviderWrapper({ children }: { children: React.ReactNode }) {
+  const { profile } = useAuth();
+
+  return (
+    <NotificationProvider userId={profile?.id}>
+      {children}
+    </NotificationProvider>
   );
 }

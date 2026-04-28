@@ -1,4 +1,4 @@
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -7,16 +7,17 @@ import {
   RefreshControl,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { PostCard } from "@/components/post/PostCard";
-import { PostIcon } from "@/components/shared/icons/Icons";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { Text } from "@/components/ui";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { PostResponseDto, UserMinimalDto } from "@/dtos";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { postService } from "@/services/post.service";
 import { colors, getSemantic } from "@/styles/colors";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function SavedPostsScreen() {
   const { profile } = useAuth();
@@ -70,9 +71,9 @@ export default function SavedPostsScreen() {
     if (!profile) return;
 
     if (post.userId === profile.id) {
-      Alert.alert("Bài viết của bạn", undefined, [
+      Alert.alert("Your post", undefined, [
         {
-          text: "Chỉnh sửa",
+          text: "Edit",
           onPress: () =>
             router.push({
               pathname: "/create-post",
@@ -80,57 +81,69 @@ export default function SavedPostsScreen() {
             } as any),
         },
         {
-          text: "Xóa",
+          text: "Delete",
           style: "destructive",
           onPress: () => {
-            Alert.alert("Xóa bài viết?", "Hành động này không hoàn tác.", [
-              { text: "Hủy", style: "cancel" },
+            Alert.alert("Delete post?", "This action cannot be undone.", [
+              { text: "Cancel", style: "cancel" },
               {
-                text: "Xóa",
+                text: "Delete",
                 style: "destructive",
                 onPress: async () => {
                   try {
                     await postService.deletePost(post.id);
                     setPosts((prev) => prev.filter((p) => p.id !== post.id));
                   } catch (e: unknown) {
-                    const msg = e instanceof Error ? e.message : "Không xóa được";
-                    Alert.alert("Lỗi", msg);
+                    const msg = e instanceof Error ? e.message : "Cannot delete";
+                    Alert.alert("Error", msg);
                   }
                 },
               },
             ]);
           },
         },
-        { text: "Đóng", style: "cancel" },
+        { text: "Close", style: "cancel" },
       ]);
       return;
     }
 
-    Alert.alert("Bài viết", undefined, [
+    Alert.alert("Post", undefined, [
       {
-        text: "Không quan tâm",
+        text: "Hide post",
+        onPress: async () => {
+          try {
+            await postService.submitFeedFeedback(post.id, "hide");
+            setPosts((prev) => prev.filter((p) => p.id !== post.id));
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
+          }
+        },
+      },
+      {
+        text: "Not interested",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(post.id, "not_interested");
             setPosts((prev) => prev.filter((p) => p.id !== post.id));
           } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Không gửi được phản hồi";
-            Alert.alert("Lỗi", msg);
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
           }
         },
       },
       {
-        text: "Muốn xem thêm tương tự",
+        text: "See more like this",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(post.id, "see_more");
           } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Không gửi được phản hồi";
-            Alert.alert("Lỗi", msg);
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
           }
         },
       },
-      { text: "Hủy", style: "cancel" },
+      { text: "Cancel", style: "cancel" },
     ]);
   };
 
@@ -139,71 +152,63 @@ export default function SavedPostsScreen() {
   }
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-background-light dark:bg-background-dark"
-      edges={["bottom"]}
-    >
-      <Stack.Screen options={{ title: "Đã lưu" }} />
-      {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.primary[100]} />
-        </View>
-      ) : (
-        <FlatList
-          data={posts}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-          ItemSeparatorComponent={() => <View className="h-4" />}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[colors.primary[100]]}
-              tintColor={colors.primary[100]}
-            />
-          }
-          renderItem={({ item }) => (
-            <PostCard
-              post={item}
-              currentUser={userMinimal}
-              onLikeChange={(postId, isLiked) => {
-                setPosts((prev) =>
-                  prev.map((p) =>
-                    p.id === postId
-                      ? {
-                          ...p,
-                          isLiked,
-                          likesCount: isLiked
-                            ? p.likesCount + 1
-                            : p.likesCount - 1,
-                        }
-                      : p
-                  )
-                );
-              }}
-              onCommentPress={(postId) => router.push(`/post/${postId}` as any)}
-              onShareChange={(postId, nextCount) => {
-                setPosts((prev) =>
-                  prev.map((p) =>
-                    p.id === postId ? { ...p, sharesCount: nextCount } : p
-                  )
-                );
-              }}
-              onSaveChange={handleSaveChange}
-              onUserPress={(userId) => router.push(`/profile/${userId}` as any)}
-              onMorePress={handlePostMorePress}
-            />
-          )}
-          ListEmptyComponent={
-            <View className="items-center justify-center py-20">
-              <PostIcon size={48} color={semantic.placeholder} />
-              <Text variant="muted" className="mt-4 text-center px-6">
-                Chưa có bài viết đã lưu
-              </Text>
-            </View>
-          }
-        />
-      )}
-    </SafeAreaView>
+      <ScreenContainer className="gap-4">
+        <PageHeader title="Saved" />
+        {loading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator color={colors.primary[100]} />
+          </View>
+        ) : (
+          <FlatList
+            data={posts}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ paddingBottom: 32 }}
+            ItemSeparatorComponent={() => <View className="h-4" />}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[colors.primary[100]]}
+                tintColor={colors.primary[100]}
+              />
+            }
+            renderItem={({ item }) => (
+              <PostCard
+                post={item}
+                currentUser={userMinimal}
+                onLikeChange={(postId, isLiked) => {
+                  setPosts((prev) =>
+                    prev.map((p) =>
+                      p.id === postId
+                        ? {
+                            ...p,
+                            isLiked,
+                            likesCount: isLiked
+                              ? p.likesCount + 1
+                              : p.likesCount - 1,
+                          }
+                        : p
+                    )
+                  );
+                }}
+                onCommentPress={(postId) => router.push(`/post/${postId}` as any)}
+                onShareChange={(postId, nextCount) => {
+                  setPosts((prev) =>
+                    prev.map((p) =>
+                      p.id === postId ? { ...p, sharesCount: nextCount } : p
+                    )
+                  );
+                }}
+                onSaveChange={handleSaveChange}
+                onUserPress={(userId) => router.push(`/profile/${userId}` as any)}
+                onMorePress={handlePostMorePress}
+              />
+            )}
+            ListEmptyComponent={
+              <EmptyState title="No saved posts" />
+            }
+          />
+        )}
+      </ScreenContainer>
   );
 }

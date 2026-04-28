@@ -6,6 +6,8 @@ import {
   PublicUserDto,
   UpdateProfileRequestDto,
   UserProfileDto,
+  UserRole,
+  UserStatsDto,
 } from "@/dtos";
 import { apiMultipartRequest } from "@/services/api-client";
 import { authService } from "@/services/auth.service";
@@ -51,6 +53,10 @@ class UserService {
     publicUser: PublicUserDto,
     storedUser: AuthUserDto
   ): UserProfileDto {
+    const role =
+      storedUser.role === UserRole.ADMIN || storedUser.role === "admin"
+        ? UserRole.ADMIN
+        : UserRole.USER;
     return {
       id: publicUser.id,
       phoneNumber: storedUser.phoneNumber,
@@ -59,9 +65,14 @@ class UserService {
       bio: publicUser.bio,
       avatar: publicUser.avatar ?? storedUser.avatar,
       backgroundUrl: publicUser.backgroundUrl,
-      dateOfBirth: undefined,
+      relationship: publicUser.relationship,
+      hobby: publicUser.hobby ?? [],
+      work: publicUser.work,
+      currentAddress: publicUser.currentAddress,
+      hometown: publicUser.hometown,
+      dateOfBirth: publicUser.dateOfBirth,
       gender: publicUser.gender,
-      role: storedUser.role as UserProfileDto["role"],
+      role,
       verified: Boolean(publicUser.verified ?? storedUser.verified),
       twoFactorEnabled: false,
       isActive: true,
@@ -72,7 +83,44 @@ class UserService {
       postsCount: Number(publicUser.postsCount) || 0,
       lastLogin: undefined,
       createdAt: publicUser.createdAt ?? new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      updatedAt: publicUser.updatedAt ?? new Date().toISOString(),
+    };
+  }
+
+  /** Gộp public user (GET /users/:id) thành UserProfileDto cho màn xem profile */
+  mapPublicUserToProfileView(publicUser: PublicUserDto): UserProfileDto {
+    const role =
+      (publicUser as { role?: string }).role === UserRole.ADMIN ||
+      (publicUser as { role?: string }).role === "admin"
+        ? UserRole.ADMIN
+        : UserRole.USER;
+    return {
+      id: publicUser.id,
+      phoneNumber: "",
+      email: undefined,
+      name: publicUser.name,
+      bio: publicUser.bio,
+      avatar: publicUser.avatar,
+      backgroundUrl: publicUser.backgroundUrl,
+      relationship: publicUser.relationship,
+      hobby: publicUser.hobby ?? [],
+      work: publicUser.work,
+      currentAddress: publicUser.currentAddress,
+      hometown: publicUser.hometown,
+      dateOfBirth: publicUser.dateOfBirth,
+      gender: publicUser.gender,
+      role,
+      verified: Boolean(publicUser.verified),
+      twoFactorEnabled: false,
+      isActive: true,
+      isBlocked: false,
+      onlineStatus: Boolean(publicUser.onlineStatus),
+      followersCount: Number(publicUser.followersCount) || 0,
+      followingCount: Number(publicUser.followingCount) || 0,
+      postsCount: Number(publicUser.postsCount) || 0,
+      lastLogin: undefined,
+      createdAt: publicUser.createdAt,
+      updatedAt: publicUser.updatedAt ?? new Date().toISOString(),
     };
   }
 
@@ -126,11 +174,19 @@ class UserService {
   private normalizeUserProfile(raw: any): UserProfileDto {
     if (!raw) throw new Error("Không có dữ liệu hồ sơ");
     const id = raw.id ?? raw._id?.toString?.() ?? String(raw._id);
+    const hobby = Array.isArray(raw.hobby)
+      ? (raw.hobby as unknown[]).filter((x): x is string => typeof x === "string")
+      : [];
+    const role =
+      raw.role === UserRole.ADMIN || raw.role === "admin"
+        ? UserRole.ADMIN
+        : UserRole.USER;
     return {
       ...raw,
       id,
       phoneNumber: raw.phoneNumber ?? "",
-      role: raw.role ?? "user",
+      role,
+      hobby,
       twoFactorEnabled: Boolean(raw.twoFactorEnabled),
       isActive: raw.isActive !== false,
       isBlocked: Boolean(raw.isBlocked),
@@ -194,8 +250,13 @@ class UserService {
     return this.request<PublicUserDto>(`/${userId}`);
   }
 
+  /** GET /users/:userId/stats */
+  async getUserStats(userId: string): Promise<UserStatsDto> {
+    return this.request<UserStatsDto>(`/${userId}/stats`);
+  }
+
   /**
-   * PUT /users/me — body: name?, bio?, avatar?, backgroundUrl?, dateOfBirth?, gender?
+   * PUT /users/me — body khớp UpdateProfileRequestDto (BE updateProfile)
    */
   async updateProfile(
     payload: UpdateProfileRequestDto
@@ -300,6 +361,12 @@ class UserService {
       bio: u.bio,
       avatar: u.avatar,
       backgroundUrl: u.backgroundUrl,
+      relationship: u.relationship,
+      hobby: Array.isArray(u.hobby) ? u.hobby : [],
+      work: u.work,
+      currentAddress: u.currentAddress,
+      hometown: u.hometown,
+      dateOfBirth: u.dateOfBirth,
       gender: u.gender,
       verified: Boolean(u.verified),
       onlineStatus: Boolean(u.onlineStatus),
@@ -307,6 +374,7 @@ class UserService {
       followingCount: Number(u.followingCount) || 0,
       postsCount: Number(u.postsCount) || 0,
       createdAt: u.createdAt ?? new Date().toISOString(),
+      updatedAt: u.updatedAt,
     }));
     const pSource =
       root && typeof root === "object"
@@ -323,6 +391,32 @@ class UserService {
       hasMore: Boolean(p.hasMore ?? false),
     };
     return { users, pagination };
+  }
+
+  /** GET /users/phone/:phoneNumber — tìm user qua số điện thoại */
+  async getUserByPhone(phoneNumber: string): Promise<PublicUserDto> {
+    const params = new URLSearchParams({ phoneNumber: phoneNumber.trim() });
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_URL}/users/phone/${encodeURIComponent(phoneNumber.trim())}`, {
+      headers,
+    });
+    let json: Record<string, unknown> = {};
+    try {
+      const text = await response.text();
+      json = text ? JSON.parse(text) : {};
+    } catch {
+      throw new Error('Phản hồi từ máy chủ không hợp lệ');
+    }
+    const message = this.extractErrorMessage(json);
+    if (!response.ok) {
+      await authService.handleUnauthorizedResponse(response, message);
+      throw new Error(message);
+    }
+    const data = this.extractData<PublicUserDto>(json);
+    if (data === undefined) {
+      throw new Error('Không tìm thấy người dùng');
+    }
+    return data;
   }
 }
 

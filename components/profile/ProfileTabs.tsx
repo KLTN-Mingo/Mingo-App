@@ -20,7 +20,6 @@ const TABS: {
   isFriendNav?: boolean;
 }[] = [
   { key: "posts", label: "Post", icon: "grid-outline" },
-  { key: "friend", label: "Friend", icon: "people-outline", isFriendNav: true },
   { key: "photos", label: "Image", icon: "image-outline" },
   { key: "videos", label: "Video", icon: "videocam-outline" },
 ];

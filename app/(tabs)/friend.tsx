@@ -6,26 +6,23 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ScreenContainer } from '@/components/containers/ScreenContainer';
+import { EmptyState } from '@/components/shared/ui/EmptyState';
 import { FriendCard } from '@/components/friend/FriendCard';
 import { FriendRequestCard } from '@/components/friend/FriendRequestCard';
-import {
-  AddIcon,
-  FriendIcon,
-  SearchIcon,
-} from '@/components/shared/icons/Icons';
+import { SearchIcon } from '@/components/shared/icons/Icons';
 import { FriendListSkeleton, FriendRequestListSkeleton } from '@/components/skeleton';
-import { Button, Input, Tab, Text } from '@/components/ui';
+import { ActionInput, Button, Tab, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import {
   CloseFriendDto,
+  CloseFriendRequestDto,
   FollowerDto,
   FollowingDto,
   FollowRequestDto,
   FollowStatsDto,
   FriendDto,
-  CloseFriendRequestDto,
 } from '@/dtos';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FollowApi } from '@/services/follow.service';
@@ -74,7 +71,7 @@ export default function FriendScreen() {
   const [followers, setFollowers] = useState<FollowerDto[]>([]);
   const [following, setFollowing] = useState<FollowingDto[]>([]);
   const [stats, setStats] = useState<FollowStatsDto | null>(null);
-  
+
   // Loading states
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -82,7 +79,7 @@ export default function FriendScreen() {
   // Fetch data based on active tab
   const fetchData = useCallback(async () => {
     if (!profile?.id) return;
-    
+
     setLoading(true);
     try {
       switch (activeTab) {
@@ -200,7 +197,7 @@ export default function FriendScreen() {
           <FriendRequestCard
             id={item.id}
             user={item.user}
-            mutualCount={5} // Replace with actual data
+            mutualCount={5}
             onAccept={handleAcceptRequest}
             onDecline={handleDeclineRequest}
           />
@@ -226,7 +223,7 @@ export default function FriendScreen() {
           <FriendCard
             user={item.user}
             isCloseFriend={item.isCloseFriend}
-            onPress={() => {/* Navigate to profile */}}
+            onPress={() => {/* Navigate to profile */ }}
           />
         )}
         refreshControl={
@@ -323,7 +320,7 @@ export default function FriendScreen() {
           <FriendCard
             user={item.user}
             isCloseFriend={true}
-            onPress={() => {/* Navigate to profile */}}
+            onPress={() => {/* Navigate to profile */ }}
           />
         )}
         refreshControl={
@@ -346,7 +343,7 @@ export default function FriendScreen() {
         renderItem={({ item }) => (
           <FriendCard
             user={item.follower}
-            onPress={() => {/* Navigate to profile */}}
+            onPress={() => {/* Navigate to profile */ }}
           />
         )}
         refreshControl={
@@ -369,7 +366,7 @@ export default function FriendScreen() {
         renderItem={({ item }) => (
           <FriendCard
             user={item.following}
-            onPress={() => {/* Navigate to profile */}}
+            onPress={() => {/* Navigate to profile */ }}
           />
         )}
         refreshControl={
@@ -381,14 +378,12 @@ export default function FriendScreen() {
   };
 
   const renderEmptyState = (message: string) => (
-    <View className="flex-1 items-center justify-center py-20">
-      <FriendIcon size={48} color={semantic.placeholder} />
-      <Text variant="muted" className="mt-4">{message}</Text>
-    </View>
+    <EmptyState title={message} />
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark pt-10 px-5 pb-5 gap-6">
+    // <View className="flex-1 bg-background-light dark:bg-background-dark">
+    <ScreenContainer className="gap-6">
       {/* Header */}
       <View className="">
         <View className="flex-row justify-between items-center">
@@ -402,15 +397,13 @@ export default function FriendScreen() {
             >
               <SearchIcon size={24} color={theme.icon} />
             </TouchableOpacity>
-            <TouchableOpacity className="">
-              <AddIcon size={24} color={theme.icon} />
-            </TouchableOpacity>
           </View>
         </View>
 
         {/* Search Bar */}
         {isSearchVisible && (
-          <Input
+          <ActionInput
+            surface="component"
             placeholder="Search friends..."
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -449,6 +442,7 @@ export default function FriendScreen() {
       <View className="flex-1">
         {renderContent()}
       </View>
-    </SafeAreaView>
+    </ScreenContainer>
+    // </View>
   );
 }

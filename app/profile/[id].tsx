@@ -13,9 +13,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfo } from "@/components/profile/ProfileInfo";
 import { ProfileSkeleton } from "@/components/skeleton";
+import { EmptyStateScreen } from "@/components/shared/ui/empty-state-screen";
 import { Button, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
-import { CloseFriendStatus, RelationshipStatusDto, UserProfileDto, UserRole } from "@/dtos";
+import {
+  CloseFriendStatus,
+  PublicUserDto,
+  RelationshipStatusDto,
+  UserProfileDto,
+} from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { FollowApi } from "@/services/follow.service";
 import { userService } from "@/services/user.service";
@@ -38,19 +44,14 @@ export default function UserProfileDetailScreen() {
     if (!id) return;
     try {
       const [rawUser, rel] = await Promise.all([
-        userService.getUserById(id),
+        isMine ? userService.getCurrentUser() : userService.getUserById(id),
         isMine ? Promise.resolve(null) : FollowApi.getRelationshipStatus(id),
       ]);
-      setUser({
-        ...(rawUser as any),
-        id: (rawUser as any).id,
-        phoneNumber: "",
-        role: UserRole.USER,
-        twoFactorEnabled: false,
-        isActive: true,
-        isBlocked: false,
-        updatedAt: (rawUser as any).updatedAt ?? new Date().toISOString(),
-      });
+      setUser(
+        isMine
+          ? (rawUser as UserProfileDto)
+          : userService.mapPublicUserToProfileView(rawUser as PublicUserDto)
+      );
       setRelationship(rel as RelationshipStatusDto | null);
     } finally {
       setLoading(false);
@@ -100,20 +101,20 @@ export default function UserProfileDetailScreen() {
   const handleBlockUser = () => {
     if (!id || isMine) return;
     Alert.alert(
-      "Chặn người này?",
-      "Họ sẽ không thể xem hồ sơ hoặc tương tác với bạn theo chính sách ứng dụng.",
+      "Block this user?",
+      "They will not be able to view your profile or interact with you according to the app policy.",
       [
-        { text: "Hủy", style: "cancel" },
+        { text: "Cancel", style: "cancel" },
         {
-          text: "Chặn",
+          text: "Block",
           style: "destructive",
           onPress: async () => {
             try {
               await FollowApi.blockUser(id);
               router.back();
             } catch (e: unknown) {
-              const msg = e instanceof Error ? e.message : "Không chặn được";
-              Alert.alert("Lỗi", msg);
+              const msg = e instanceof Error ? e.message : "Cannot block";
+              Alert.alert("Error", msg);
             }
           },
         },
@@ -121,18 +122,26 @@ export default function UserProfileDetailScreen() {
     );
   };
 
-  const followLabel = relationship?.isFollowing ? "Bỏ theo dõi" : "Theo dõi";
+  const followLabel = relationship?.isFollowing ? "Unfollow" : "Follow";
   const closeFriendLabel =
     relationship?.closeFriendStatus === CloseFriendStatus.ACCEPTED
-      ? "Gỡ bạn thân"
-      : "Thêm bạn thân";
+      ? "Remove best friend"
+      : "Add best friend";
 
   if (loading) return <ProfileSkeleton />;
   if (!user) {
     return (
-      <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center">
-        <Text>Không tìm thấy hồ sơ người dùng</Text>
-      </SafeAreaView>
+      <EmptyStateScreen
+        title="Profile not found"
+        subtitle="This user may not exist or has been removed."
+        actions={[
+          {
+            label: "Go back",
+            onPress: () => router.back(),
+            variant: "primary",
+          },
+        ]}
+      />
     );
   }
 

@@ -1,20 +1,35 @@
-import * as ImagePicker from "expo-image-picker";
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
-  TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Button, Input, Text, TextArea } from "@/components/ui";
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
+import HobbySelector from "@/components/shared/ui/hobby-selector";
+import { Button, InfoInput, Text } from "@/components/ui";
+import { PageHeader } from "@/components/ui/PageHeader";
+import {
+  ADDRESS_SUGGESTIONS,
+  RELATIONSHIP_OPTIONS,
+} from "@/constants/editProfileOptions";
+import {
+  PRESET_HOBBIES,
+  PRESET_HOBBY_SET,
+  matchPresetHobby,
+} from "@/constants/hobbyCatalog";
 import { useAuth } from "@/context/AuthContext";
 import { Gender } from "@/dtos";
 import { userService } from "@/services/user.service";
 import { colors } from "@/styles/colors";
+import { authUserFromProfile } from "@/utils/authUserFromProfile";
+
+const GENDER_OPTIONS: { label: string; value: Gender }[] = [
+  { label: "Nam", value: Gender.MALE },
+  { label: "Nữ", value: Gender.FEMALE },
+];
 
 function toDateInputValue(iso?: string): string {
   if (!iso) return "";
@@ -26,36 +41,36 @@ function toDateInputValue(iso?: string): string {
 export default function EditProfileScreen() {
   const { profile, setProfile } = useAuth();
   const [name, setName] = useState("");
-  const [bio, setBio] = useState("");
+  const [relationship, setRelationship] = useState("");
+  const [presetHobbies, setPresetHobbies] = useState<string[]>([]);
+  const [work, setWork] = useState("");
+  const [currentAddress, setCurrentAddress] = useState("");
+  const [hometown, setHometown] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<Gender | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState<"avatar" | "background" | null>(
-    null
-  );
-
-  const syncAuthFromProfile = useCallback(
-    (u: Awaited<ReturnType<typeof userService.getCurrentUser>>) => {
-      setProfile({
-        id: u.id,
-        phoneNumber: u.phoneNumber,
-        name: u.name,
-        avatar: u.avatar,
-        role: u.role,
-        verified: u.verified,
-      });
-    },
-    [setProfile]
-  );
 
   const load = useCallback(async () => {
     try {
       const u = await userService.getCurrentUser();
       setName(u.name ?? "");
-      setBio(u.bio ?? "");
+      setRelationship(u.relationship ?? "");
+      const preset: string[] = [];
+      for (const h of u.hobby ?? []) {
+        const m = matchPresetHobby(h);
+        if (m && !preset.includes(m)) preset.push(m);
+      }
+      setPresetHobbies(preset);
+      setWork(u.work ?? "");
+      setCurrentAddress(u.currentAddress ?? "");
+      setHometown(u.hometown ?? "");
       setDateOfBirth(toDateInputValue(u.dateOfBirth));
-      setGender(u.gender);
+      setGender(
+        u.gender === Gender.MALE || u.gender === Gender.FEMALE
+          ? u.gender
+          : undefined
+      );
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Không tải được hồ sơ";
       Alert.alert("Lỗi", msg);
@@ -68,60 +83,10 @@ export default function EditProfileScreen() {
     load();
   }, [load]);
 
-  const pickImage = async (): Promise<ImagePicker.ImagePickerAsset | null> => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert("Quyền truy cập", "Cần quyền thư viện ảnh.");
-      return null;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.85,
-    });
-    if (result.canceled || !result.assets[0]) return null;
-    return result.assets[0];
-  };
-
-  const handleUploadAvatar = async () => {
-    const asset = await pickImage();
-    if (!asset) return;
-    setUploading("avatar");
-    try {
-      const updated = await userService.uploadAvatar({
-        uri: asset.uri,
-        fileName: asset.fileName ?? `avatar_${Date.now()}.jpg`,
-        mimeType: asset.mimeType ?? "image/jpeg",
-      });
-      syncAuthFromProfile(updated);
-      Alert.alert("Thành công", "Đã cập nhật ảnh đại diện.");
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Upload thất bại";
-      Alert.alert("Lỗi", msg);
-    } finally {
-      setUploading(null);
-    }
-  };
-
-  const handleUploadBackground = async () => {
-    const asset = await pickImage();
-    if (!asset) return;
-    setUploading("background");
-    try {
-      const updated = await userService.uploadBackground({
-        uri: asset.uri,
-        fileName: asset.fileName ?? `cover_${Date.now()}.jpg`,
-        mimeType: asset.mimeType ?? "image/jpeg",
-      });
-      syncAuthFromProfile(updated);
-      Alert.alert("Thành công", "Đã cập nhật ảnh bìa.");
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Upload thất bại";
-      Alert.alert("Lỗi", msg);
-    } finally {
-      setUploading(null);
-    }
+  const handleHobbyToggle = (hobby: string) => {
+    setPresetHobbies((prev) =>
+      prev.includes(hobby) ? prev.filter((h) => h !== hobby) : [...prev, hobby]
+    );
   };
 
   const handleSave = async () => {
@@ -129,6 +94,17 @@ export default function EditProfileScreen() {
     if (trimmed.length < 2) {
       Alert.alert("Lỗi", "Tên cần ít nhất 2 ký tự.");
       return;
+    }
+    if (!gender) {
+      Alert.alert("Lỗi", "Vui lòng chọn giới tính.");
+      return;
+    }
+    const hobbies = presetHobbies.filter((h) => PRESET_HOBBY_SET.has(h));
+    for (const h of hobbies) {
+      if (h.length > 100) {
+        Alert.alert("Lỗi", "Mỗi sở thích tối đa 100 ký tự.");
+        return;
+      }
     }
     let dobIso: string | undefined;
     if (dateOfBirth.trim()) {
@@ -143,11 +119,15 @@ export default function EditProfileScreen() {
     try {
       const updated = await userService.updateProfile({
         name: trimmed,
-        bio: bio.trim() || undefined,
+        relationship: relationship.trim(),
+        hobby: hobbies,
+        work: work.trim(),
+        currentAddress: currentAddress.trim(),
+        hometown: hometown.trim(),
         dateOfBirth: dobIso,
         gender,
       });
-      syncAuthFromProfile(updated);
+      setProfile(authUserFromProfile(updated));
       Alert.alert("Thành công", "Đã lưu hồ sơ.", [
         { text: "OK", onPress: () => router.back() },
       ]);
@@ -164,123 +144,102 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-background-light dark:bg-background-dark"
-      edges={["bottom"]}
-    >
-      <Stack.Screen
-        options={{
-          title: "Chỉnh sửa hồ sơ",
-          headerBackTitle: "Quay lại",
-        }}
-      />
-      {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.primary[100]} />
-        </View>
-      ) : (
-        <ScrollView
-          className="flex-1 px-4 pt-2"
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 32 }}
-        >
-          <View className="gap-3 mb-6">
-            <Button
-              variant="outline"
-              onPress={handleUploadAvatar}
-              loading={uploading === "avatar"}
-              disabled={uploading !== null}
-            >
-              Đổi ảnh đại diện
-            </Button>
-            <Button
-              variant="outline"
-              onPress={handleUploadBackground}
-              loading={uploading === "background"}
-              disabled={uploading !== null}
-            >
-              Đổi ảnh bìa
-            </Button>
+      <ScreenContainer className="gap-4">
+        <PageHeader title="Chỉnh sửa hồ sơ" />
+        {loading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator color={colors.primary[100]} />
           </View>
-
-          <View className="gap-4">
-            <View>
-              <Text variant="muted" className="mb-1">
-                Họ tên <Text className="text-red-500">*</Text>
-              </Text>
-              <Input
-                value={name}
-                onChangeText={setName}
-                placeholder="Tên hiển thị"
-                autoCapitalize="words"
-              />
-            </View>
-
-            <TextArea
-              label="Giới thiệu"
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Bio (tối đa 500 ký tự)"
-              rows={4}
+        ) : (
+          <ScrollView
+            className="flex-1"
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 32 }}
+          >
+            <View className="gap-2">
+            <InfoInput
+              label="Họ và tên"
+              required
+              value={name}
+              onChangeText={setName}
+              placeholder="Tên hiển thị"
+              autoCapitalize="words"
             />
 
-            <View>
-              <Text variant="muted" className="mb-1">
-                Ngày sinh (YYYY-MM-DD)
-              </Text>
-              <Input
-                value={dateOfBirth}
-                onChangeText={setDateOfBirth}
-                placeholder="1990-01-01"
-              />
-            </View>
+            <InfoInput
+              mode="select"
+              label="Giới tính"
+              required
+              value={gender ?? ""}
+              onValueChange={(v) => setGender(v as Gender)}
+              options={GENDER_OPTIONS.map((o) => ({
+                label: o.label,
+                value: String(o.value),
+              }))}
+              placeholder="Chọn giới tính"
+            />
 
-            <View>
-              <Text variant="muted" className="mb-2">
-                Giới tính
+            <InfoInput
+              mode="select"
+              label="Tình trạng mối quan hệ"
+              value={relationship}
+              onValueChange={setRelationship}
+              options={RELATIONSHIP_OPTIONS}
+              placeholder="Chọn..."
+            />
+
+            <InfoInput
+              label="Công việc"
+              value={work}
+              onChangeText={setWork}
+              placeholder="Nghề nghiệp / công ty"
+              maxLength={150}
+            />
+
+            <InfoInput
+              label="Nơi ở hiện tại"
+              value={currentAddress}
+              onChangeText={setCurrentAddress}
+              placeholder="Nhập địa chỉ hoặc chọn gợi ý"
+              maxLength={255}
+              suggestions={ADDRESS_SUGGESTIONS}
+              mapPickEnabled
+            />
+
+            <InfoInput
+              label="Quê quán"
+              value={hometown}
+              onChangeText={setHometown}
+              placeholder="Nhập hoặc chọn gợi ý"
+              maxLength={255}
+              suggestions={ADDRESS_SUGGESTIONS}
+              mapPickEnabled
+            />
+
+            <InfoInput
+              mode="date"
+              label="Ngày sinh"
+              value={dateOfBirth}
+              onValueChange={setDateOfBirth}
+            />
+
+            <View className="mt-4">
+              <Text variant="muted" className="mb-2 font-medium">
+                Sở thích
               </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {(
-                  [
-                    { v: Gender.MALE, label: "Nam" },
-                    { v: Gender.FEMALE, label: "Nữ" },
-                    { v: Gender.OTHER, label: "Khác" },
-                  ] as const
-                ).map(({ v, label }) => (
-                  <TouchableOpacity
-                    key={v}
-                    onPress={() => setGender(gender === v ? undefined : v)}
-                    className={`px-4 py-2 rounded-full border ${
-                      gender === v
-                        ? "bg-primary-100 border-primary-100"
-                        : "bg-input-light dark:bg-input-dark border-border-light dark:border-border-dark"
-                    }`}
-                  >
-                    <Text
-                      className={
-                        gender === v
-                          ? "text-primary-foreground-light font-semibold"
-                          : "text-text-light dark:text-text-dark"
-                      }
-                    >
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <HobbySelector
+                hobbies={PRESET_HOBBIES}
+                selectedHobbies={presetHobbies}
+                onToggle={handleHobbyToggle}
+              />
             </View>
           </View>
 
-          <Button
-            className="mt-8"
-            onPress={handleSave}
-            loading={saving}
-            disabled={uploading !== null}
-          >
+          <Button className="mt-8" onPress={handleSave} loading={saving}>
             Lưu thay đổi
           </Button>
-        </ScrollView>
-      )}
-    </SafeAreaView>
+          </ScrollView>
+        )}
+      </ScreenContainer>
   );
 }

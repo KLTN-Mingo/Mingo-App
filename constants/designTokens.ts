@@ -27,6 +27,7 @@ export const paletteLight = {
   700: "#F0F2F5",
 } as const;
 
+
 export const palettePrimary = {
   100: "#768D85",
 } as const;
@@ -38,10 +39,18 @@ export const colors = {
   light: { ...paletteLight },
 } as const;
 
+/** Nền khối UI (search, outline button, …) — light #F1F4F3 / dark #2D2F2F */
+export const componentBackground = {
+  light: "#F1F4F3",
+  dark: "#2D2F2F",
+} as const;
+
 export type SemanticColors = {
   background: string;
   surface: string;
   surfaceMuted: string;
+  /** Nền component (khớp `bg-component-light` / `dark:bg-component-dark`) */
+  componentBackground: string;
   input: string;
   text: string;
   textMuted: string;
@@ -58,6 +67,7 @@ export function getSemantic(scheme: ColorScheme): SemanticColors {
       background: paletteDark[500],
       surface: paletteDark[400],
       surfaceMuted: paletteDark[200],
+      componentBackground: componentBackground.dark,
       input: paletteDark[400],
       text: paletteDark[100],
       textMuted: paletteDark[300],
@@ -72,6 +82,7 @@ export function getSemantic(scheme: ColorScheme): SemanticColors {
     background: paletteLight[500],
     surface: paletteLight[500],
     surfaceMuted: paletteLight[200],
+    componentBackground: componentBackground.light,
     input: paletteLight[400],
     text: paletteLight[100],
     textMuted: paletteLight[300],
@@ -115,6 +126,7 @@ export const colorTable = {
   dark: {
     appBackground: paletteDark[500],
     cardSurface: paletteDark[400],
+    componentSurface: componentBackground.dark,
     surfaceMuted: paletteDark[200],
     textPrimary: paletteDark[100],
     textMuted: paletteDark[300],
@@ -124,6 +136,7 @@ export const colorTable = {
   light: {
     appBackground: paletteLight[500],
     card: paletteLight[500],
+    componentSurface: componentBackground.light,
     chipInactive: paletteLight[200],
     textPrimary: paletteLight[100],
     textMuted: paletteLight[300],

@@ -1,9 +1,14 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { format, isValid, parseISO } from "date-fns";
 import React from "react";
-import { Platform, StyleSheet, TouchableOpacity, View } from "react-native";
+import { View } from "react-native";
 
+import { ProfileHobbyChip } from "@/components/profile/ProfileHobbyChip";
+import {
+  HobbyIcon,
+} from "@/components/shared/icons/Icons";
 import { Text } from "@/components/ui";
+import { matchPresetHobby } from "@/constants/hobbyCatalog";
 import { Gender, UserProfileDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -23,44 +28,36 @@ function genderDisplay(g?: Gender): string | null {
   if (g === Gender.MALE) return "Nam";
   if (g === Gender.FEMALE) return "Nữ";
   if (g === Gender.OTHER) return "Khác";
+  if (g === Gender.PREFER_NOT_TO_SAY) return "Không tiết lộ";
   return null;
 }
 
 const ICON_GREY_LIGHT = "#9CA3AF";
 const ICON_GREY_DARK = "#A1A1AA";
 
-const cardShadow = StyleSheet.create({
-  wrap: Platform.select({
-    ios: {
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.07,
-      shadowRadius: 14,
-    },
-    android: { elevation: 3 },
-    default: {},
-  }),
-});
-
 function InfoRow({
   icon,
   children,
-  isLast,
 }: {
   icon: React.ReactNode;
   children: React.ReactNode;
-  isLast?: boolean;
 }) {
   return (
-    <View
-      className={`flex-row items-center py-[14px] ${
-        isLast ? "" : "S"
-      }`}
-    >
-      <View className="w-11 items-center justify-center">{icon}</View>
-      <View className="flex-1 min-w-0 pl-1">{children}</View>
+    <View className="flex-row items-center gap-3">
+      <View className="w-6 items-center justify-center">{icon}</View>
+      <View className="flex-1 min-w-0">{children}</View>
     </View>
   );
+}
+
+function genderIcon(g: Gender | undefined, color: string) {
+  if (g === Gender.FEMALE) {
+    return <Ionicons name="female-outline" size={22} color={color} />;
+  }
+  if (g === Gender.MALE) {
+    return <Ionicons name="male-outline" size={22} color={color} />;
+  }
+  return <Ionicons name="male-female-outline" size={22} color={color} />;
 }
 
 export function ProfileInfo({
@@ -74,29 +71,54 @@ export function ProfileInfo({
   const joined = formatIsoDateDisplay(user.createdAt);
   const gender = genderDisplay(user.gender);
   const email = user.email?.trim();
-  const phone = user.phoneNumber?.trim();
+  const relationship = user.relationship?.trim();
+  const work = user.work?.trim();
+  const currentAddress = user.currentAddress?.trim();
+  const hometown = user.hometown?.trim();
+  const location =
+    [...new Set([hometown, currentAddress].filter(Boolean))].join(", ") ||
+    null;
+
+  const hobbies = Array.from(
+    new Set(
+      (user.hobby ?? [])
+        .map((h) => matchPresetHobby(h))
+        .filter((x): x is string => x !== null)
+    )
+  );
 
   const rows: { key: string; icon: React.ReactNode; node: React.ReactNode }[] =
     [];
 
-  if (phone) {
+  if (location) {
     rows.push({
-      key: "phone",
-      icon: <Ionicons name="call-outline" size={22} color={iconColor} />,
+      key: "location",
+      icon: <Ionicons name="location-outline" size={22} color={iconColor} />,
       node: (
-        <Text className="text-[15px]">
-          {phone}
+        <Text className="text-4 text-text-light dark:text-text-dark">
+          {location}
         </Text>
       ),
     });
   }
-  if (email) {
+  if (work) {
     rows.push({
-      key: "email",
-      icon: <Ionicons name="mail-outline" size={22} color={iconColor} />,
+      key: "work",
+      icon: <Ionicons name="briefcase-outline" size={22} color={iconColor} />,
       node: (
-        <Text className="text-[15px]">
-          {email}
+        <Text className="text-4 text-text-light dark:text-text-dark">
+          {work}
+        </Text>
+      ),
+    });
+  }
+  if (relationship) {
+    rows.push({
+      key: "relationship",
+      icon: <Ionicons name="heart-outline" size={22} color={iconColor} />,
+      node: (
+        <Text className="text-4 text-text-light dark:text-text-dark">
+          {relationship}
         </Text>
       ),
     });
@@ -112,7 +134,7 @@ export function ProfileInfo({
         />
       ),
       node: (
-        <Text className="text-[15px]">
+        <Text className="text-4 text-text-light dark:text-text-dark">
           {dob}
         </Text>
       ),
@@ -121,10 +143,21 @@ export function ProfileInfo({
   if (gender) {
     rows.push({
       key: "gender",
-      icon: <Ionicons name="male-female-outline" size={22} color={iconColor} />,
+      icon: genderIcon(user.gender, iconColor),
       node: (
-        <Text className="text-[15px] text-neutral-800 dark:text-neutral-100">
+        <Text className="text-4 text-text-light dark:text-text-dark">
           {gender}
+        </Text>
+      ),
+    });
+  }
+  if (email) {
+    rows.push({
+      key: "email",
+      icon: <Ionicons name="mail-outline" size={22} color={iconColor} />,
+      node: (
+        <Text className="text-4 text-text-light dark:text-text-dark">
+          {email}
         </Text>
       ),
     });
@@ -134,56 +167,55 @@ export function ProfileInfo({
       key: "joined",
       icon: <Ionicons name="calendar-outline" size={22} color={iconColor} />,
       node: (
-        <Text className="text-[15px] text-neutral-800 dark:text-neutral-100">
-          Joined {joined}
+        <Text className="text-4 text-text-light dark:text-text-dark">
+          {joined}
         </Text>
       ),
     });
   }
 
-  return (
-    <View className="mt-6 px-4">
-      {/* Chỉ số — ngoài thẻ trắng (giống feed-style mockup) */}
-      <View className="flex-row items-center justify-between px-2 pb-5">
-        <TouchableOpacity className="flex-1 items-center py-1" activeOpacity={0.7}>
-          <Text className="text-[18px] font-montserrat-bold text-neutral-900 dark:text-neutral-100">
-            {user.postsCount}
-          </Text>
-          <Text className="text-[12px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Post
-          </Text>
-        </TouchableOpacity>
-        <View className="w-px h-8 bg-neutral-200 dark:bg-neutral-700" />
-        <TouchableOpacity className="flex-1 items-center py-1" activeOpacity={0.7}>
-          <Text className="text-[18px] font-montserrat-bold text-neutral-900 dark:text-neutral-100">
-            {user.followersCount}
-          </Text>
-          <Text className="text-[12px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Followers
-          </Text>
-        </TouchableOpacity>
-        <View className="w-px h-8 bg-neutral-200 dark:bg-neutral-700" />
-        <TouchableOpacity className="flex-1 items-center py-1" activeOpacity={0.7}>
-          <Text className="text-[18px] font-montserrat-bold text-neutral-900 dark:text-neutral-100">
-            {user.followingCount}
-          </Text>
-          <Text className="text-[12px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-            Following
-          </Text>
-        </TouchableOpacity>
-      </View>
+  const showInformationBlock = rows.length > 0 || hobbies.length > 0;
 
-      {rows.length > 0 ? (
-        <View
-          className="rounded-3xl bg-white dark:bg-neutral-900/90 px-3 border border-neutral-100 dark:border-neutral-800"
-          style={cardShadow.wrap}
-        >
-          {rows.map((r, i) => (
-            <InfoRow key={r.key} icon={r.icon} isLast={i === rows.length - 1}>
-              {r.node}
-            </InfoRow>
-          ))}
-        </View>
+  return (
+    <View className="">
+      {/* <View className="flex-row items-center justify-between gap-5 mb-6 bg-sheet-light dark:bg-sheet-dark rounded-[12px]">
+        <ProfileStatItem value={user.postsCount} label="Post" />
+        <ProfileStatItem value={user.followersCount} label="Followers" />
+        <ProfileStatItem value={user.followingCount} label="Following" />
+      </View> */}
+
+      {showInformationBlock ? (
+        <>
+        <Text className="text-4 font-semibold text-neutral-600 dark:text-neutral-300 mb-3">
+              Information
+            </Text>
+          <View className="rounded-2xl bg-sheet-light dark:bg-sheet-dark py-5 px-6 gap-4">
+            
+
+            {rows.length > 0 ? (
+              <View className="gap-4 ">
+                {rows.map((r) => (
+                  <InfoRow key={r.key} icon={r.icon}>
+                    {r.node}
+                  </InfoRow>
+                ))}
+              </View>
+            ) : null}
+
+            {hobbies.length > 0 ? (
+              <View className="gap-4 flex-row">
+                <HobbyIcon size={22} color={iconColor} />
+                <View className="flex-row flex-wrap gap-2">
+                  {hobbies.map((h) => (
+                    <ProfileHobbyChip key={h} label={h} />
+                  ))}
+                </View>
+              </View>
+            ) : null}
+          </View>
+        </>
+
+
       ) : null}
     </View>
   );

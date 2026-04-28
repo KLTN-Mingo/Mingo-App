@@ -42,11 +42,11 @@ export function ProfileHeader({
   }, [user.phoneNumber, user.email, user.verified]);
 
   return (
-    <View className="px-4 pt-1">
+    <View className="">
       <TouchableOpacity
         onPress={isOwnProfile ? onEditBackground : undefined}
         activeOpacity={isOwnProfile ? 0.88 : 1}
-        className="rounded-3xl overflow-hidden bg-neutral-200 dark:bg-primary-900/40"
+        className="rounded-3xl overflow-hidden flex-1 bg-background-light dark:bg-background-dark"
       >
         {user.backgroundUrl ? (
           <Image
@@ -57,7 +57,7 @@ export function ProfileHeader({
           />
         ) : (
           <View
-            className="w-full bg-neutral-200 dark:bg-neutral-800"
+            className="w-full bg-background-light dark:bg-background-dark"
             style={{ height: COVER_HEIGHT }}
           />
         )}
@@ -68,7 +68,7 @@ export function ProfileHeader({
         )}
       </TouchableOpacity>
 
-      <View className="flex-row items-end -mt-[52px]">
+      <View className="flex-row items-start -mt-[52px]">
         <TouchableOpacity
           onPress={isOwnProfile ? onEditAvatar : undefined}
           activeOpacity={isOwnProfile ? 0.88 : 1}
@@ -99,45 +99,26 @@ export function ProfileHeader({
           )}
         </TouchableOpacity>
 
-        <View className="flex-1 ml-3 mb-2 min-w-0 pb-0.5">
-          {/* {subtitleLine ? (
-            <Text
-              className="text-[13px] text-neutral-500 dark:text-neutral-400 leading-4"
-              numberOfLines={1}
-            >
-              {subtitleLine}
-            </Text>
-          ) : null}
-          <View className="flex-row items-center flex-wrap gap-1 mt-0.5">
-            <Text
-              className="text-text-light dark:text-text-dark font-montserrat-bold text-[19px] leading-6 flex-shrink"
-              numberOfLines={2}
-            >
-              {user.name || "—"}
-            </Text>
-            {user.verified ? (
-              <CircleTickIcon size={20} color={colors.primary[100]} />
-            ) : null}
-          </View> */}
+        <View className="flex-1 ml-3 min-w-0" style={{ paddingTop: 70 }}>
           <TouchableOpacity
-        onPress={isOwnProfile ? onEditBio : undefined}
-        activeOpacity={isOwnProfile ? 0.75 : 1}
-        className="mt-5"
-      >
-        {user.bio ? (
-          <Text className="text-[14px] leading-[22px] text-neutral-700 dark:text-neutral-300">
-            {user.bio}
-          </Text>
-        ) : isOwnProfile ? (
-          <Text className="text-[14px] text-neutral-400 dark:text-neutral-500 italic">
-            Thêm giới thiệu...
-          </Text>
-        ) : null}
-      </TouchableOpacity>
+            onPress={isOwnProfile ? onEditBio : undefined}
+            activeOpacity={isOwnProfile ? 0.75 : 1}
+            className="rounded-2xl bg-sheet-light dark:bg-sheet-dark py-5 px-6"
+          >
+            {user.bio ? (
+              <Text className="text-[14px] leading-[22px] text-text-light dark:text-text-dark">
+                {user.bio}
+              </Text>
+            ) : isOwnProfile ? (
+              <Text className="text-[14px] text-text-light dark:text-text-dark italic">
+                Thêm giới thiệu...
+              </Text>
+            ) : null}
+          </TouchableOpacity>
         </View>
       </View>
 
-      
+
     </View>
   );
 }

@@ -9,8 +9,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChatListItem } from "@/components/chat";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { ArrowIcon } from "@/components/shared/icons/Icons";
-import { Input, Text } from "@/components/ui";
+import { ActionInput, Text } from "@/components/ui";
 import { useChatList } from "@/hooks/use-chat-list";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { colors, getSemantic } from "@/styles/colors";
@@ -87,7 +88,8 @@ export default function ChatListScreen() {
             }}
           >
             <View style={{ flex: 1 }}>
-              <Input
+              <ActionInput
+                surface="component"
                 placeholder="Search"
                 value={searchText}
                 onChangeText={handleSearchChange}
@@ -110,9 +112,7 @@ export default function ChatListScreen() {
             }}
             style={{ flex: 1, backgroundColor: semantic.surface }}
             ListEmptyComponent={
-              <View className="py-12 items-center">
-                <Text variant="muted">No conversations yet</Text>
-              </View>
+              <EmptyState title="No conversations yet" />
             }
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

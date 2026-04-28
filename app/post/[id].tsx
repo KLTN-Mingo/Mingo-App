@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PostCard } from "@/components/post/PostCard";
 import { ArrowIcon, LikeIcon, SendIcon } from "@/components/shared/icons/Icons";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { Avatar, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { CommentResponseDto, PostResponseDto, UserMinimalDto } from "@/dtos";
@@ -110,9 +111,9 @@ export default function PostDetailScreen() {
     );
     try {
       if (newIsLiked) {
-        await commentService.likeComment(id!, comment.id);
+        await commentService.likeComment(comment.id);
       } else {
-        await commentService.unlikeComment(id!, comment.id);
+        await commentService.unlikeComment(comment.id);
       }
     } catch {
       // revert
@@ -134,71 +135,83 @@ export default function PostDetailScreen() {
     if (!profile) return;
 
     if (p.userId === profile.id) {
-      Alert.alert("Bài viết của bạn", undefined, [
+      Alert.alert("Your post", undefined, [
         {
-          text: "Chỉnh sửa",
+          text: "Edit",
           onPress: () =>
             router.push({ pathname: "/create-post", params: { id: p.id } } as any),
         },
         {
-          text: "Xóa",
+          text: "Delete",
           style: "destructive",
           onPress: () => {
-            Alert.alert("Xóa bài viết?", "Hành động này không hoàn tác.", [
-              { text: "Hủy", style: "cancel" },
+            Alert.alert("Delete post?", "This action cannot be undone.", [
+              { text: "Cancel", style: "cancel" },
               {
-                text: "Xóa",
+                text: "Delete",
                 style: "destructive",
                 onPress: async () => {
                   try {
                     await postService.deletePost(p.id);
                     router.back();
                   } catch (e: unknown) {
-                    const msg = e instanceof Error ? e.message : "Không xóa được";
-                    Alert.alert("Lỗi", msg);
+                    const msg = e instanceof Error ? e.message : "Cannot delete";
+                    Alert.alert("Error", msg);
                   }
                 },
               },
             ]);
           },
         },
-        { text: "Đóng", style: "cancel" },
+        { text: "Close", style: "cancel" },
       ]);
       return;
     }
 
-    Alert.alert("Bài viết", undefined, [
+    Alert.alert("Post", undefined, [
       {
-        text: "Không quan tâm",
+        text: "Hide post",
+        onPress: async () => {
+          try {
+            await postService.submitFeedFeedback(p.id, "hide");
+            router.back();
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
+          }
+        },
+      },
+      {
+        text: "Not interested",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(p.id, "not_interested");
             router.back();
           } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Không gửi được phản hồi";
-            Alert.alert("Lỗi", msg);
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
           }
         },
       },
       {
-        text: "Muốn xem thêm tương tự",
+        text: "See more like this",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(p.id, "see_more");
           } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Không gửi được phản hồi";
-            Alert.alert("Lỗi", msg);
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
           }
         },
       },
-      { text: "Hủy", style: "cancel" },
+      { text: "Cancel", style: "cancel" },
     ]);
   };
 
   const handleDeleteComment = async (comment: CommentResponseDto) => {
     if (!id) return;
     try {
-      await commentService.deleteComment(id, comment.id);
+      await commentService.deleteComment(comment.id);
       setComments((prev) => prev.filter((c) => c.id !== comment.id));
       setPost((prev) =>
         prev ? { ...prev, commentsCount: Math.max(0, prev.commentsCount - 1) } : prev
@@ -250,77 +263,71 @@ export default function PostDetailScreen() {
   const renderComment = ({ item }: { item: CommentResponseDto }) => {
     const isEditing = editingCommentId === item.id;
     return (
-      <View className="flex-row px-4 py-3">
+      <View className="px-4 py-2.5 flex-row">
         <Avatar
           source={item.user?.avatar ? { uri: item.user.avatar } : undefined}
           fallback={item.user?.name}
           size="sm"
         />
-        <View className="ml-3 flex-1">
-          <View className="rounded-2xl bg-surface-dark px-3 py-2">
-            <Text className="font-semibold text-sm text-text-dark">
+        <View className="ml-2.5 flex-1 pr-8">
+          {/* Row: username · time · heart */}
+          <View className="flex-row items-center gap-1.5 mb-1">
+            <Text className="font-semibold text-sm text-text-dark leading-tight">
               {item.user?.name || "Unknown"}
             </Text>
-            {isEditing ? (
-              <TextInput
-                value={editCommentDraft}
-                onChangeText={setEditCommentDraft}
-                className="text-sm mt-1 text-text-dark border border-border-dark rounded-lg px-2 py-1.5"
-                multiline
-                maxLength={500}
-                placeholderTextColor={colors.dark[300]}
-              />
-            ) : (
-              <Text className="text-sm mt-0.5 text-text-dark">{item.contentText}</Text>
-            )}
-          </View>
-          <View className="flex-row flex-wrap items-center mt-1 gap-x-4 gap-y-1 ml-1">
-            <Text variant="muted" className="text-xs">
+            <Text variant="muted" className="text-xs leading-tight">·</Text>
+          <Text variant="muted" className="text-xs leading-tight flex-1">
               {formatTime(item.createdAt)}
             </Text>
-            {!isEditing && (
-              <TouchableOpacity
-                onPress={() => handleLikeComment(item)}
-                className="flex-row items-center gap-1"
-              >
-                <LikeIcon
-                  size={13}
-                  color={item.isLiked ? statusColors.error.dark : colors.dark[300]}
-                />
-                {item.likesCount > 0 && (
-                  <Text variant="muted" className="text-xs">
-                    {item.likesCount}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            )}
-            {currentUser?.id && item.userId === currentUser.id && !isEditing && (
-              <>
-                <TouchableOpacity onPress={() => handleStartEditComment(item)}>
-                  <Text variant="muted" className="text-xs text-primary-100">
-                    Sửa
-                  </Text>
-                </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleLikeComment(item)}>
+              <LikeIcon
+                size={13}
+                color={item.isLiked ? statusColors.error.dark : colors.dark[300]}
+              />
+            </TouchableOpacity>
+          </View>
+          {/* Comment text */}
+          {isEditing ? (
+            <TextInput
+              value={editCommentDraft}
+              onChangeText={setEditCommentDraft}
+              className="text-sm text-text-dark border border-border-dark rounded-lg px-2 py-1.5 mb-1"
+              multiline
+              maxLength={500}
+              placeholderTextColor={colors.dark[300]}
+            />
+          ) : (
+            <Text className="text-sm text-text-dark leading-relaxed">
+              {item.contentText}
+            </Text>
+          )}
+          {/* Action row */}
+          {!isEditing && (
+            <View className="flex-row items-center gap-4 mt-1.5">
+              {item.likesCount > 0 && (
+                <Text variant="muted" className="text-xs text-red-400 leading-tight">
+                  {item.likesCount} lượt thích
+                </Text>
+              )}
+              {currentUser?.id && item.userId === currentUser.id && (
                 <TouchableOpacity onPress={() => handleDeleteComment(item)}>
-                  <Text variant="muted" className="text-xs text-red-400">
+                  <Text variant="muted" className="text-xs text-red-400 leading-tight">
                     Xóa
                   </Text>
                 </TouchableOpacity>
-              </>
-            )}
-            {isEditing && (
-              <View className="flex-row gap-3">
-                <TouchableOpacity onPress={() => handleSaveEditComment(item.id)}>
-                  <Text className="text-xs font-semibold text-primary-100">Lưu</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleCancelEditComment}>
-                  <Text variant="muted" className="text-xs">
-                    Hủy
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
+              )}
+            </View>
+          )}
+          {isEditing && (
+            <View className="flex-row gap-4 mt-1">
+              <TouchableOpacity onPress={() => handleSaveEditComment(item.id)}>
+                <Text className="text-xs font-semibold text-primary-100 leading-tight">Lưu</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleCancelEditComment}>
+                <Text variant="muted" className="text-xs leading-tight">Hủy</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
     );
@@ -370,7 +377,7 @@ export default function PostDetailScreen() {
           <Text className="font-semibold text-text-dark">
             {post.commentsCount > 0
               ? `${post.commentsCount} bình luận`
-              : "Chưa có bình luận"}
+              : "No comments yet"}
           </Text>
         </View>
       </>
@@ -384,10 +391,10 @@ export default function PostDetailScreen() {
     >
       {/* Header */}
       <View className="flex-row items-center px-4 py-3 bg-surface-dark border-b border-border-dark">
-        <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
+        <TouchableOpacity onPress={() => router.replace("/(tabs)/home" as any)} className="mr-3 p-1">
           <ArrowIcon size={22} color={colors.dark[100]} />
         </TouchableOpacity>
-        <Text className="font-semibold text-lg text-text-dark">Bài viết</Text>
+        <Text className="font-semibold text-lg text-text-dark">Post</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -406,7 +413,9 @@ export default function PostDetailScreen() {
               <View className="py-8 items-center">
                 <ActivityIndicator color={colors.primary[100]} />
               </View>
-            ) : null
+            ) : (
+              <EmptyState title="No comments yet" />
+            )
           }
           contentContainerStyle={{ paddingBottom: 16 }}
         />

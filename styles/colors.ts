@@ -3,16 +3,17 @@
  * Nguồn chuẩn: constants/designTokens.ts
  */
 export {
-  BORDER_DEFAULT,
-  colors,
-  getSemantic,
-  getStatusColor,
-  paletteDark,
-  paletteLight,
-  statusColors,
+    BORDER_DEFAULT,
+    colors,
+    getSemantic,
+    getStatusColor,
+    paletteDark,
+    paletteLight,
+    statusColors
 } from "@/constants/designTokens";
 export type {
-  ColorScheme,
-  SemanticColors,
-  StatusColorKind,
+    ColorScheme,
+    SemanticColors,
+    StatusColorKind
 } from "@/constants/designTokens";
+
