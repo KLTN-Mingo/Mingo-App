@@ -12,7 +12,6 @@ import {
 } from "react-native";
 
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
-import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { CommentModal } from "@/components/post/CommentModal";
 import { PostCard } from "@/components/post/PostCard";
 import { ProfileBioEditModal } from "@/components/profile/ProfileBioEditModal";
@@ -24,6 +23,7 @@ import {
   VideoIcon,
 } from "@/components/shared/icons/Icons";
 import { EmptyStateScreen } from "@/components/shared/ui/empty-state-screen";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { ProfileSkeleton } from "@/components/skeleton";
 import { Button, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
@@ -33,7 +33,7 @@ import { PostResponseDto, UserMinimalDto, UserProfileDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { postService } from "@/services/post.service";
 import { userService } from "@/services/user.service";
-import { colors, getSemantic, getStatusColor } from "@/styles/colors";
+import { colors, getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
 import { authUserFromProfile } from "@/utils/authUserFromProfile";
 import { pickProfileImage } from "@/utils/profileMediaPicker";
 
@@ -339,7 +339,7 @@ export default function ProfileScreen() {
                 />
                 <View className="absolute inset-0 items-center justify-center">
                   <View className="bg-black/50 rounded-full p-2">
-                    <VideoIcon size={20} color={colors.light[400]} />
+                    <VideoIcon size={20} color={paletteIcon.light} />
                   </View>
                 </View>
               </TouchableOpacity>
@@ -400,8 +400,8 @@ export default function ProfileScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={[colors.primary[100]]}
-              tintColor={colors.primary[100]}
+              colors={[colors.primary.light]}
+              tintColor={colors.primary.light}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -425,7 +425,8 @@ export default function ProfileScreen() {
         {/* Name and menu */}
         <View className="flex-row items-center justify-between">
           <Text
-            className="text-7 text-text-light dark:text-text-dark font-bold flex-1 mr-2"
+            style={{ fontFamily: 'Montserrat-Bold', fontSize: 18 }}
+            className="text-text-light dark:text-text-dark flex-1 mr-2"
             numberOfLines={1}
           >
             {userProfile.name || "Profile"}
@@ -454,7 +455,7 @@ export default function ProfileScreen() {
         <View className="relative">
           {(uploadAvatarBusy || uploadBackgroundBusy) && (
             <View className="absolute inset-0 z-10 rounded-3xl bg-black/25 items-center justify-center pointer-events-none">
-              <ActivityIndicator size="large" color={colors.light[400]} />
+              <ActivityIndicator size="large" color={paletteIcon.light} />
             </View>
           )}
           <ProfileHeader

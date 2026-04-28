@@ -8,41 +8,45 @@ interface AvatarProps {
   fallback?: string;
   size?: AvatarSize;
   className?: string;
+  online?: boolean;
 }
 
 const sizeClasses: Record<AvatarSize, string> = {
   sm: 'w-8 h-8',
-  md: 'w-12 h-12',
-  lg: 'w-16 h-16',
-  xl: 'w-24 h-24',
+  md: 'w-10 h-10',
+  lg: 'w-12 h-12',
+  xl: 'w-20 h-20',
 };
 
 const textSizeClasses: Record<AvatarSize, string> = {
   sm: 'text-xs',
-  md: 'text-base',
-  lg: 'text-xl',
-  xl: 'text-3xl',
+  md: 'text-sm',
+  lg: 'text-base',
+  xl: 'text-2xl',
 };
 
-export function Avatar({ source, fallback, size = 'md', className = '' }: AvatarProps) {
-  if (source) {
-    return (
-      <Image
-        source={source}
-        className={`rounded-full ${sizeClasses[size]} ${className}`}
-      />
-    );
-  }
-
+export function Avatar({ source, fallback, size = 'md', className = '', online }: AvatarProps) {
   return (
-    <View
-      className={`rounded-full bg-primary-100 items-center justify-center ${sizeClasses[size]} ${className}`}
-    >
-      <Text
-        className={`font-bold text-primary-foreground-light dark:text-primary-foreground-dark ${textSizeClasses[size]}`}
-      >
-        {fallback?.charAt(0).toUpperCase() || '?'}
-      </Text>
+    <View className="relative">
+      {source ? (
+        <Image
+          source={source}
+          className={`rounded-full ${sizeClasses[size]} ${className}`}
+        />
+      ) : (
+        <View
+          className={`rounded-full bg-primary items-center justify-center ${sizeClasses[size]} ${className}`}
+        >
+          <Text
+            className={`font-bold text-white ${textSizeClasses[size]}`}
+          >
+            {fallback?.charAt(0).toUpperCase() || '?'}
+          </Text>
+        </View>
+      )}
+      {online && (
+        <View className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-online border-2 border-background-light dark:border-background-dark" />
+      )}
     </View>
   );
 }

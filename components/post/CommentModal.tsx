@@ -188,7 +188,7 @@
 //                 name={item.isLiked ? "heart.fill" : "heart"}
 //                 size={13}
 //                 color={
-//                   item.isLiked ? statusColors.error.dark : colors.dark[300]
+//                   item.isLiked ? statusColors.error.dark : iconMutedColor
 //                 }
 //               />
 //             </TouchableOpacity>
@@ -201,7 +201,7 @@
 //               className="text-sm text-text-dark border border-border-dark rounded-lg px-2 py-1.5 mb-1"
 //               multiline
 //               maxLength={500}
-//               placeholderTextColor={colors.dark[300]}
+//               placeholderTextColor={iconMutedColor}
 //             />
 //           ) : (
 //             <Text className="text-sm text-text-dark leading-relaxed">
@@ -278,7 +278,7 @@
 //                   <Icon
 //                     name="bubble.left"
 //                     size={40}
-//                     color={colors.dark[300]}
+//                     color={iconMutedColor}
 //                   />
 //                   <Text variant="muted" className="mt-3">
 //                     Chưa có bình luận nào
@@ -301,7 +301,7 @@
 //               value={commentText}
 //               onChangeText={setCommentText}
 //               placeholder="Viết bình luận..."
-//               placeholderTextColor={colors.dark[300]}
+//               placeholderTextColor={iconMutedColor}
 //               className="flex-1 bg-surface-dark rounded-full px-4 py-2.5 text-base font-regular text-text-dark"
 //               multiline
 //               maxLength={500}
@@ -346,9 +346,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Avatar, Icon, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import { CommentResponseDto } from "@/dtos";
 import { commentService } from "@/services/comment.service";
-import { BORDER_DEFAULT, colors, statusColors } from "@/styles/colors";
+import { BORDER_DEFAULT, colors, paletteIcon, statusColors } from "@/styles/colors";
 
 interface CommentWithReplies extends CommentResponseDto {
   replies?: CommentResponseDto[];
@@ -367,6 +368,9 @@ export function CommentModal({
   onCommentCountChange,
 }: CommentModalProps) {
   const { profile } = useAuth();
+  const { colorScheme } = useTheme();
+  const iconMutedColor = paletteIcon[colorScheme];
+
   const [comments, setComments] = useState<CommentWithReplies[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -601,7 +605,7 @@ export function CommentModal({
             </Text>
             {mentionName && (
               <>
-                <Icon name="chevron.right" size={10} color={colors.dark[400]} />
+                <Icon name="chevron.right" size={10} color={iconMutedColor} />
                 <Text className="font-semibold text-sm text-text-light leading-tight">
                   {mentionName}
                 </Text>
@@ -617,7 +621,7 @@ export function CommentModal({
               className="text-sm text-text-light border border-border-light rounded-2xl px-3 py-2 mb-1 bg-surface-muted-light"
               multiline
               maxLength={500}
-              placeholderTextColor={colors.dark[300]}
+              placeholderTextColor={iconMutedColor}
             />
           ) : (
             <View className="bg-surface-muted-light rounded-2xl px-3 py-2 self-start max-w-full mb-1">
@@ -679,7 +683,7 @@ export function CommentModal({
           <Icon
             name={item.isLiked ? "heart.fill" : "heart"}
             size={14}
-            color={item.isLiked ? statusColors.error.dark : colors.dark[300]}
+            color={item.isLiked ? statusColors.error.dark : iconMutedColor}
           />
         </TouchableOpacity>
       </View>
@@ -731,7 +735,7 @@ export function CommentModal({
         <View className="flex-row items-center justify-between px-4 py-3 bg-background-light border-b border-border-light">
           <Text className="font-semibold text-base text-text-light">Bình luận</Text>
           <TouchableOpacity onPress={onClose} className="p-1">
-            <Icon name="xmark" size={20} color={colors.dark[400]} />
+            <Icon name="xmark" size={20} color={iconMutedColor} />
           </TouchableOpacity>
         </View>
 
@@ -751,7 +755,7 @@ export function CommentModal({
               renderItem={renderComment}
               ListEmptyComponent={
                 <View className="flex-1 items-center justify-center py-20">
-                  <Icon name="bubble.left" size={40} color={colors.dark[300]} />
+                  <Icon name="bubble.left" size={40} color={iconMutedColor} />
                   <Text variant="muted" className="mt-3">
                     Chưa có bình luận nào
                   </Text>
@@ -768,7 +772,7 @@ export function CommentModal({
                 Đang trả lời <Text className="font-semibold text-text-light">{replyingTo.name}</Text>
               </Text>
               <TouchableOpacity onPress={() => setReplyingTo(null)}>
-                <Icon name="xmark" size={14} color={colors.dark[300]} />
+                <Icon name="xmark" size={14} color={iconMutedColor} />
               </TouchableOpacity>
             </View>
           )}
@@ -785,7 +789,7 @@ export function CommentModal({
               value={commentText}
               onChangeText={setCommentText}
               placeholder="Write comment..."
-              placeholderTextColor={colors.dark[300]}
+              placeholderTextColor={iconMutedColor}
               className="flex-1 bg-surface-muted-light rounded-full px-4 py-2.5 text-sm font-regular text-text-light"
               multiline
               maxLength={500}

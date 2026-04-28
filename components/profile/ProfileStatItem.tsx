@@ -14,7 +14,7 @@ export function ProfileStatItem({
 }: ProfileStatItemProps) {
   const inner = (
     <>
-      <Text className="text-[18px] font-montserrat-bold text-text-light dark:text-text-dark">
+      <Text className="text-[18px] font-bold text-text-light dark:text-text-dark">
         {value}
       </Text>
       <Text className="text-[12px] text-text-light dark:text-text-dark mt-0.5">

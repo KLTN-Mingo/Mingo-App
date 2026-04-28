@@ -50,7 +50,7 @@ const TabSelector: React.FC<TabSelectorProps> = ({
                   borderBottomColor: isActive ? textColor : "transparent",
                 },
               ]}
-              className="font-mmedium text-[18px]"
+              className="font-medium text-[18px]"
             >
               {tab.label}
             </Text>
@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
   },
   label: {
     paddingBottom: 2,
+    fontFamily: "Montserrat-Medium",
   },
 });
 

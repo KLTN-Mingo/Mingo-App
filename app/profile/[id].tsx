@@ -160,7 +160,7 @@ export default function UserProfileDetailScreen() {
             <Ionicons name="arrow-back" size={24} color={semantic.text} />
           </TouchableOpacity>
           <Text
-            className="text-[22px] text-neutral-900 dark:text-neutral-100 font-montserrat-bold flex-1 ml-1"
+            className="text-[22px] text-neutral-900 dark:text-neutral-100 font-bold flex-1 ml-1"
             numberOfLines={1}
           >
             {user.name || "Profile"}

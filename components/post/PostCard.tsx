@@ -13,7 +13,7 @@ import {
 import { Avatar, Text } from "@/components/ui";
 import { PostResponseDto, UserMinimalDto } from "@/dtos";
 import { postService } from "@/services/post.service";
-import { colors, statusColors } from "@/styles/colors";
+import { paletteIcon, colors, statusColors } from "@/styles/colors";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -38,11 +38,11 @@ export function PostCard({
   onUserPress,
   onMorePress,
 }: PostCardProps) {
-  const isDark = useColorScheme() === "dark";
+  const colorScheme = useColorScheme() ?? 'light';
 
   const theme = {
-    icon: isDark ? colors.dark[100] : colors.light[100],
-    iconMuted: isDark ? colors.dark[300] : colors.light[300],
+    icon: paletteIcon[colorScheme],
+    iconMuted: paletteIcon.lightMuted,
   };
 
   const [isLiked, setIsLiked] = useState(post.isLiked ?? false);

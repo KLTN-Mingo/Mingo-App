@@ -1,6 +1,8 @@
 import React from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { twMerge } from 'tailwind-merge';
+import { paletteIcon } from '@/styles/colors';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 interface IconButtonProps {
   icon: React.ReactNode;
@@ -20,6 +22,9 @@ export function IconButton({
   loading = false,
   disabled = false,
 }: IconButtonProps) {
+  const colorScheme = useColorScheme() ?? 'light';
+  const loadingColor = paletteIcon[colorScheme];
+
   return (
     <TouchableOpacity
       className={twMerge(
@@ -31,7 +36,7 @@ export function IconButton({
       activeOpacity={0.7}
     >
       {loading ? (
-        <ActivityIndicator size="small" color="#768D85" />
+        <ActivityIndicator size="small" color={loadingColor} />
       ) : (
         <View className={iconClassName}>{icon}</View>
       )}

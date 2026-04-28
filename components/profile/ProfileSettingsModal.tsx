@@ -14,7 +14,7 @@ import {
   SunIcon,
 } from "@/components/shared/icons/Icons";
 import { Text } from "@/components/ui";
-import { colors } from "@/styles/colors";
+import { colors, getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
 
 export type ProfileSettingsModalProps = {
   visible: boolean;
@@ -69,7 +69,8 @@ export function ProfileSettingsModal({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  const textColor = isDark ? colors.dark[100] : colors.light[100];
+  const iconColor = isDark ? paletteIcon.dark : paletteIcon.light;
+  const textColor = isDark ? colors.dark.textPrimary : colors.light.textPrimary;
   const isDarkMode = themeToggleLabel.includes("Dark");
 
   return (
@@ -92,44 +93,44 @@ export function ProfileSettingsModal({
 
         <View className="">
           <MenuItem
-            icon={<PenIcon size={22} color={textColor} />}
+            icon={<PenIcon size={22} color={iconColor} />}
             label="Chỉnh sửa trang cá nhân"
             onPress={onEditProfile}
-            iconColor={textColor}
+            iconColor={iconColor}
           />
 
           <MenuItem
-            icon={<SaveIcon size={22} color={textColor} />}
+            icon={<SaveIcon size={22} color={iconColor} />}
             label="Khu lưu trữ"
             onPress={onOpenSavedPosts}
-            iconColor={textColor}
+            iconColor={iconColor}
           />
 
           <MenuItem
-            icon={<ActivityIcon size={22} color={textColor} />}
+            icon={<ActivityIcon size={22} color={iconColor} />}
             label="Hoạt động"
             onPress={() => {}}
-            iconColor={textColor}
+            iconColor={iconColor}
           />
 
           <MenuItem
-            icon={<LockIcon size={22} color={textColor} />}
+            icon={<LockIcon size={22} color={iconColor} />}
             label="Đổi mật khẩu"
             onPress={onOpenAccountSettings}
-            iconColor={textColor}
+            iconColor={iconColor}
           />
 
           <MenuItem
             icon={
               isDarkMode ? (
-                <SunIcon size={22} color={textColor} />
+                <SunIcon size={22} color={iconColor} />
               ) : (
-                <MoonIcon size={22} color={textColor} />
+                <MoonIcon size={22} color={iconColor} />
               )
             }
             label={themeToggleLabel}
             onPress={onToggleTheme}
-            iconColor={textColor}
+            iconColor={iconColor}
           />
 
           <View className="mt-6">

@@ -28,7 +28,7 @@ import {
   View,
 } from "react-native";
 
-import { colors, getSemantic, getStatusColor } from "@/styles/colors";
+import { colors, getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
 
 interface InfoChatProps {
   visible: boolean;
@@ -52,7 +52,6 @@ export function InfoChat({
   const otherUserId =
     conversation?.participantIds?.find((pid) => pid !== currentUserId) ??
     conversation?.participants?.find((p) => p.id !== currentUserId)?.id;
-  const isDark = colorScheme === "dark";
   const semantic = getSemantic(colorScheme);
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [images, setImages] = useState<FileResponse[]>([]);
@@ -61,7 +60,7 @@ export function InfoChat({
 
   const textColor = semantic.text;
   const bgColor = semantic.background;
-  const iconColor = isDark ? colors.light[400] : semantic.textMuted;
+  const iconColor = paletteIcon.lightMuted;
   const surfaceColor = semantic.surfaceMuted;
 
   const isGroup = conversation?.type === ConversationType.GROUP;

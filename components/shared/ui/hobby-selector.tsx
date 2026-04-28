@@ -1,7 +1,7 @@
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
-import { colors } from "@/styles/colors";
+import { colors, paletteIcon } from "@/styles/colors";
 import { resolveHobbyIcon } from "@/constants/hobbyCatalog";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -24,9 +24,7 @@ const HobbySelector: React.FC<HobbySelectorProps> = ({
         const isSelected = selectedHobbies.includes(hobby);
         const Icon = resolveHobbyIcon(hobby);
         if (!Icon) return null;
-        const mutedIcon =
-          colorScheme === "dark" ? colors.dark[100] : colors.light[100];
-        const iconColor = isSelected ? "#FFFFFF" : mutedIcon;
+        const iconColor = isSelected ? "#FFFFFF" : paletteIcon[colorScheme];
 
         return (
           <TouchableOpacity

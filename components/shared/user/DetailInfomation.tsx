@@ -12,7 +12,7 @@ import {
 } from "@/components/shared/icons/Icons";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import { colors } from "@/styles/colors";
+import { colors, paletteIcon } from "@/styles/colors";
 import React, { useEffect, useState } from "react";
 import { Modal, Text, TouchableOpacity, View } from "react-native";
 // import UpdateInformation from "../../forms/setting/UpdateInformation";
@@ -28,7 +28,7 @@ const DetailRow = ({
 }) => (
   <View className="flex-row items-center space-x-3 mb-4">
     <Icon size={24} color={color} />
-    <Text className="text-[16px] font-mregular" style={{ color }}>
+    <Text className="text-[16px] font-regular" style={{ color }}>
       {value}
     </Text>
   </View>
@@ -39,8 +39,7 @@ const DetailInformation = ({ profileUser, setProfileUser }: any) => {
   const [isMe, setIsMe] = useState(false);
   const { profile } = useAuth();
   const { colorScheme } = useTheme();
-  const iconColor =
-    colorScheme === "dark" ? colors.dark[100] : colors.light[100];
+  const iconColor = paletteIcon[colorScheme];
 
   useEffect(() => {
     if (profile?._id && profile?._id === profileUser?._id) {
@@ -62,7 +61,7 @@ const DetailInformation = ({ profileUser, setProfileUser }: any) => {
   return (
     <View>
       <Text
-        className="mb-3 text-[16px] font-msemibold"
+        className="mb-3 text-[16px] font-semibold"
         style={{ color: textColor }}
       >
         Information
@@ -147,7 +146,7 @@ const DetailInformation = ({ profileUser, setProfileUser }: any) => {
                           ? colors.dark[100]
                           : colors.light[100],
                     }}
-                    className="font-mmedium text-4"
+                    className="font-medium text-sm"
                   >
                     {hobby}
                   </Text>
@@ -167,7 +166,7 @@ const DetailInformation = ({ profileUser, setProfileUser }: any) => {
               className="ml-auto py-3 px-3 rounded-full"
               onPress={() => setShowEdit(true)}
             >
-              <PenIcon size={18} color={colors.primary[100]} />
+              <PenIcon size={18} color={iconColor} />
             </TouchableOpacity>
           )}
         </View>

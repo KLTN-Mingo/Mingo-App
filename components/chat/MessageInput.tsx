@@ -23,7 +23,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { pickDocument } from "@/lib/utils/document-picker";
 import { pickFromCamera, pickMedia } from "@/lib/utils/gallery-picker";
 
-import { BORDER_DEFAULT, getSemantic, getStatusColor } from "@/styles/colors";
+import { BORDER_DEFAULT, getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
 
 function hexToRgba(hex: string, alpha: number): string {
   const clean = hex.replace("#", "");
@@ -74,8 +74,7 @@ export function MessageInput({
   const colorScheme = useColorScheme() ?? "light";
   const semantic = getSemantic(colorScheme);
   const errorColor = getStatusColor(colorScheme, "error");
-  const iconColor =
-    colorScheme === "dark" ? semantic.text : semantic.textMuted;
+  const iconColor = paletteIcon[colorScheme];
   const placeholderColor = semantic.placeholder;
   const recordingBadgeBg = hexToRgba(errorColor, 0.1);
 
@@ -492,6 +491,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
+    fontFamily: "Montserrat-Regular",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 9999,
@@ -508,10 +508,12 @@ const styles = StyleSheet.create({
   },
   recordingDot: {
     fontSize: 10,
+    fontFamily: "Montserrat-Regular",
   },
   recordingText: {
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: "Montserrat-SemiBold",
   },
   recordingActionBtn: {
     paddingHorizontal: 14,
@@ -521,5 +523,6 @@ const styles = StyleSheet.create({
   recordingActionText: {
     fontSize: 13,
     fontWeight: "600",
+    fontFamily: "Montserrat-SemiBold",
   },
 });

@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
@@ -8,10 +9,10 @@ import {
 } from 'react-native';
 
 import { ScreenContainer } from '@/components/containers/ScreenContainer';
-import { EmptyState } from '@/components/shared/ui/EmptyState';
 import { FriendCard } from '@/components/friend/FriendCard';
 import { FriendRequestCard } from '@/components/friend/FriendRequestCard';
 import { SearchIcon } from '@/components/shared/icons/Icons';
+import { EmptyState } from '@/components/shared/ui/EmptyState';
 import { FriendListSkeleton, FriendRequestListSkeleton } from '@/components/skeleton';
 import { ActionInput, Button, Tab, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
@@ -26,7 +27,7 @@ import {
 } from '@/dtos';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FollowApi } from '@/services/follow.service';
-import { colors, getSemantic } from '@/styles/colors';
+import { getSemantic, paletteIcon } from '@/styles/colors';
 
 type TabType =
   | 'requests'
@@ -48,15 +49,15 @@ const TABS: { key: TabType; label: string }[] = [
 ];
 
 export default function FriendScreen() {
-  const isDark = useColorScheme() === "dark";
+  const colorScheme = useColorScheme() ?? 'light';
 
   const theme = {
-    icon: isDark ? colors.dark[100] : colors.light[100],
-    iconMuted: isDark ? colors.dark[300] : colors.light[300],
+    icon: paletteIcon[colorScheme],
+    iconMuted: paletteIcon.lightMuted,
   };
 
   const { profile } = useAuth();
-  const colorScheme = useColorScheme() ?? 'light';
+  // const colorScheme = useColorScheme() ?? 'light';
   const semantic = getSemantic(colorScheme);
   const [activeTab, setActiveTab] = useState<TabType>('requests');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -387,12 +388,12 @@ export default function FriendScreen() {
       {/* Header */}
       <View className="">
         <View className="flex-row justify-between items-center">
-          <Text variant="title" className="font-semibold text-6">
+          <Text style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 24 }}>
             Friends
           </Text>
           <View className="flex-row gap-4">
             <TouchableOpacity
-              onPress={() => setIsSearchVisible(!isSearchVisible)}
+              onPress={() => router.push('/add-friend')}
               className=""
             >
               <SearchIcon size={24} color={theme.icon} />

@@ -24,7 +24,7 @@ import { ChatConversationDto, ConversationType, MessageResponseDto } from "@/dto
 import { useChatMessages } from "@/hooks/use-chat-messages";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { messageService } from "@/services/message.service";
-import { BORDER_DEFAULT, colors, getSemantic } from "@/styles/colors";
+import { BORDER_DEFAULT, colors, getSemantic, paletteIcon } from "@/styles/colors";
 
 function formatDateLabel(dateStr: string): string {
   const date = new Date(dateStr);
@@ -54,7 +54,7 @@ export default function ChatScreen() {
   const semantic = getSemantic(colorScheme);
   const messagesBg = isDark ? colors.dark[300] : semantic.surface;
   const headerTextColor = semantic.text;
-  const iconColor = isDark ? colors.light[400] : semantic.textMuted;
+  const iconColor = paletteIcon.lightMuted;
   const [infoModalVisible, setInfoModalVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

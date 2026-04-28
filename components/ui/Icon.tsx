@@ -1,7 +1,8 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
-import { colors } from '@/styles/colors';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { paletteIcon } from '@/styles/colors';
 
 type MaterialIconName = ComponentProps<typeof MaterialIcons>['name'];
 
@@ -81,17 +82,20 @@ interface IconProps {
 export function Icon({ 
   name, 
   size = 24, 
-  color = colors.primary[100], 
+  color,
   style,
   className,
 }: IconProps) {
+  const colorScheme = useColorScheme() ?? 'light';
+  const defaultColor = color ?? (colorScheme === 'dark' ? paletteIcon.dark : paletteIcon.light);
+  
   const iconName = SF_TO_MATERIAL[name as string] || (name as MaterialIconName);
   
   return (
     <MaterialIcons 
       name={iconName} 
       size={size} 
-      color={color} 
+      color={defaultColor} 
       style={style}
     />
   );

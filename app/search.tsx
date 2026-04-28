@@ -98,7 +98,7 @@ export default function SearchScreen() {
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => router.push(`/profile/${item.id}` as any)}
-              className="flex-row items-center py-3 border-b border-border-light dark:border-border-dark"
+              className="flex-row items-center px-4 py-4"
             >
               <Avatar
                 source={item.avatar ? { uri: item.avatar } : undefined}

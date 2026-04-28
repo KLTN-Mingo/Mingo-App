@@ -9,7 +9,7 @@ const MyTextArea = ({ value, onChangeText, placeholder }) => {
   return (
     <View className="mb-4 h-32 w-full">
       <TextInput
-        className="rounded-lg p-2 h-full w-full font-mmedium bg-surface-dark"
+        className="rounded-lg p-2 h-full w-full font-medium bg-surface-dark"
         multiline
         value={value}
         onChangeText={onChangeText}

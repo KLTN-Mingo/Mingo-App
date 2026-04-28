@@ -11,20 +11,21 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          50: "#768D85",
+          DEFAULT: "#768D85",
+          muted: "#BAC6C2",
+          50: "#E8EDEB",
           100: "#768D85",
-          200: "#768D85",
-          300: "#768D85",
-          400: "#768D85",
+          200: "#9AA9A2",
+          300: "#BAC6C2",
+          400: "#D4DED9",
           500: "#768D85",
-          600: "#768D85",
-          700: "#768D85",
-          800: "#768D85",
-          900: "#768D85",
-          /** Chữ trên nền primary */
+          600: "#5E7069",
+          700: "#475852",
+          800: "#313F3B",
+          900: "#1A2723",
           foreground: {
             light: "#FFFFFF",
-            dark: "#EFE7DF",
+            dark: "#FFFFFF",
           },
         },
         background: {
@@ -32,59 +33,67 @@ module.exports = {
           dark: "#1E2021",
         },
         surface: {
-          light: "#FFFFFF",
+          light: "#F1F4F3",
+          dark: "#252525",
+        },
+        "surface-light": {
+          light: "#FAFAFA",
           dark: "#2D2F2F",
         },
         "surface-muted": {
-          light: "#F2F2F2",
+          light: "#F1F4F3",
           dark: "#252525",
         },
-        /** Nền block: trắng (light) / #252525 (dark) */
+        "surface-elevated": {
+          light: "#FFFFFF",
+          dark: "#2D2F2F",
+        },
         sheet: {
           light: "#FFFFFF",
           dark: "#252525",
         },
-        /** Nền component: #F1F4F3 (light) / #2D2F2F (dark) */
         component: {
           light: "#F1F4F3",
-          dark: "#2D2F2F",
+          dark: "#252525",
         },
         input: {
-          light: "#FFFFFF",
-          dark: "#2D2F2F",
+          light: "#F1F4F3",
+          dark: "#252525",
         },
         text: {
           light: "#1E2021",
-          dark: "#EFE7DF",
+          dark: "#FAFAFA",
+          secondary: {
+            light: "#6B6B6B",
+            dark: "#6B6B6B",
+          },
           muted: {
-            light: "#515E5A",
-            dark: "#515E5A",
+            light: "#CCCCCC",
+            dark: "#CCCCCC",
           },
         },
         border: {
-          light: "#CCCCCC",
-          dark: "#CCCCCC",
+          light: "#BAC6C2",
+          dark: "#2D2F2F",
         },
-        success: {
+        "border-subtle": {
+          light: "#F1F4F3",
+          dark: "#2D2F2F",
+        },
+        online: {
           light: "#22C55E",
-          dark: "#4ADE80",
+          dark: "#22C55E",
         },
-        warning: {
-          light: "#F59E0B",
-          dark: "#FBBF24",
-        },
-        error: {
+        danger: {
           light: "#EF4444",
-          dark: "#F87171",
-        },
-        info: {
-          light: "#3B82F6",
-          dark: "#60A5FA",
+          dark: "#FF453A",
         },
       },
       borderColor: {
-        "pill-light": "#CCCCCC",
-        "pill-dark": "#CCCCCC",
+        pill: {
+          light: "#BAC6C2",
+          dark: "#2D2F2F",
+        },
       },
       fontFamily: {
         sans: ["Montserrat-Regular"],
@@ -96,15 +105,32 @@ module.exports = {
         bold: ["Montserrat-Bold"],
         extrabold: ["Montserrat-ExtraBold"],
         black: ["Montserrat-Black"],
+        montserrat: ["Montserrat-Regular"],
+        "montserrat-bold": ["Montserrat-Bold"],
+        "montserrat-semibold": ["Montserrat-SemiBold"],
+        "montserrat-medium": ["Montserrat-Medium"],
+        // Short aliases
+        mmedium: ["Montserrat-Medium"],
+        mregular: ["Montserrat-Regular"],
+        msemibold: ["Montserrat-SemiBold"],
         josefin: ["JosefinSans-SemiBold"],
-        /** Logo / brand — @expo-google-fonts/jost */
         jost: ["Jost_600SemiBold"],
         "jost-bold": ["Jost_700Bold"],
       },
       borderRadius: {
+        sm: "8px",
+        md: "12px",
+        lg: "16px",
+        full: "9999px",
         "4xl": "2rem",
       },
       spacing: {
+        xs: "4px",
+        sm: "8px",
+        md: "12px",
+        lg: "16px",
+        xl: "20px",
+        xxl: "24px",
         18: "4.5rem",
         88: "22rem",
       },

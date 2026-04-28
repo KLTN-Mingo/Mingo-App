@@ -41,7 +41,7 @@ const Tab: React.FC<TabProps> = ({ content, isActive, onClick }) => {
         style={{
           color: isActive ? activeTextColor : inactiveTextColor,
         }}
-        className="font-mmedium text-4 rounded-3"
+        className="font-medium text-sm rounded-3"
       >
         {content}
       </Text>
