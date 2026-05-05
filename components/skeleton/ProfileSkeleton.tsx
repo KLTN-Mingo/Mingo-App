@@ -1,13 +1,18 @@
 import React from "react";
-import { View } from "react-native";
+import { useColorScheme, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { paletteDark, paletteLight } from "@/constants/designTokens";
 import { Skeleton, SkeletonCircle, SkeletonText } from "@/components/ui/Skeleton";
 
 export function ProfileSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === "dark" ? paletteDark : paletteLight;
+
   return (
     <SafeAreaView
-      className="flex-1 bg-neutral-100 dark:bg-background-dark"
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
       edges={["top"]}
     >
       <View className="flex-row items-center justify-between px-4 pt-3 pb-2">
@@ -18,7 +23,7 @@ export function ProfileSkeleton() {
       <View className="px-4 pt-1">
         <Skeleton width="100%" height={192} borderRadius={24} />
         <View className="flex-row items-end -mt-[52px]">
-          <View className="rounded-full border-[5px] border-neutral-100 dark:border-background-dark overflow-hidden">
+          <View className="rounded-full overflow-hidden" style={{ borderWidth: 5, borderColor: colors.background }}>
             <SkeletonCircle size={96} />
           </View>
           <View className="flex-1 ml-3 mb-2 gap-2">
@@ -41,9 +46,9 @@ export function ProfileSkeleton() {
             </View>
           ))}
         </View>
-        <View className="rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 px-3 py-2">
+        <View className="rounded-3xl px-3 py-2" style={{ backgroundColor: colors.background }}>
           {[1, 2, 3].map((i) => (
-            <View key={i} className="flex-row items-center py-3.5 border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
+            <View key={i} className="flex-row items-center py-3.5">
               <SkeletonCircle size={22} />
               <View className="flex-1 ml-3">
                 <SkeletonText width="70%" height={16} />
@@ -57,7 +62,7 @@ export function ProfileSkeleton() {
         <Skeleton width="100%" height={50} borderRadius={999} />
       </View>
 
-      <View className="flex-row mt-5 px-1 border-b border-neutral-200 dark:border-neutral-800">
+      <View className="flex-row mt-5 px-1">
         {[1, 2, 3, 4].map((i) => (
           <View key={i} className="flex-1 items-center py-3 gap-1">
             <SkeletonCircle size={22} />

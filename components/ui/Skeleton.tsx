@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, View, ViewStyle } from 'react-native';
+import { Animated, useColorScheme, ViewStyle } from 'react-native';
+
+import { paletteDark, paletteLight, radius } from '@/constants/designTokens';
 
 interface SkeletonProps {
   width?: number | string;
@@ -12,11 +14,15 @@ interface SkeletonProps {
 export function Skeleton({
   width = '100%',
   height = 20,
-  borderRadius = 4,
+  borderRadius = radius.sm,
   className = '',
   style,
 }: SkeletonProps) {
+  const colorScheme = useColorScheme();
   const opacity = useRef(new Animated.Value(0.3)).current;
+
+  const colors = colorScheme === 'dark' ? paletteDark : paletteLight;
+  const baseColor = colorScheme === 'dark' ? '#4A4A4A' : colors.surfaceMuted;
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -40,15 +46,16 @@ export function Skeleton({
 
   return (
     <Animated.View
-      className={`bg-gray-300 dark:bg-gray-700 ${className}`}
+      className={className}
       style={[
+        style,
         {
-          width,
-          height,
+          width: width as number | `${number}%`,
+          height: height as number,
           borderRadius,
           opacity,
+          backgroundColor: baseColor,
         },
-        style,
       ]}
     />
   );
@@ -65,5 +72,5 @@ export function SkeletonText({
   width?: number | string;
   height?: number;
 }) {
-  return <Skeleton width={width} height={height} borderRadius={4} />;
+  return <Skeleton width={width} height={height} borderRadius={radius.sm} />;
 }

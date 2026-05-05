@@ -1,7 +1,5 @@
 import React from "react";
 import { Modal, StatusBar, TouchableOpacity, useColorScheme, View } from "react-native";
-// import { Modal, TouchableOpacity, View, StatusBar } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   ActivityIcon,
@@ -13,8 +11,9 @@ import {
   SaveIcon,
   SunIcon,
 } from "@/components/shared/icons/Icons";
-import { Text } from "@/components/ui";
-import { colors, getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
+import { ScreenHeader, Text } from "@/components/ui";
+import { paletteDark, paletteLight } from "@/constants/designTokens";
+import { paletteIcon } from "@/styles/colors";
 
 export type ProfileSettingsModalProps = {
   visible: boolean;
@@ -37,16 +36,25 @@ interface MenuItemProps {
 }
 
 function MenuItem({ icon, label, onPress, isLogout, iconColor }: MenuItemProps) {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const palette = isDark ? paletteDark : paletteLight;
+
   return (
     <TouchableOpacity
       onPress={onPress}
       className="flex-row items-center px-5 py-3"
+      style={{ backgroundColor: palette.background }}
     >
-      <View className="w-10 h-10 items-center justify-center rounded-full bg-primary-light/10 dark:bg-primary-dark/20">
+      <View
+        className="w-10 h-10 items-center justify-center rounded-full"
+        style={{ backgroundColor: isDark ? "rgba(230, 58, 71, 0.15)" : "rgba(230, 58, 71, 0.1)" }}
+      >
         {icon}
       </View>
       <Text
-        className={`ml-4 text-base ${isLogout ? "text-red-500" : "text-text-light dark:text-text-dark"}`}
+        className={`ml-4 text-base ${isLogout ? "text-red-500" : ""}`}
+        style={{ color: isLogout ? "#EF4444" : palette.textPrimary }}
       >
         {label}
       </Text>
@@ -65,57 +73,51 @@ export function ProfileSettingsModal({
   logoutIconColor,
   onLogout,
 }: ProfileSettingsModalProps) {
-  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const palette = isDark ? paletteDark : paletteLight;
 
-  const iconColor = isDark ? paletteIcon.dark : paletteIcon.light;
-  const textColor = isDark ? colors.dark.textPrimary : colors.light.textPrimary;
+  const iconColor = palette.textSecondary;
   const isDarkMode = themeToggleLabel.includes("Dark");
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onRequestClose}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
-      <View className="flex-1 bg-background-light dark:bg-background-dark">
-        <View
-          className="bg-white dark:bg-background-dark"
-          style={{ paddingTop: insets.top }}
-        >
-          <View className="flex-row items-center px-4 py-4">
+      <View className="flex-1" style={{ backgroundColor: palette.background }}>
+        <ScreenHeader
+          title="Settings"
+          leftSlot={
             <TouchableOpacity onPress={onRequestClose} className="p-2 -ml-2">
-              <ArrowLeftIcon size={24} color={textColor} />
+              <ArrowLeftIcon size={24} color={palette.textPrimary} />
             </TouchableOpacity>
-            <Text variant="subtitle" className="flex-1 text-center pr-8 text-text-light dark:text-text-dark">
-              Cài đặt
-            </Text>
-          </View>
-        </View>
+          }
+        />
 
         <View className="">
           <MenuItem
             icon={<PenIcon size={22} color={iconColor} />}
-            label="Chỉnh sửa trang cá nhân"
+            label="Edit Profile"
             onPress={onEditProfile}
             iconColor={iconColor}
           />
 
           <MenuItem
             icon={<SaveIcon size={22} color={iconColor} />}
-            label="Khu lưu trữ"
+            label="Saved Posts"
             onPress={onOpenSavedPosts}
             iconColor={iconColor}
           />
 
           <MenuItem
             icon={<ActivityIcon size={22} color={iconColor} />}
-            label="Hoạt động"
+            label="Activity"
             onPress={() => {}}
             iconColor={iconColor}
           />
 
           <MenuItem
             icon={<LockIcon size={22} color={iconColor} />}
-            label="Đổi mật khẩu"
+            label="Change Password"
             onPress={onOpenAccountSettings}
             iconColor={iconColor}
           />
@@ -136,7 +138,7 @@ export function ProfileSettingsModal({
           <View className="mt-6">
             <MenuItem
               icon={<LogoutIcon size={22} color={logoutIconColor} />}
-              label="Đăng xuất"
+              label="Log Out"
               onPress={onLogout}
               isLogout
               iconColor={logoutIconColor}

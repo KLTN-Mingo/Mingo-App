@@ -23,12 +23,12 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { Gender } from "@/dtos";
 import { userService } from "@/services/user.service";
-import { colors } from "@/styles/colors";
+import { paletteIcon } from "@/styles/colors";
 import { authUserFromProfile } from "@/utils/authUserFromProfile";
 
 const GENDER_OPTIONS: { label: string; value: Gender }[] = [
-  { label: "Nam", value: Gender.MALE },
-  { label: "Nữ", value: Gender.FEMALE },
+  { label: "Male", value: Gender.MALE },
+  { label: "Female", value: Gender.FEMALE },
 ];
 
 function toDateInputValue(iso?: string): string {
@@ -72,8 +72,8 @@ export default function EditProfileScreen() {
           : undefined
       );
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Không tải được hồ sơ";
-      Alert.alert("Lỗi", msg);
+      const msg = e instanceof Error ? e.message : "Failed to load profile";
+      Alert.alert("Error", msg);
     } finally {
       setLoading(false);
     }
@@ -92,17 +92,17 @@ export default function EditProfileScreen() {
   const handleSave = async () => {
     const trimmed = name.trim();
     if (trimmed.length < 2) {
-      Alert.alert("Lỗi", "Tên cần ít nhất 2 ký tự.");
+      Alert.alert("Error", "Name must be at least 2 characters.");
       return;
     }
     if (!gender) {
-      Alert.alert("Lỗi", "Vui lòng chọn giới tính.");
+      Alert.alert("Error", "Please select your gender.");
       return;
     }
     const hobbies = presetHobbies.filter((h) => PRESET_HOBBY_SET.has(h));
     for (const h of hobbies) {
       if (h.length > 100) {
-        Alert.alert("Lỗi", "Mỗi sở thích tối đa 100 ký tự.");
+        Alert.alert("Error", "Each hobby can be up to 100 characters.");
         return;
       }
     }
@@ -110,7 +110,7 @@ export default function EditProfileScreen() {
     if (dateOfBirth.trim()) {
       const d = new Date(dateOfBirth.trim());
       if (Number.isNaN(d.getTime()) || d > new Date()) {
-        Alert.alert("Lỗi", "Ngày sinh không hợp lệ.");
+        Alert.alert("Error", "Invalid date of birth.");
         return;
       }
       dobIso = d.toISOString();
@@ -128,12 +128,12 @@ export default function EditProfileScreen() {
         gender,
       });
       setProfile(authUserFromProfile(updated));
-      Alert.alert("Thành công", "Đã lưu hồ sơ.", [
+      Alert.alert("Success", "Profile saved.", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Không lưu được";
-      Alert.alert("Lỗi", msg);
+      const msg = e instanceof Error ? e.message : "Failed to save";
+      Alert.alert("Error", msg);
     } finally {
       setSaving(false);
     }
@@ -145,10 +145,10 @@ export default function EditProfileScreen() {
 
   return (
       <ScreenContainer className="gap-4">
-        <PageHeader title="Chỉnh sửa hồ sơ" />
+        <PageHeader title="Edit Profile" />
         {loading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={colors.primary[100]} />
+            <ActivityIndicator color={paletteIcon.lightMuted} />
           </View>
         ) : (
           <ScrollView
@@ -158,17 +158,17 @@ export default function EditProfileScreen() {
           >
             <View className="gap-2">
             <InfoInput
-              label="Họ và tên"
+              label="Full Name"
               required
               value={name}
               onChangeText={setName}
-              placeholder="Tên hiển thị"
+              placeholder="Display name"
               autoCapitalize="words"
             />
 
             <InfoInput
               mode="select"
-              label="Giới tính"
+              label="Gender"
               required
               value={gender ?? ""}
               onValueChange={(v) => setGender(v as Gender)}
@@ -176,41 +176,41 @@ export default function EditProfileScreen() {
                 label: o.label,
                 value: String(o.value),
               }))}
-              placeholder="Chọn giới tính"
+              placeholder="Select gender"
             />
 
             <InfoInput
               mode="select"
-              label="Tình trạng mối quan hệ"
+              label="Relationship Status"
               value={relationship}
               onValueChange={setRelationship}
               options={RELATIONSHIP_OPTIONS}
-              placeholder="Chọn..."
+              placeholder="Select..."
             />
 
             <InfoInput
-              label="Công việc"
+              label="Work"
               value={work}
               onChangeText={setWork}
-              placeholder="Nghề nghiệp / công ty"
+              placeholder="Job / Company"
               maxLength={150}
             />
 
             <InfoInput
-              label="Nơi ở hiện tại"
+              label="Current Location"
               value={currentAddress}
               onChangeText={setCurrentAddress}
-              placeholder="Nhập địa chỉ hoặc chọn gợi ý"
+              placeholder="Enter address or select suggestion"
               maxLength={255}
               suggestions={ADDRESS_SUGGESTIONS}
               mapPickEnabled
             />
 
             <InfoInput
-              label="Quê quán"
+              label="Hometown"
               value={hometown}
               onChangeText={setHometown}
-              placeholder="Nhập hoặc chọn gợi ý"
+              placeholder="Enter or select suggestion"
               maxLength={255}
               suggestions={ADDRESS_SUGGESTIONS}
               mapPickEnabled
@@ -218,14 +218,14 @@ export default function EditProfileScreen() {
 
             <InfoInput
               mode="date"
-              label="Ngày sinh"
+              label="Date of Birth"
               value={dateOfBirth}
               onValueChange={setDateOfBirth}
             />
 
             <View className="mt-4">
               <Text variant="muted" className="mb-2 font-medium">
-                Sở thích
+                Hobbies
               </Text>
               <HobbySelector
                 hobbies={PRESET_HOBBIES}
@@ -236,7 +236,7 @@ export default function EditProfileScreen() {
           </View>
 
           <Button className="mt-8" onPress={handleSave} loading={saving}>
-            Lưu thay đổi
+            Save Changes
           </Button>
           </ScrollView>
         )}

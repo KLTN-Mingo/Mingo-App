@@ -1,7 +1,7 @@
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
-import { colors, paletteIcon } from "@/styles/colors";
+import { paletteDark, paletteLight, paletteIcon, palettePrimary } from "@/constants/designTokens";
 import { resolveHobbyIcon } from "@/constants/hobbyCatalog";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -25,17 +25,16 @@ const HobbySelector: React.FC<HobbySelectorProps> = ({
         const Icon = resolveHobbyIcon(hobby);
         if (!Icon) return null;
         const iconColor = isSelected ? "#FFFFFF" : paletteIcon[colorScheme];
+        const selectedBg = colorScheme === "dark" ? palettePrimary.dark : palettePrimary.light;
+        const unselectedBg = colorScheme === "dark" ? paletteDark.surface : paletteLight.surface;
+        const textColor = colorScheme === "dark" ? paletteDark.textMuted : paletteLight.textMuted;
 
         return (
           <TouchableOpacity
             key={hobby}
             onPress={() => onToggle(hobby)}
             style={{
-              backgroundColor: isSelected
-                ? colors.primary[100]
-                : colorScheme === "dark"
-                  ? colors.dark[400]
-                  : colors.light[400],
+              backgroundColor: isSelected ? selectedBg : unselectedBg,
               paddingVertical: 8,
               paddingHorizontal: 14,
               borderRadius: 999,
@@ -49,7 +48,7 @@ const HobbySelector: React.FC<HobbySelectorProps> = ({
             <Icon size={18} color={iconColor} />
             <Text
               style={{
-                color: isSelected ? "#FFFFFF" : mutedIcon,
+                color: isSelected ? "#FFFFFF" : textColor,
                 fontFamily: "Montserrat-Medium",
                 fontSize: 14,
               }}

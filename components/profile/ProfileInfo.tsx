@@ -178,10 +178,10 @@ export function ProfileInfo({
     <View className="">
       {showInformationBlock ? (
         <>
-          <Text className="text-sm font-semibold text-text-secondary-light dark:text-text-secondary-dark mb-3 px-5">
+          <Text className="text-sm font-semibold text-text-secondary-light dark:text-text-secondary-dark mb-3">
             Information
           </Text>
-          <View className="rounded-lg bg-sheet-light dark:bg-sheet-dark py-5 px-5 gap-4 mx-5">
+          <View className="rounded-lg bg-sheet-light dark:bg-sheet-dark py-5 px-5 gap-4">
             {rows.length > 0 ? (
               <View className="gap-4">
                 {rows.map((r) => (
