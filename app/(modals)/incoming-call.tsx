@@ -1,13 +1,13 @@
-import type { OngoingCall } from "@/dtos/call.dto";
 import { useCall } from "@/context/CallContext";
+import type { OngoingCall } from "@/dtos/call.dto";
 import { useRingtone } from "@/hooks/useRingtone";
 import { useEffect } from "react";
 import {
-  View,
+  ImageBackground,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
+  View,
 } from "react-native";
 
 export default function IncomingCallScreen() {
@@ -46,9 +46,7 @@ export default function IncomingCallScreen() {
     <>
       <View style={styles.topContainer}>
         <Text style={styles.title}>Incoming call</Text>
-        <Text style={styles.caller}>
-          {caller?.profile?.name ?? "Unknown"}
-        </Text>
+        <Text style={styles.caller}>{caller?.profile?.name ?? "Unknown"}</Text>
         <Text style={styles.subtitle}>
           {ongoingCall.isVideoCall ? "Video call" : "Audio call"}
         </Text>

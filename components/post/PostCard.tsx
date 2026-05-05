@@ -1,17 +1,19 @@
 import { formatDistanceToNow } from "date-fns";
-import React, { useState } from "react";
-import { Dimensions, Image, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Dimensions, Image, TouchableOpacity, useColorScheme, View } from "react-native";
 
-import { Avatar, Text } from "@/components/ui";
-import { PostResponseDto, UserMinimalDto } from "@/dtos";
-import { postService } from "@/services/post.service";
 import {
   CommentIcon,
   LikeIcon,
   LocationIcon,
-  MusicIcon,
+  SaveIcon,
+  ShareIcon,
   ThreeDotsIcon,
 } from "@/components/shared/icons/Icons";
+import { Avatar, Text } from "@/components/ui";
+import { PostResponseDto, UserMinimalDto } from "@/dtos";
+import { postService } from "@/services/post.service";
+import { colors, statusColors } from "@/styles/colors";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -20,6 +22,8 @@ interface PostCardProps {
   currentUser?: UserMinimalDto | null;
   onLikeChange?: (postId: string, isLiked: boolean) => void;
   onCommentPress?: (postId: string) => void;
+  onShareChange?: (postId: string, nextCount: number) => void;
+  onSaveChange?: (postId: string, isSaved: boolean) => void;
   onUserPress?: (userId: string) => void;
   onMorePress?: (post: PostResponseDto) => void;
 }
@@ -29,12 +33,29 @@ export function PostCard({
   currentUser,
   onLikeChange,
   onCommentPress,
+  onShareChange,
+  onSaveChange,
   onUserPress,
   onMorePress,
 }: PostCardProps) {
+  const isDark = useColorScheme() === "dark";
+
+  const theme = {
+    icon: isDark ? colors.dark[100] : colors.light[100],
+    iconMuted: isDark ? colors.dark[300] : colors.light[300],
+  };
+
   const [isLiked, setIsLiked] = useState(post.isLiked ?? false);
   const [likesCount, setLikesCount] = useState(post.likesCount);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [sharesCount, setSharesCount] = useState(post.sharesCount);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [isSaved, setIsSaved] = useState(post.isSaved ?? false);
+  const [saveLoading, setSaveLoading] = useState(false);
+
+  useEffect(() => {
+    setIsSaved(post.isSaved ?? false);
+  }, [post.id, post.isSaved]);
 
   const handleLike = async () => {
     if (likeLoading) return;
@@ -60,6 +81,44 @@ export function PostCard({
       console.error("Like error:", error);
     } finally {
       setLikeLoading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (shareLoading) return;
+    setShareLoading(true);
+    const optimistic = sharesCount + 1;
+    setSharesCount(optimistic);
+    onShareChange?.(post.id, optimistic);
+    try {
+      await postService.sharePost(post.id);
+    } catch (error) {
+      setSharesCount((prev) => Math.max(0, prev - 1));
+      onShareChange?.(post.id, Math.max(0, optimistic - 1));
+      console.error("Share error:", error);
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!currentUser?.id || saveLoading) return;
+    setSaveLoading(true);
+    const next = !isSaved;
+    setIsSaved(next);
+    onSaveChange?.(post.id, next);
+    try {
+      if (next) {
+        await postService.savePost(post.id);
+      } else {
+        await postService.unsavePost(post.id);
+      }
+    } catch (error) {
+      setIsSaved(!next);
+      onSaveChange?.(post.id, !next);
+      console.error("Save post error:", error);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -92,10 +151,10 @@ export function PostCard({
     }
 
     return (
-      <Text className="text-[#68716F]">
+      <Text className="text-text-muted-dark">
         {" "}
         with{" "}
-        <Text className="font-semibold text-[#212625]">
+        <Text className="font-semibold text-text-dark">
           {mentionNames[0]}
         </Text>{" "}
         and {mentionNames.length - 1} others
@@ -117,9 +176,9 @@ export function PostCard({
       : baseMediaWidth;
 
   return (
-    <View className="mx-4 mb-3 overflow-hidden rounded-2xl bg-surface-dark">
+    <View className="p-4 overflow-hidden rounded-[10px] bg-surface-muted-light dark:bg-surface-muted-dark gap-4">
       {/* Header */}
-      <View className="flex-row items-start px-4 pb-2 pt-4">
+      <View className="flex-row items-start">
         <TouchableOpacity
           onPress={() => onUserPress?.(post.userId)}
           className="flex-row items-center flex-1"
@@ -132,26 +191,28 @@ export function PostCard({
           />
           <View className="ml-3 flex-1">
             <View className="flex-row flex-wrap items-center">
-              <Text className="text-[22px] leading-[23px] font-semibold text-text-dark">
+              <Text className="text-[16px] font-semibold text-text-light dark:text-text-dark">
                 {post.user?.name || "Unknown"}
               </Text>
               {renderMentions()}
             </View>
-            <Text className="mt-0.5 text-xs text-text-muted-dark">
+            <Text className="mt-0.5 text-xs text-text-light dark:text-text-dark">
               {formatTime(post.createdAt)}
             </Text>
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => onMorePress?.(post)} className="p-2">
-          <ThreeDotsIcon size={20} color="#1E2021" />
-        </TouchableOpacity>
+        {onMorePress && currentUser?.id ? (
+          <TouchableOpacity onPress={() => onMorePress(post)} className="p-2">
+            <ThreeDotsIcon size={20} color={theme.icon} />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {/* Content */}
       {post.contentText && (
-        <View className="px-4 pb-1">
-          <Text className="text-[27px] leading-[27px] text-[#212625]">
+        <View className="">
+          <Text className="text-[27px] leading-[27px] text-text-light dark:text-text-dark">
             {post.contentText}
           </Text>
         </View>
@@ -159,34 +220,34 @@ export function PostCard({
 
       {/* Location & Music Tags */}
       {(post.location?.name || firstMusicTag) && (
-            <View className="flex-row flex-wrap items-center px-4 pb-2 pt-1">
+            <View className="flex-row flex-wrap items-center">
           {post.location?.name && (
-            <View className="mr-2 flex-row items-center">
-              <LocationIcon size={14} color="#8E9794" />
-              <Text className="ml-1 text-xs text-[#7E8785]">
+            <View className="flex-row items-center">
+              <LocationIcon size={14} color={theme.icon} />
+              <Text className="text-xs text-text-light dark:text-text-dark">
                 {post.location.name}
               </Text>
             </View>
           )}
-          {firstMusicTag && (
+          {/* {firstMusicTag && (
             <View className="max-w-[70%] flex-row items-center">
-              <Text className="text-xs text-[#7E8785]">-</Text>
-              <MusicIcon size={14} color="#8E9794" />
+              <Text className="text-xs text-text-muted-dark">-</Text>
+              <MusicIcon size={14} color={colors.dark[300]} />
               <Text
-                className="ml-1 text-xs text-[#7E8785]"
+                className="text-xs text-text-muted-dark"
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
                 {firstMusicTag}
               </Text>
             </View>
-          )}
+          )} */}
         </View>
       )}
 
       {/* Media */}
       {post.media && post.media.length > 0 && (
-            <View className="mt-1 bg-[#2D2F2F]">
+            <View className="bg-surface-muted-light dark:bg-surface-muted-dark">
           {post.media.length === 1 ? (
             <Image
               source={{ uri: post.media[0].mediaUrl }}
@@ -212,16 +273,19 @@ export function PostCard({
       )}
 
       {/* Actions */}
-      <View className="flex-row items-center px-4 pb-2 pt-3">
+      <View className="flex-row items-center gap-5">
         {/* Like */}
         <TouchableOpacity
           onPress={handleLike}
-          className="mr-6 flex-row items-center"
+          className="flex-row items-center gap-3"
           disabled={likeLoading}
         >
-          <LikeIcon size={24} color={isLiked ? "#EB5A5A" : "#212625"} />
+          <LikeIcon
+            size={24}
+            color={isLiked ? statusColors.error.dark : theme.icon}
+          />
           {likesCount > 0 && (
-            <Text className="ml-2 text-[17px] text-[#2F3735]">
+            <Text className="text-[17px] text-text-muted-dark">
               {likesCount} likes
             </Text>
           )}
@@ -230,30 +294,67 @@ export function PostCard({
         {/* Comment */}
         <TouchableOpacity
           onPress={() => onCommentPress?.(post.id)}
-          className="flex-row items-center"
+          className="flex-row items-center gap-3"
         >
-          <CommentIcon size={23} color="#212625" />
+          <CommentIcon size={23} color={theme.icon} />
           {post.commentsCount > 0 && (
-            <Text className="ml-2 text-[17px] text-[#2F3735]">
+            <Text className="text-[17px] text-text-muted-dark">
               {post.commentsCount} comments
             </Text>
           )}
         </TouchableOpacity>
+
+        {/* Share */}
+        <TouchableOpacity
+          onPress={handleShare}
+          className="flex-row items-center gap-3"
+          disabled={shareLoading}
+        >
+          <ShareIcon size={22} color={theme.icon} />
+          {sharesCount > 0 && (
+            <Text className="text-[17px] text-text-muted-dark">
+              {sharesCount} shares
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        {currentUser?.id ? (
+          <TouchableOpacity
+            onPress={handleSave}
+            className="flex-row items-center gap-3 ml-auto"
+            disabled={saveLoading}
+            accessibilityLabel={isSaved ? "Bỏ lưu" : "Lưu bài"}
+          >
+            <SaveIcon
+              size={22}
+              color={isSaved ? colors.primary[100] : theme.icon}
+            />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {/* Comment Input */}
-      <View className="flex-row items-center gap-2 px-4 pb-4 pt-1">
+      <View className="flex-row items-center gap-3">
         <Avatar
-          size="sm"
+          size="md"
           source={currentUser?.avatar ? { uri: currentUser.avatar } : undefined}
           fallback={currentUser?.name}
         />
-        <TouchableOpacity
-          onPress={() => onCommentPress?.(post.id)}
-          className="h-10 flex-1 justify-center rounded-full bg-[#2D2F2F] px-4"
-        >
-          <Text className="text-[16px] text-text-muted-dark">Write comment...</Text>
-        </TouchableOpacity>
+         <TouchableOpacity
+              onPress={() => onCommentPress?.(post.id)}
+              activeOpacity={0.85}
+              className="flex-1 flex-row items-center px-4 py-3 rounded-[20px] bg-input-light dark:bg-input-dark"
+            >
+              {/* <LocationPinIcon size={22} color={semantic.textMuted} /> */}
+              <Text
+                variant="muted"
+                className="flex-1 text-[16px] h-[20px] text-text-muted-light dark:text-text-muted-dark"
+              >
+                Write comment...
+              </Text>
+              {/* <SearchIcon size={22} color={semantic.textMuted} /> */}
+            </TouchableOpacity>
+        
       </View>
     </View>
   );

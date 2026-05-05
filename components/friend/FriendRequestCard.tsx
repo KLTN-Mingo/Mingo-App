@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Avatar, AvatarStack, Button, Text } from '@/components/ui';
 import { UserMinimalDto } from '@/dtos';
 
+
 interface FriendRequestCardProps {
   id: string;
   user: UserMinimalDto;
@@ -27,7 +28,7 @@ export function FriendRequestCard({
     .map((f) => f.avatar!);
 
   return (
-    <View className="flex-row items-start py-4 border-b border-border-light dark:border-border-dark">
+    <View className="flex-row items-start px-4 py-5 bg-surface-muted-light dark:bg-surface-muted-dark rounded-[10px]">
       {/* Avatar */}
       <Avatar
         source={user.avatar ? { uri: user.avatar } : undefined}
@@ -37,20 +38,20 @@ export function FriendRequestCard({
       />
 
       {/* Content */}
-      <View className="flex-1">
+      <View className="flex-1 gap-4">
         {/* Name & Message */}
         <View className="flex-row flex-wrap">
-          <Text className="font-bold text-text-light dark:text-text-dark">
-            {user.name || 'Unknown'}
+          <Text className="text-base font-semibold text-text-light dark:text-text-dark">
+            {user.name || 'Unknown'} {" "}
           </Text>
-          <Text className="text-text-muted-light dark:text-text-muted-dark ml-1">
+          <Text className="text-text-light dark:text-text-dark">
             sent you friend request
           </Text>
         </View>
 
         {/* Mutual Friends */}
         {mutualCount > 0 && (
-          <View className="mt-1">
+          <View className="">
             <AvatarStack
               avatars={mutualAvatars}
               maxDisplay={3}
@@ -61,10 +62,10 @@ export function FriendRequestCard({
         )}
 
         {/* Action Buttons */}
-        <View className="flex-row mt-3 gap-2">
+        <View className="flex-row gap-2">
           <Button
             variant="primary"
-            size="sm"
+            size="md"
             onPress={() => onAccept(id)}
             disabled={loading}
             className="flex-1"
@@ -73,7 +74,7 @@ export function FriendRequestCard({
           </Button>
           <Button
             variant="outline"
-            size="sm"
+            size="md"
             onPress={() => onDecline(id)}
             disabled={loading}
             className="flex-1"

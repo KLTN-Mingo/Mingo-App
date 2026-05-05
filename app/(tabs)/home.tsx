@@ -1,35 +1,49 @@
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { FlatList, RefreshControl, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-
-import { CommentModal } from "@/components/post/CommentModal";
-import { CreatePostButton } from "@/components/post/CreatePostButton";
-import { PostCard } from "@/components/post/PostCard";
 import {
-  MessageIcon,
-  PostIcon,
-  ReportIcon,
-  SearchIcon,
-} from "@/components/shared/icons/Icons";
+  Alert,
+  FlatList,
+  RefreshControl,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
+import { CommentModal } from "@/components/post/CommentModal";
+import { PostCard } from "@/components/post/PostCard";
+import { NotificationIcon, ReportIcon } from "@/components/shared/icons/Icons";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
+import { SearchBarTrigger } from "@/components/shared/ui/search-bar";
 import { HomeSkeleton } from "@/components/skeleton";
 import { Tab, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import {
   FeedTab,
+  NotificationCountDto,
   PaginationDto,
   PostResponseDto,
   UserMinimalDto,
 } from "@/dtos";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { notificationService } from "@/services/notification.service";
 import { postService } from "@/services/post.service";
+import { colors, getSemantic, getStatusColor } from "@/styles/colors";
 
 const FEED_TABS: { key: FeedTab; label: string }[] = [
   { key: "explore", label: "Khám phá" },
   { key: "friends", label: "Bạn bè" },
 ];
 
+/** Khoảng đệm dưới khi tab bar nổi (BAR_HEIGHT + offset) — khớp app/(tabs)/_layout */
+const TAB_BAR_FLOAT_RESERVE = 64 + 20 + 20;
+
 export default function HomeScreen() {
   const { profile, logout, setProfile } = useAuth();
+  const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme() ?? "light";
+  const semantic = getSemantic(colorScheme);
+  const errorColor = getStatusColor(colorScheme, "error");
   const [activeTab, setActiveTab] = useState<FeedTab>("explore");
   const [posts, setPosts] = useState<PostResponseDto[]>([]);
   const [pagination, setPagination] = useState<PaginationDto | null>(null);
@@ -38,6 +52,8 @@ export default function HomeScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
+  const [notificationCount, setNotificationCount] =
+    useState<NotificationCountDto | null>(null);
 
   // Convert profile to UserMinimalDto for components
   const userMinimal: UserMinimalDto | null = profile
@@ -89,6 +105,18 @@ export default function HomeScreen() {
     }
   }, [profile, activeTab, fetchPosts]);
 
+  useEffect(() => {
+    const loadNotificationCount = async () => {
+      try {
+        const count = await notificationService.getNotificationCount();
+        setNotificationCount(count);
+      } catch (error) {
+        console.warn("Cannot load notification count:", error);
+      }
+    };
+    loadNotificationCount();
+  }, [activeTab, profile?.id]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchPosts(1, false, activeTab);
@@ -133,20 +161,117 @@ export default function HomeScreen() {
     );
   };
 
+  const handleShareChange = (postId: string, nextCount: number) => {
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, sharesCount: nextCount } : p))
+    );
+  };
+
+  const handleSaveChange = (postId: string, isSaved: boolean) => {
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, isSaved } : p))
+    );
+  };
+
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}` as any);
   };
 
-  const handleCreatePost = () => {
-    router.push("/create-post" as any);
+  const handlePostMorePress = (post: PostResponseDto) => {
+    if (!profile) return;
+
+    if (post.userId === profile.id) {
+      Alert.alert("Your post", undefined, [
+        {
+          text: "Edit",
+          onPress: () =>
+            router.push({
+              pathname: "/create-post",
+              params: { id: post.id },
+            } as any),
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert("Delete post?", "This action cannot be undone.", [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: async () => {
+                  try {
+                    await postService.deletePost(post.id);
+                    setPosts((prev) => prev.filter((p) => p.id !== post.id));
+                  } catch (e: unknown) {
+                    const msg =
+                      e instanceof Error ? e.message : "Cannot delete";
+                    Alert.alert("Error", msg);
+                  }
+                },
+              },
+            ]);
+          },
+        },
+        { text: "Close", style: "cancel" },
+      ]);
+      return;
+    }
+
+    Alert.alert("Post", undefined, [
+      {
+        text: "Hide post",
+        onPress: async () => {
+          try {
+            await postService.submitFeedFeedback(post.id, "hide", activeTab);
+            setPosts((prev) => prev.filter((p) => p.id !== post.id));
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
+          }
+        },
+      },
+      {
+        text: "Not interested",
+        onPress: async () => {
+          try {
+            await postService.submitFeedFeedback(
+              post.id,
+              "not_interested",
+              activeTab
+            );
+            setPosts((prev) => prev.filter((p) => p.id !== post.id));
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
+          }
+        },
+      },
+      {
+        text: "See more like this",
+        onPress: async () => {
+          try {
+            await postService.submitFeedFeedback(
+              post.id,
+              "see_more",
+              activeTab
+            );
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Cannot send feedback";
+            Alert.alert("Error", msg);
+          }
+        },
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const handleSearch = () => {
     router.push("/search" as any);
   };
 
-  const handleMessages = () => {
-    router.push("/chat" as any);
+  const handleNotifications = () => {
+    router.push("/notification" as any);
   };
 
   // Loading state
@@ -166,46 +291,65 @@ export default function HomeScreen() {
     };
 
     return (
-      <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-4">
-        <ReportIcon size={48} color="#EF4444" />
+      <ScreenContainer
+        className="items-center justify-center px-4"
+        style={{ paddingBottom: TAB_BAR_FLOAT_RESERVE + insets.bottom }}
+      >
+        <ReportIcon size={48} color={errorColor} />
         <Text className="mt-4 text-center">{error}</Text>
         <TouchableOpacity
           onPress={handleTryAgain}
-          className="mt-4 bg-primary-400 px-6 py-3 rounded-xl"
+          className="mt-4 bg-primary-100 px-6 py-3 rounded-xl"
         >
-          <Text className="text-white font-semibold">Đăng nhập lại</Text>
+          <Text className="text-primary-foreground-light font-semibold">
+            Đăng nhập lại
+          </Text>
         </TouchableOpacity>
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background-dark" edges={["top"]}>
+    <ScreenContainer>
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
+        className="gap-6"
         ListHeaderComponent={
-          <View className="px-4 pt-2 pb-3">
-            {/* Header */}
-            <View className="flex-row items-center justify-between py-2">
-              <Text className="text-[33px] leading-[38px] font-medium text-text-dark">
-                Min<Text className="text-primary-100 font-bold">gle</Text>
+          <View className="gap-5 mb-5">
+            {/* Header: logo + thông báo */}
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[33px] leading-[38px] font-jost">
+                <Text className="font-montserrat-bold text-text-light dark:text-text-dark">
+                  Min
+                </Text>
+                <Text className="text-[22px] leading-[23px] text-primary-100 dark:text-primary-100">
+                  go
+                </Text>
               </Text>
-              <View className="flex-row items-center gap-1">
-                <TouchableOpacity onPress={handleSearch} className="p-2">
-                  <SearchIcon size={23} color="#CFBFAD" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleMessages} className="p-2">
-                  <MessageIcon size={22} color="#CFBFAD" />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                onPress={handleNotifications}
+                className="p-2 relative"
+                // hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <NotificationIcon size={24} color={semantic.text} />
+                {Boolean(notificationCount?.unread) &&
+                  notificationCount!.unread > 0 && (
+                    <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full px-1 bg-error-light dark:bg-error-dark border border-white dark:border-background-dark items-center justify-center">
+                      <Text className="text-[10px] leading-[10px] text-white font-semibold">
+                        {notificationCount!.unread > 99
+                          ? "99+"
+                          : notificationCount!.unread}
+                      </Text>
+                    </View>
+                  )}
+              </TouchableOpacity>
             </View>
 
-            {/* Create Post Button */}
-            <CreatePostButton user={userMinimal} onPress={handleCreatePost} />
+            <SearchBarTrigger onPress={handleSearch} />
 
             {/* Feed Tabs */}
-            <View className="mt-3 flex-row gap-2">
+            <View className="flex-row gap-2">
               {FEED_TABS.map((tab) => (
                 <Tab
                   key={tab.key}
@@ -223,38 +367,40 @@ export default function HomeScreen() {
             currentUser={userMinimal}
             onLikeChange={handleLikeChange}
             onCommentPress={handleCommentPress}
+            onShareChange={handleShareChange}
+            onSaveChange={handleSaveChange}
             onUserPress={handleUserPress}
+            onMorePress={handlePostMorePress}
           />
         )}
-        ItemSeparatorComponent={() => <View className="h-0.5" />}
+        ItemSeparatorComponent={() => <View className="h-4" />}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#768D85"]}
-            tintColor="#768D85"
+            colors={[colors.primary[100]]}
+            tintColor={colors.primary[100]}
           />
         }
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-20">
-            <PostIcon size={48} color="#9CA3AF" />
-            <Text variant="muted" className="mt-4">
-              {activeTab === "explore"
-                ? "Chưa có bài viết để khám phá"
-                : "Chưa có bài viết từ bạn bè"}
-            </Text>
-          </View>
+          <EmptyState
+            title={
+              activeTab === "explore"
+                ? "No posts to explore"
+                : "No posts from friends"
+            }
+          />
         }
         ListFooterComponent={
           loadingMore ? (
             <View className="py-4 items-center">
-              <Text variant="muted">Đang tải thêm...</Text>
+              <Text variant="muted">Loading more...</Text>
             </View>
           ) : null
         }
-        contentContainerStyle={{ paddingBottom: 96 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       />
 
@@ -263,6 +409,6 @@ export default function HomeScreen() {
         onClose={() => setCommentPostId(null)}
         onCommentCountChange={handleCommentCountChange}
       />
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }

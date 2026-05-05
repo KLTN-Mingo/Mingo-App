@@ -1,15 +1,15 @@
 import { useCall } from "@/context/CallContext";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
+  Image,
   SafeAreaView,
   StatusBar,
   StyleSheet,
+  Text,
   TouchableOpacity,
-  Image,
+  View,
 } from "react-native";
 
 function formatTime(seconds: number): string {
@@ -30,7 +30,9 @@ export default function CallRoomScreen() {
   const [callDuration, setCallDuration] = useState(0);
   const isVideo = isVideoCall === "true";
   const isOutgoing = ongoingCall?.callStatus === "outgoing";
-  const isConnected = ongoingCall?.callStatus === "connected" || (ongoingCall && ongoingCall.callStatus !== "outgoing");
+  const isConnected =
+    ongoingCall?.callStatus === "connected" ||
+    (ongoingCall && ongoingCall.callStatus !== "outgoing");
 
   useEffect(() => {
     if (!isConnected) return;
@@ -48,7 +50,8 @@ export default function CallRoomScreen() {
 
   const remoteName =
     ongoingCall?.participants?.receiver?.profile?.name ?? "Unknown";
-  const remoteAvatar = receiverAva || ongoingCall?.participants?.receiver?.profile?.avatar;
+  const remoteAvatar =
+    receiverAva || ongoingCall?.participants?.receiver?.profile?.avatar;
 
   if (isOutgoing) {
     return (
@@ -100,9 +103,7 @@ export default function CallRoomScreen() {
               <Text style={styles.callingText}>{remoteName}</Text>
             </View>
           )}
-          <Text style={styles.callingSubtext}>
-            {formatTime(callDuration)}
-          </Text>
+          <Text style={styles.callingSubtext}>{formatTime(callDuration)}</Text>
         </View>
 
         <View style={styles.controls}>

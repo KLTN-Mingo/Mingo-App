@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet } from "react-native";
 import { SelectCountry } from "react-native-element-dropdown";
+import { colors } from "@/styles/colors";
 
 const local_data = [
   {
@@ -51,7 +52,7 @@ const styles = StyleSheet.create({
   dropdown: {
     height: 25,
     width: 120,
-    backgroundColor: "#EEEEEE",
+    backgroundColor: colors.light[200],
     borderRadius: 22,
     paddingHorizontal: 8,
   },

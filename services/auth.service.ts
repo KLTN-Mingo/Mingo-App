@@ -5,6 +5,7 @@ import {
   AuthResponseDto,
   AuthUserDto,
   LoginRequestDto,
+  RefreshTokenResponseDto,
   RegisterRequestDto,
 } from "@/dtos";
 
@@ -131,6 +132,71 @@ class AuthService {
 
   async getAccessToken(): Promise<string | null> {
     return AsyncStorage.getItem("accessToken");
+  }
+
+  async refreshToken(refreshToken: string): Promise<RefreshTokenResponseDto> {
+    const response = await this.request<RefreshTokenResponseDto>(
+      "/refresh-token",
+      {
+        method: "POST",
+        body: JSON.stringify({ refreshToken }),
+      }
+    );
+    await AsyncStorage.setItem("accessToken", response.accessToken);
+    return response;
+  }
+
+  async googleLogin(googleToken: string): Promise<AuthResponseDto> {
+    const response = await this.request<AuthResponseDto>("/google", {
+      method: "POST",
+      body: JSON.stringify({ googleToken }),
+    });
+    await AsyncStorage.setItem("accessToken", response.accessToken);
+    await AsyncStorage.setItem("user", JSON.stringify(response.user));
+    return response;
+  }
+
+  async setup2FA(): Promise<{ secret: string; qrCode: string }> {
+    const token = await AsyncStorage.getItem("accessToken");
+    return this.request("/2fa/setup", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  }
+
+  async enable2FA(code: string): Promise<void> {
+    const token = await AsyncStorage.getItem("accessToken");
+    await this.request("/2fa/enable", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  async disable2FA(code: string): Promise<void> {
+    const token = await AsyncStorage.getItem("accessToken");
+    await this.request("/2fa/disable", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  async complete2FALogin(body: {
+    phoneNumber?: string;
+    email?: string;
+    code: string;
+  }): Promise<AuthResponseDto> {
+    const response = await this.request<AuthResponseDto>(
+      "/2fa/complete-login",
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      }
+    );
+    await AsyncStorage.setItem("accessToken", response.accessToken);
+    await AsyncStorage.setItem("user", JSON.stringify(response.user));
+    return response;
   }
 }
 

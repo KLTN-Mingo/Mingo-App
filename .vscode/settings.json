@@ -3,5 +3,7 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
-  }
+  },
+  "workbench.preferredDarkColorTheme": "Tokyo Night Storm",
+  "window.autoDetectColorScheme": true
 }

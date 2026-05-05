@@ -14,12 +14,14 @@ export enum CommentModerationStatus {
 
 export interface CreateCommentRequestDto {
   contentText: string;
+  source?: string;
 }
 
 export interface CreateReplyRequestDto {
   contentText: string;
   parentCommentId: string;
   originalCommentId: string;
+  source?: string;
 }
 
 export interface UpdateCommentRequestDto {
@@ -34,7 +36,8 @@ export interface GetRepliesQueryDto extends PaginationParams {}
 
 export interface CommentResponseDto {
   id: string;
-  postId: string;
+  postId?: string | null;
+  mediaId?: string | null;
   userId: string;
   user?: UserMinimalDto;
   contentText: string;

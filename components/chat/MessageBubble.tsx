@@ -1,3 +1,4 @@
+import { Audio, AVPlaybackStatus, ResizeMode, Video } from "expo-av";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
@@ -6,7 +7,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Audio, AVPlaybackStatus, ResizeMode, Video } from "expo-av";
 
 import { Text } from "@/components/ui";
 import { MessageResponseDto } from "@/dtos";
@@ -50,8 +50,9 @@ function mapContentType(type?: string | null): BubbleMessageType {
 }
 
 function resolveMessageType(message: MessageResponseDto): BubbleMessageType {
-  const contentId = (message as MessageResponseDto & { contentId?: ContentIdLike })
-    .contentId;
+  const contentId = (
+    message as MessageResponseDto & { contentId?: ContentIdLike }
+  ).contentId;
 
   if (contentId?.type) {
     return mapContentType(contentId.type);
@@ -69,16 +70,22 @@ function resolveMessageType(message: MessageResponseDto): BubbleMessageType {
 }
 
 function resolveMediaUri(message: MessageResponseDto): string | null {
-  const contentId = (message as MessageResponseDto & { contentId?: ContentIdLike })
-    .contentId;
+  const contentId = (
+    message as MessageResponseDto & { contentId?: ContentIdLike }
+  ).contentId;
   return (
-    contentId?.url ?? contentId?.uri ?? message.attachment?.url ?? message.content ?? null
+    contentId?.url ??
+    contentId?.uri ??
+    message.attachment?.url ??
+    message.content ??
+    null
   );
 }
 
 function resolveFileName(message: MessageResponseDto): string {
-  const contentId = (message as MessageResponseDto & { contentId?: ContentIdLike })
-    .contentId;
+  const contentId = (
+    message as MessageResponseDto & { contentId?: ContentIdLike }
+  ).contentId;
   return (
     contentId?.fileName ??
     message.attachment?.fileName ??
@@ -88,8 +95,9 @@ function resolveFileName(message: MessageResponseDto): string {
 }
 
 function resolveAudioDuration(message: MessageResponseDto): string {
-  const contentId = (message as MessageResponseDto & { contentId?: ContentIdLike })
-    .contentId;
+  const contentId = (
+    message as MessageResponseDto & { contentId?: ContentIdLike }
+  ).contentId;
   const rawDuration = contentId?.duration ?? message.attachment?.duration;
   const durationSec =
     typeof rawDuration === "string"
@@ -111,7 +119,9 @@ function resolveAudioDuration(message: MessageResponseDto): string {
 }
 
 function ImageMessage({ uri }: { uri: string }) {
-  return <Image source={{ uri }} style={styles.imageMessage} resizeMode="cover" />;
+  return (
+    <Image source={{ uri }} style={styles.imageMessage} resizeMode="cover" />
+  );
 }
 
 function VideoMessage({ uri }: { uri: string }) {
@@ -132,12 +142,20 @@ function VideoMessage({ uri }: { uri: string }) {
         isLooping={false}
         onPlaybackStatusUpdate={handleStatusUpdate}
       />
-      <Text style={styles.mediaMetaText}>{isPlaying ? "Playing" : "Paused"}</Text>
+      <Text style={styles.mediaMetaText}>
+        {isPlaying ? "Playing" : "Paused"}
+      </Text>
     </View>
   );
 }
 
-function AudioMessage({ uri, durationLabel }: { uri: string; durationLabel: string }) {
+function AudioMessage({
+  uri,
+  durationLabel,
+}: {
+  uri: string;
+  durationLabel: string;
+}) {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -181,7 +199,9 @@ function AudioMessage({ uri, durationLabel }: { uri: string; durationLabel: stri
   return (
     <View style={styles.audioWrap}>
       <TouchableOpacity style={styles.audioButton} onPress={togglePlayPause}>
-        <Text style={styles.audioButtonText}>{isPlaying ? "Pause" : "Play"}</Text>
+        <Text style={styles.audioButtonText}>
+          {isPlaying ? "Pause" : "Play"}
+        </Text>
       </TouchableOpacity>
       <Text style={styles.mediaMetaText}>{durationLabel}</Text>
     </View>
@@ -230,7 +250,9 @@ function MessageContent({
 
   if (!uri) {
     return (
-      <Text style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther]}>
+      <Text
+        style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther]}
+      >
         Unsupported message
       </Text>
     );

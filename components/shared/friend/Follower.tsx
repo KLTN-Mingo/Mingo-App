@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { View, Text, FlatList } from "react-native";
 import { FriendResponseDTO } from "@/dtos/FriendDTO";
 import FriendCard from "../../card/friend/FriendCard";
+import { colors } from "@/styles/colors";
 
 const Follower = () => {
   const [followers, setFollowers] = useState<FriendResponseDTO[]>([]);
@@ -31,7 +32,7 @@ const Follower = () => {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color={colors.primary[100]} />
         <Text>Loading...</Text>
       </View>
     );

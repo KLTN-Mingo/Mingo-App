@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Input, Text } from '@/components/ui';
+import { ActionInput, Button, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { LoginRequestDto } from '@/dtos';
 
@@ -85,7 +85,7 @@ export default function SignInScreen() {
               <Text variant="muted" className="mb-1">
                 Username <Text className="text-red-500">*</Text>
               </Text>
-              <Input
+              <ActionInput
                 placeholder="Nhập số điện thoại"
                 value={formData.phoneNumber}
                 onChangeText={(text) => updateField('phoneNumber', text)}
@@ -100,7 +100,7 @@ export default function SignInScreen() {
               <Text variant="muted" className="mb-1">
                 Password <Text className="text-red-500">*</Text>
               </Text>
-              <Input
+              <ActionInput
                 placeholder="Nhập mật khẩu"
                 value={formData.password}
                 onChangeText={(text) => updateField('password', text)}

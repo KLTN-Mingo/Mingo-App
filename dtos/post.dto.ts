@@ -6,7 +6,10 @@ import { UserMinimalDto } from "./user.dto";
 export enum PostVisibility {
   PUBLIC = "public",
   FRIENDS = "friends",
+  /** Mingo / một số BE */
   CLOSE_FRIENDS = "close_friends",
+  /** Mingo API guide: bestfriends */
+  BESTFRIENDS = "bestfriends",
   PRIVATE = "private",
 }
 
@@ -21,6 +24,7 @@ export enum ModerationStatus {
 
 export interface CreatePostRequestDto {
   contentText?: string;
+  contentRichText?: string;
   visibility?: PostVisibility;
   mediaFiles?: MediaFileDto[];
   hashtags?: string[];
@@ -32,6 +36,7 @@ export interface CreatePostRequestDto {
 
 export interface UpdatePostRequestDto {
   contentText?: string;
+  contentRichText?: string;
   visibility?: PostVisibility;
 }
 
@@ -109,6 +114,7 @@ export interface PostResponseDto {
   userId: string;
   user?: UserMinimalDto;
   contentText?: string;
+  contentRichText?: string;
   visibility: PostVisibility;
   media?: PostMediaDto[];
   hashtags?: string[];

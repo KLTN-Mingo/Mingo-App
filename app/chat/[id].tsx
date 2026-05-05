@@ -20,7 +20,11 @@ import { Avatar, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useCall } from "@/context/CallContext";
 import { useChatContext } from "@/context/ChatContext";
-import { ChatConversationDto, ConversationType, MessageResponseDto } from "@/dtos";
+import {
+  ChatConversationDto,
+  ConversationType,
+  MessageResponseDto,
+} from "@/dtos";
 import { useChatMessages } from "@/hooks/use-chat-messages";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { messageService } from "@/services/message.service";
@@ -370,9 +374,7 @@ export default function ChatScreen() {
               maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
               ListHeaderComponent={
                 isLoadingMore ? (
-                  <View
-                    style={{ paddingVertical: 12, alignItems: "center" }}
-                  >
+                  <View style={{ paddingVertical: 12, alignItems: "center" }}>
                     <Text
                       style={{
                         color: isDark ? "#888" : "#92898A",
@@ -383,9 +385,7 @@ export default function ChatScreen() {
                     </Text>
                   </View>
                 ) : hasMore ? (
-                  <View
-                    style={{ paddingVertical: 12, alignItems: "center" }}
-                  >
+                  <View style={{ paddingVertical: 12, alignItems: "center" }}>
                     <Text
                       style={{
                         color: isDark ? "#888" : "#92898A",

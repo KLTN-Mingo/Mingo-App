@@ -1,5 +1,6 @@
 import Svg, { Path, Rect, Circle } from "react-native-svg";
 import { useTheme } from "@react-navigation/native";
+import { statusColors } from "@/styles/colors";
 const SearchIcon = ({ size = 24, color }) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 256 256" fill="none">
@@ -244,7 +245,7 @@ const PlusIcon = ({ size = 50, color = "currentColor" }) => (
   </Svg>
 );
 
-const MicroIcon = ({ size = 24, color = "currentColor", onClick }) => (
+const MicroIcon = ({ size = 24, color = "currentColor", onClick = undefined }) => (
   <Svg
     width={size}
     height={size}
@@ -939,7 +940,7 @@ export const PlayAudioIcon = ({ size = 24, color = "currentColor" }) => (
     <Path fill={color} d="M14 19V5h4v14zm-8 0V5h4v14z" />
   </Svg>
 );
-export const DocTypeIcon = ({ size = 70, color = "#1f64ad" }) => {
+export const DocTypeIcon = ({ size = 70, color = statusColors.info.light }) => {
   // Blue for Word
   return (
     <Svg
@@ -957,7 +958,7 @@ export const DocTypeIcon = ({ size = 70, color = "#1f64ad" }) => {
   );
 };
 
-export const PptTypeIcon = ({ size = 70, color = "#e50000" }) => {
+export const PptTypeIcon = ({ size = 70, color = statusColors.error.light }) => {
   // Red for PowerPoint
   return (
     <Svg
@@ -977,7 +978,7 @@ export const PptTypeIcon = ({ size = 70, color = "#e50000" }) => {
   );
 };
 
-export const PdfTypeIcon = ({ size = 70, color = "#e50000" }) => {
+export const PdfTypeIcon = ({ size = 70, color = statusColors.error.light }) => {
   // Red for PDF
   return (
     <Svg
@@ -1025,6 +1026,97 @@ const LocationIcon = ({ size = 24, color = "currentColor" }) => (
       stroke={color} // Màu viền
       strokeWidth={1} // Độ dày viền, có thể giảm để mỏng hơn
       d="M5.843 4.568a8.707 8.707 0 0 1 12.314 12.314l-1.187 1.174q-1.312 1.288-3.406 3.312a2.25 2.25 0 0 1-3.128 0l-3.49-3.396q-.66-.646-1.103-1.09a8.707 8.707 0 0 1 0-12.314M17.097 5.63A7.207 7.207 0 0 0 6.904 15.822l1.487 1.467q1.228 1.202 3.088 3a.75.75 0 0 0 1.043.001l3.395-3.302q.703-.69 1.18-1.166a7.207 7.207 0 0 0 0-10.193M12 7.999a3.002 3.002 0 1 1 0 6.003a3.002 3.002 0 0 1 0-6.003m0 1.5a1.502 1.502 0 1 0 0 3.003A1.502 1.502 0 0 0 12 9.5"
+    />
+  </Svg>
+);
+
+const ArrowLeftIcon = ({ size = 24, color = "currentColor" }) => (
+  <Svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      fill={color}
+      d="M19 12H5m0 0l7 7m-7-7l7-7"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const ActivityIcon = ({ size = 24, color = "currentColor" }) => (
+  <Svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      fill={color}
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const LockIcon = ({ size = 24, color = "currentColor" }) => (
+  <Svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      fill={color}
+      d="M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Zm-7 6a2 2 0 1 1 0-4a2 2 0 0 1 0 4m0 2a4 4 0 0 0-4 4v1h8v-1a4 4 0 0 0-4-4"
+    />
+  </Svg>
+);
+
+const SunIcon = ({ size = 24, color = "currentColor" }) => (
+  <Svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      fill={color}
+      d="M12 17a5 5 0 1 0 0-10a5 5 0 0 0 0 10M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const MoonIcon = ({ size = 24, color = "currentColor" }) => (
+  <Svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      fill={color}
+      d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </Svg>
 );
@@ -1315,4 +1407,9 @@ export {
   CircleFillIcon,
   LogoutIcon,
   LocationIcon,
+  ArrowLeftIcon,
+  ActivityIcon,
+  LockIcon,
+  SunIcon,
+  MoonIcon,
 };

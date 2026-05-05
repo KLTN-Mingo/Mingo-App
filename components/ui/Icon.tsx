@@ -1,6 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
+import { colors } from '@/styles/colors';
 
 type MaterialIconName = ComponentProps<typeof MaterialIcons>['name'];
 
@@ -80,7 +81,7 @@ interface IconProps {
 export function Icon({ 
   name, 
   size = 24, 
-  color = '#768D85', 
+  color = colors.primary[100], 
   style,
   className,
 }: IconProps) {

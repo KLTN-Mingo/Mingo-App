@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Input, Text } from '@/components/ui';
+import { ActionInput, Button, Text } from '@/components/ui';
 import { ArrowIcon } from '@/components/shared/icons/Icons';
+import { colors } from '@/styles/colors';
 
 export default function ForgotPasswordScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -60,7 +61,7 @@ export default function ForgotPasswordScreen() {
           onPress={() => router.back()}
           className="px-4 py-2 flex-row items-center"
         >
-          <ArrowIcon size={24} color="#768D85" />
+          <ArrowIcon size={24} color={colors.primary[100]} />
           <Text className="ml-1 text-primary-400">Back</Text>
         </TouchableOpacity>
 
@@ -85,7 +86,7 @@ export default function ForgotPasswordScreen() {
               <Text variant="muted" className="mb-1">
                 Phone Number <Text className="text-red-500">*</Text>
               </Text>
-              <Input
+              <ActionInput
                 placeholder="Nhập số điện thoại"
                 value={phoneNumber}
                 onChangeText={(text) => {

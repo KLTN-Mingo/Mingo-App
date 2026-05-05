@@ -1,19 +1,26 @@
 import "@/global.css";
-
-import { DarkTheme, ThemeProvider } from "@react-navigation/native";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { View } from "react-native";
 import "react-native-reanimated";
 
+import { BORDER_DEFAULT, colors } from "@/constants/designTokens";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { CallProvider } from "@/context/CallContext";
-import { ChatProvider } from "@/context/ChatContext";
-import { ThemeProvider as AppThemeProvider } from "@/context/ThemeContext";
+import { NotificationProvider } from "@/context/NotificationContext";
+import {
+  ThemeProvider as AppThemeProvider,
+  useTheme,
+} from "@/context/ThemeContext";
+import { Stack } from "expo-router";
 
-// Giữ splash hiển thị cho đến khi auth check xong
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
@@ -27,7 +34,6 @@ function HideSplashWhenReady({ fontsLoaded }: { fontsLoaded: boolean }) {
     if (!isLoading && fontsLoaded) SplashScreen.hideAsync();
   }, [isLoading, fontsLoaded]);
 
-  // An toàn: luôn ẩn splash sau 2.5s để tránh kẹt nếu checkAuth lỗi/hang
   useEffect(() => {
     const t = setTimeout(() => SplashScreen.hideAsync(), 2500);
     return () => clearTimeout(t);
@@ -36,55 +42,100 @@ function HideSplashWhenReady({ fontsLoaded }: { fontsLoaded: boolean }) {
   return null;
 }
 
+function ThemedNavigation() {
+  const { colorScheme } = useTheme();
+
+  const navigationTheme = useMemo(() => {
+    if (colorScheme === "dark") {
+      return {
+        ...DarkTheme,
+        colors: {
+          ...DarkTheme.colors,
+          primary: colors.primary[100],
+          background: colors.dark[500],
+          card: colors.dark[400],
+          text: colors.dark[100],
+          border: colors.dark[300],
+        },
+      };
+    }
+    return {
+      ...DefaultTheme,
+      colors: {
+        ...DefaultTheme.colors,
+        primary: colors.primary[100],
+        background: colors.light[500],
+        card: colors.light[500],
+        text: colors.light[100],
+        border: BORDER_DEFAULT,
+      },
+    };
+  }, [colorScheme]);
+
+  return (
+    <ThemeProvider value={navigationTheme}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="modal"
+          options={{ presentation: "modal", title: "Modal" }}
+        />
+        <Stack.Screen name="create-post" options={{ presentation: "modal" }} />
+        <Stack.Screen name="post/[id]" options={{ presentation: "card" }} />
+        <Stack.Screen name="profile/[id]" options={{ presentation: "card" }} />
+        <Stack.Screen name="search" options={{ presentation: "card" }} />
+        <Stack.Screen name="edit-profile" options={{ presentation: "card" }} />
+        <Stack.Screen name="chat/index" options={{ presentation: "card" }} />
+      </Stack>
+      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+    </ThemeProvider>
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    "Montserrat-Thin": require("@/assets/font/Montserrat-Thin.ttf"),
-    "Montserrat-Light": require("@/assets/font/Montserrat-Light.ttf"),
-    "Montserrat-ExtraLight": require("@/assets/font/Montserrat-ExtraLight.ttf"),
-    "Montserrat-Regular": require("@/assets/font/Montserrat-Regular.ttf"),
-    "Montserrat-Medium": require("@/assets/font/Montserrat-Medium.ttf"),
-    "Montserrat-SemiBold": require("@/assets/font/Montserrat-SemiBold.ttf"),
-    "Montserrat-Bold": require("@/assets/font/Montserrat-Bold.ttf"),
-    "Montserrat-ExtraBold": require("@/assets/font/Montserrat-ExtraBold.ttf"),
-    "Montserrat-Black": require("@/assets/font/Montserrat-Black.ttf"),
-    "Montserrat-Italic": require("@/assets/font/Montserrat-Italic.ttf"),
-    "JosefinSans-SemiBold": require("@/assets/font/JosefinSans-SemiBold.ttf"),
+    "Montserrat-Thin": require("@/assets/fonts/Montserrat-Thin.ttf"),
+    "Montserrat-Light": require("@/assets/fonts/Montserrat-Light.ttf"),
+    "Montserrat-ExtraLight": require("@/assets/fonts/Montserrat-ExtraLight.ttf"),
+    "Montserrat-Regular": require("@/assets/fonts/Montserrat-Regular.ttf"),
+    "Montserrat-Medium": require("@/assets/fonts/Montserrat-Medium.ttf"),
+    "Montserrat-SemiBold": require("@/assets/fonts/Montserrat-SemiBold.ttf"),
+    "Montserrat-Bold": require("@/assets/fonts/Montserrat-Bold.ttf"),
+    "Montserrat-ExtraBold": require("@/assets/fonts/Montserrat-ExtraBold.ttf"),
+    "Montserrat-Black": require("@/assets/fonts/Montserrat-Black.ttf"),
+    "Montserrat-Italic": require("@/assets/fonts/Montserrat-Italic.ttf"),
+    "JosefinSans-SemiBold": require("@/assets/fonts/JosefinSans-SemiBold.ttf"),
   });
 
   return (
     <AuthProvider>
-      <>
-        <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
-        <AppThemeProvider>
-          {/* Luôn dùng DarkTheme cho toàn bộ app */}
-          <ChatProvider>
-            <CallProvider>
-              <ThemeProvider value={DarkTheme}>
-                <Stack>
-                  <Stack.Screen
-                    name="(tabs)"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="(auth)"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen name="chat" options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name="modal"
-                    options={{ presentation: "modal", title: "Modal" }}
-                  />
-                  <Stack.Screen
-                    name="(modals)"
-                    options={{ headerShown: false }}
-                  />
-                </Stack>
-                <StatusBar style="light" />
-              </ThemeProvider>
-            </CallProvider>
-          </ChatProvider>
-        </AppThemeProvider>
-      </>
+      <NotificationProviderWrapper>
+        <CallProvider>
+          <View className="flex-1 font-sans" style={{ flex: 1 }}>
+            <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
+            <AppThemeProvider>
+              <ThemedNavigation />
+            </AppThemeProvider>
+          </View>
+        </CallProvider>
+      </NotificationProviderWrapper>
     </AuthProvider>
+  );
+}
+
+function NotificationProviderWrapper({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { profile } = useAuth();
+
+  return (
+    <NotificationProvider userId={profile?.id}>{children}</NotificationProvider>
   );
 }

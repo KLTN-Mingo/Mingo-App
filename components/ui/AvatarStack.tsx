@@ -1,3 +1,4 @@
+import { colors } from '@/styles/colors';
 import { Image, View } from 'react-native';
 import { Text } from './Text';
 
@@ -29,13 +30,13 @@ export function AvatarStack({
               borderRadius: size / 2,
               marginLeft: index > 0 ? -8 : 0,
               borderWidth: 2,
-              borderColor: 'white',
+              borderColor: colors.dark[500],
             }}
           />
         ))}
       </View>
       {label && (
-        <Text variant="muted" className="ml-2 text-xs">
+        <Text variant="muted" className="text-sm text-text-light dark:text-text-dark">
           {label}
         </Text>
       )}

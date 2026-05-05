@@ -6,6 +6,7 @@ import { View, Text, FlatList } from "react-native";
 import { useTheme } from "../../../context/ThemeContext";
 import FriendCard from "@/components/card/friend/FriendCard";
 import { FriendResponseDTO } from "@/dtos/FriendDTO";
+import { colors } from "@/styles/colors";
 
 const Following = () => {
   const [myFollowings, setMyFollowings] = useState<FriendResponseDTO[]>([]);
@@ -32,7 +33,7 @@ const Following = () => {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color={colors.primary[100]} />
         <Text>Loading...</Text>
       </View>
     );
