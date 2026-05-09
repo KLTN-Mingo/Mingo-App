@@ -26,6 +26,11 @@ interface PostCardProps {
   onSaveChange?: (postId: string, isSaved: boolean) => void;
   onUserPress?: (userId: string) => void;
   onMorePress?: (post: PostResponseDto) => void;
+  /**
+   * Khi truyền vào, nút Share sẽ mở action sheet (DM share / Repost) thay vì
+   * gọi `postService.sharePost` luôn. Dùng cùng `useSharePost()` ở screen.
+   */
+  onSharePress?: (post: PostResponseDto) => void;
 }
 
 export function PostCard({
@@ -37,6 +42,7 @@ export function PostCard({
   onSaveChange,
   onUserPress,
   onMorePress,
+  onSharePress,
 }: PostCardProps) {
   const colorScheme = useColorScheme() ?? 'light';
 
@@ -85,6 +91,13 @@ export function PostCard({
   };
 
   const handleShare = async () => {
+    // Mới: parent tự xử lý chooser (DM share / Repost) qua `useSharePost`.
+    if (onSharePress) {
+      onSharePress(post);
+      return;
+    }
+
+    // Backward compat: vẫn dùng `postService.sharePost` cho các screen chưa migrate.
     if (shareLoading) return;
     setShareLoading(true);
     const optimistic = sharesCount + 1;

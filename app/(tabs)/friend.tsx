@@ -19,8 +19,6 @@ import { useAuth } from '@/context/AuthContext';
 import {
   CloseFriendDto,
   CloseFriendRequestDto,
-  FollowerDto,
-  FollowingDto,
   FollowRequestDto,
   FollowStatsDto,
   FriendDto,
@@ -34,9 +32,7 @@ type TabType =
   | 'sent'
   | 'closeRequests'
   | 'friends'
-  | 'bestfriends'
-  | 'followers'
-  | 'following';
+  | 'bestfriends';
 
 const TABS: { key: TabType; label: string }[] = [
   { key: 'requests', label: 'Requests' },
@@ -44,8 +40,6 @@ const TABS: { key: TabType; label: string }[] = [
   { key: 'closeRequests', label: 'Close requests' },
   { key: 'friends', label: 'Friends' },
   { key: 'bestfriends', label: 'Best friends' },
-  { key: 'followers', label: 'Followers' },
-  { key: 'following', label: 'Following' },
 ];
 
 export default function FriendScreen() {
@@ -69,8 +63,6 @@ export default function FriendScreen() {
   const [closeFriendRequests, setCloseFriendRequests] = useState<CloseFriendRequestDto[]>([]);
   const [friends, setFriends] = useState<FriendDto[]>([]);
   const [closeFriends, setCloseFriends] = useState<CloseFriendDto[]>([]);
-  const [followers, setFollowers] = useState<FollowerDto[]>([]);
-  const [following, setFollowing] = useState<FollowingDto[]>([]);
   const [stats, setStats] = useState<FollowStatsDto | null>(null);
 
   // Loading states
@@ -105,14 +97,6 @@ export default function FriendScreen() {
         case 'bestfriends':
           const bffData = await FollowApi.getCloseFriends(profile.id);
           setCloseFriends(bffData.closeFriends);
-          break;
-        case 'followers':
-          const followersData = await FollowApi.getFollowers(profile.id);
-          setFollowers(followersData.followers);
-          break;
-        case 'following':
-          const followingData = await FollowApi.getFollowing(profile.id);
-          setFollowing(followingData.following);
           break;
       }
 
@@ -176,10 +160,6 @@ export default function FriendScreen() {
         return renderCloseRequests();
       case 'bestfriends':
         return renderCloseFriends();
-      case 'followers':
-        return renderFollowers();
-      case 'following':
-        return renderFollowing();
       default:
         return null;
     }
@@ -321,52 +301,6 @@ export default function FriendScreen() {
           <FriendCard
             user={item.user}
             isCloseFriend={true}
-            onPress={() => {/* Navigate to profile */ }}
-          />
-        )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-      />
-    );
-  };
-
-  const renderFollowers = () => {
-    if (followers.length === 0) {
-      return renderEmptyState('No followers yet');
-    }
-
-    return (
-      <FlatList
-        data={followers}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <FriendCard
-            user={item.follower}
-            onPress={() => {/* Navigate to profile */ }}
-          />
-        )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-      />
-    );
-  };
-
-  const renderFollowing = () => {
-    if (following.length === 0) {
-      return renderEmptyState('Not following anyone');
-    }
-
-    return (
-      <FlatList
-        data={following}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <FriendCard
-            user={item.following}
             onPress={() => {/* Navigate to profile */ }}
           />
         )}

@@ -314,7 +314,6 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
   const backgroundColor = colorScheme === 'dark' ? '#1E2021' : '#FFFFFF';
   const sheetColor = colorScheme === 'dark' ? '#252525' : '#FFFFFF';
   const plusColor = colorScheme === 'dark' ? '#FAFAFA' : '#1E2021';
-  const activeColor = colorScheme === 'dark' ? '#515E5A' : '#768D85';
   const inactiveColor = '#6B6B6B';
   const activeTextColor = colorScheme === 'dark' ? '#1E2021' : '#FFFFFF';
 
@@ -395,12 +394,11 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
     }, [isFocused]);
 
     const animatedTextStyle = useAnimatedStyle(() => ({
-      opacity: interpolate(scale.value, [0, 1], [1, 0]),
+      opacity: 1,
     }));
 
     const animatedIconStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: interpolate(scale.value, [0, 1], [1, 1.2]) }],
-      top: interpolate(scale.value, [0, 1], [0, 9]),
+      transform: [{ scale: interpolate(scale.value, [0, 1], [1, 1.1]) }],
     }));
 
     return (
@@ -416,14 +414,22 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
       >
         <Animated.View style={animatedIconStyle}>
           {IconComponent && (
-            <IconComponent color={isFocused ? activeColor : inactiveColor} />
+            <IconComponent
+              color={isFocused ? activeTextColor : inactiveColor}
+              width={20}
+              height={20}
+            />
           )}
         </Animated.View>
-        <Animated.Text style={[animatedTextStyle, {
-          color: isFocused ? activeTextColor : inactiveColor,
-          fontSize: 12,
-          fontFamily: "Montserrat-Regular",
-        }]}>
+        <Animated.Text
+          numberOfLines={1}
+          style={[animatedTextStyle, {
+            color: isFocused ? activeTextColor : inactiveColor,
+            fontSize: 11,
+            fontFamily: "Montserrat-Regular",
+            marginTop: 2,
+          }]}
+        >
           {label}
         </Animated.Text>
       </PlatformPressable>

@@ -27,3 +27,9 @@ export * from './message.dto';
 
 // Call / Socket
 export * from './call.dto';
+
+// Search
+export * from './search.dto';
+
+// Share (DM share + Repost)
+export * from './share.dto';

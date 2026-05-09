@@ -31,6 +31,7 @@ import {
   UserMinimalDto,
 } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSharePost } from "@/hooks/use-share-post";
 import { notificationService } from "@/services/notification.service";
 import { postService } from "@/services/post.service";
 import { getSemantic, getStatusColor } from "@/styles/colors";
@@ -176,6 +177,24 @@ export default function HomeScreen() {
       prev.map((p) => (p.id === postId ? { ...p, isSaved } : p))
     );
   };
+
+  const share = useSharePost({
+    currentUserId: profile?.id,
+    onShared: ({ postId, sentCount }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + sentCount } : p
+        )
+      );
+    },
+    onReposted: ({ postId }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
+        )
+      );
+    },
+  });
 
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}` as any);
@@ -362,6 +381,7 @@ export default function HomeScreen() {
             onLikeChange={handleLikeChange}
             onCommentPress={handleCommentPress}
             onShareChange={handleShareChange}
+            onSharePress={share.openSheet}
             onSaveChange={handleSaveChange}
             onUserPress={handleUserPress}
             onMorePress={handlePostMorePress}
@@ -403,6 +423,8 @@ export default function HomeScreen() {
         onClose={() => setCommentPostId(null)}
         onCommentCountChange={handleCommentCountChange}
       />
+
+      {share.modals}
     </ScreenContainer>
   );
 }

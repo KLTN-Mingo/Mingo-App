@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { PostResponseDto, UserMinimalDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSharePost } from "@/hooks/use-share-post";
 import { postService } from "@/services/post.service";
 import { colors, getSemantic } from "@/styles/colors";
 
@@ -66,6 +67,24 @@ export default function SavedPostsScreen() {
       prev.map((p) => (p.id === postId ? { ...p, isSaved } : p))
     );
   };
+
+  const share = useSharePost({
+    currentUserId: profile?.id,
+    onShared: ({ postId, sentCount }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + sentCount } : p
+        )
+      );
+    },
+    onReposted: ({ postId }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
+        )
+      );
+    },
+  });
 
   const handlePostMorePress = (post: PostResponseDto) => {
     if (!profile) return;
@@ -199,6 +218,7 @@ export default function SavedPostsScreen() {
                     )
                   );
                 }}
+                onSharePress={share.openSheet}
                 onSaveChange={handleSaveChange}
                 onUserPress={(userId) => router.push(`/profile/${userId}` as any)}
                 onMorePress={handlePostMorePress}
@@ -209,6 +229,8 @@ export default function SavedPostsScreen() {
             }
           />
         )}
+
+        {share.modals}
       </ScreenContainer>
   );
 }

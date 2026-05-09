@@ -1,0 +1,64 @@
+---
+description: Mingo app — high-level stack, structure, conventions
+alwaysApply: true
+---
+
+# Mingo App — Project Context
+
+Social mobile app built with Expo + React Native. KEEP responses focused on this stack.
+
+## Stack
+
+- **Expo SDK 54** + **React Native 0.81** + **React 19**
+- **expo-router v6** — file-based routing in `app/`
+- **NativeWind v4** + **Tailwind CSS** for styling (NOT `StyleSheet`)
+- **TypeScript strict** with path alias `@/*` → repo root
+- **React Context** for global state (Auth, Theme, Notification, Call, Chat)
+- **socket.io-client** for realtime (chat, calls, notifications)
+- **AsyncStorage** for token + lightweight persistence
+- Custom **fetch wrapper** in `@/services/api-client.ts` (NOT axios, NOT React Query)
+
+## Folder Structure
+
+```
+app/         # expo-router screens (route groups: (auth), (tabs), (modals))
+components/  # ui/ (atoms), shared/, skeleton/, + feature folders (chat, post, profile…)
+services/    # *.service.ts — API + socket clients
+context/     # React Context providers
+hooks/       # use-*.ts custom hooks
+dtos/        # *.dto.ts — request/response types
+constants/   # designTokens.ts, theme.ts, catalogs
+utils/       # small helpers
+styles/      # color helpers
+```
+
+## Naming
+
+- Route files in `app/`: kebab-case (`add-friend.tsx`, `edit-profile.tsx`)
+- Components in `components/`: PascalCase (`Button.tsx`, `Avatar.tsx`)
+- Hooks: `use-*.ts` kebab-case
+- Services: `*.service.ts` kebab-case
+- DTOs: `*.dto.ts` kebab-case
+
+## Critical Rules
+
+- ALWAYS use `@/...` path imports, never long relative paths (`../../../`)
+- NEVER write new `StyleSheet.create` — use NativeWind className
+- NEVER hardcode hex colors in components — use Tailwind tokens from `tailwind.config.js` / `constants/designTokens.ts`
+- Follow `mingo-ui-guide.md` for any UI work (palette, spacing, components)
+- Comments: explain WHY (intent, trade-off), not WHAT — repo convention is Vietnamese for domain comments
+
+## Auth Flow
+
+- Access token persisted in `AsyncStorage` under key `accessToken`, owned by `@/context/AuthContext`
+- `apiRequest` / `apiMultipartRequest` automatically attach `Authorization: Bearer <token>`
+- 401 responses are auto-handled by `@/services/api-client.ts` via `authService.handleUnauthorizedResponse` (logout + redirect)
+- DO NOT manually catch 401 in screens or services
+- Use `useAuth()` to read `profile`, `isLoading`, login/logout actions
+
+## Error Handling Convention
+
+- Services throw `Error(message)` — catch at the **screen level** (the place that decides how to surface it)
+- User-facing messages: **Vietnamese**, e.g. `"Không tải được dữ liệu"`, `"Vui lòng thử lại"`
+- Dev/console logs: **English**, prefixed with module tag: `console.error('[post] load failed', e)` / `[chat]` / `[auth]` / `[notif]`
+- Show errors via `Alert.alert(...)` for blocking flows, or inline `<EmptyState />` for non-blocking list errors

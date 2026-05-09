@@ -1,0 +1,84 @@
+---
+description: NativeWind + Tailwind styling rules following Mingo UI Guide
+globs: ["**/*.tsx"]
+alwaysApply: false
+---
+
+# Styling — NativeWind + Mingo Design Tokens
+
+ALL styling uses NativeWind `className`. See `mingo-ui-guide.md` and `tailwind.config.js`.
+
+## Always Use Design Tokens
+
+```tsx
+// ❌ BAD — hardcoded hex / arbitrary values
+<View style={{ backgroundColor: '#768D85' }} />
+<View className="bg-[#F1F4F3]" />
+
+// ✅ GOOD — semantic tokens from tailwind.config.js
+<View className="bg-primary" />
+<View className="bg-surface-light dark:bg-surface-dark" />
+```
+
+## Mingo Color Tokens (configured in tailwind.config.js)
+
+| Use case | Token |
+|---|---|
+| Brand / active / CTA | `bg-primary` (#768D85) |
+| Screen background | `bg-background-light dark:bg-background-dark` |
+| Card / input bg | `bg-surface-light dark:bg-surface-dark` |
+| Body text | `text-text-light dark:text-text-dark` |
+| Secondary text | `text-text-secondary-light dark:text-text-secondary-dark` |
+| Placeholder / disabled | `text-text-muted-light dark:text-text-muted-dark` |
+| Borders | `border-border-light dark:border-border-dark` |
+| Destructive | `bg-danger-light dark:bg-danger-dark` |
+| Online dot | `bg-online-light` |
+
+## Dark Mode
+
+ALWAYS pair light + dark variants for surface/text/border:
+
+```tsx
+<View className="bg-background-light dark:bg-background-dark">
+  <Text className="text-text-light dark:text-text-dark">Hello</Text>
+</View>
+```
+
+## Typography
+
+Use the `<Text>` component from `@/components/ui` (NOT raw `<Text>` from `react-native`):
+
+```tsx
+import { Text } from '@/components/ui';
+
+<Text variant="title">Heading</Text>     // h1 28/700
+<Text variant="subtitle">Subhead</Text>  // 22/700
+<Text>Body</Text>                        // default 16/400
+<Text variant="muted">Caption</Text>
+```
+
+Font family classes: `font-regular`, `font-medium`, `font-semibold`, `font-bold` (Montserrat).
+
+## Spacing & Radius
+
+- Horizontal screen padding: `px-4` (16px) — consistent across app
+- Pills / buttons / inputs: `rounded-full`
+- Cards: `rounded-lg` (16px)
+- Avatars: `rounded-full`, sizes 32 / 40 / 48 / 80
+
+## Composing Classes
+
+Use `tailwind-merge` (`twMerge`) to safely merge override className from props:
+
+```tsx
+import { twMerge } from 'tailwind-merge';
+
+<View className={twMerge('px-4 py-2 bg-primary', className)} />
+```
+
+## Don'ts
+
+- ❌ NO `StyleSheet.create` for new code — NativeWind only
+- ❌ NO inline `style={{ color: '#...' }}` for theme-able colors
+- ❌ NO `#F5F5F5`, `#2C2C2E`, `#4A7C6A` (legacy values — see UI guide §7)
+- ❌ NO divider lines — use spacing instead (per UI guide)

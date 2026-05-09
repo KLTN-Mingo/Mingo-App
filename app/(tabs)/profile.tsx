@@ -17,6 +17,7 @@ import { PostCard } from "@/components/post/PostCard";
 import { ProfileBioEditModal } from "@/components/profile/ProfileBioEditModal";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfo } from "@/components/profile/ProfileInfo";
+import { ProfileRepostsList } from "@/components/profile/ProfileRepostsList";
 import { ProfileSettingsModal } from "@/components/profile/ProfileSettingsModal";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import {
@@ -31,13 +32,14 @@ import { useNotification } from "@/context/NotificationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { PostResponseDto, UserMinimalDto, UserProfileDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSharePost } from "@/hooks/use-share-post";
 import { postService } from "@/services/post.service";
 import { userService } from "@/services/user.service";
 import { colors, getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
 import { authUserFromProfile } from "@/utils/authUserFromProfile";
 import { pickProfileImage } from "@/utils/profileMediaPicker";
 
-type TabKey = "posts" | "photos" | "videos";
+type TabKey = "posts" | "photos" | "videos" | "reposts";
 
 export default function ProfileScreen() {
   const { profile, setProfile, logout } = useAuth();
@@ -207,6 +209,24 @@ export default function ProfileScreen() {
     }
     : null;
 
+  const share = useSharePost({
+    currentUserId: userProfile?.id,
+    onShared: ({ postId, sentCount }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + sentCount } : p
+        )
+      );
+    },
+    onReposted: ({ postId }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
+        )
+      );
+    },
+  });
+
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}` as any);
   };
@@ -272,13 +292,7 @@ export default function ProfileScreen() {
                 );
               }}
               onCommentPress={(postId) => setCommentPostId(postId)}
-              onShareChange={(postId, nextCount) => {
-                setPosts((prev) =>
-                  prev.map((p) =>
-                    p.id === postId ? { ...p, sharesCount: nextCount } : p
-                  )
-                );
-              }}
+              onSharePress={share.openSheet}
               onSaveChange={(postId, isSaved) => {
                 setPosts((prev) =>
                   prev.map((p) => (p.id === postId ? { ...p, isSaved } : p))
@@ -349,6 +363,14 @@ export default function ProfileScreen() {
           <EmptyState title="No videos yet" />
         );
       }
+
+      case "reposts":
+        return userProfile ? (
+          <ProfileRepostsList
+            userId={userProfile.id}
+            currentUser={userMinimal}
+          />
+        ) : null;
 
       default:
         return null;
@@ -552,6 +574,8 @@ export default function ProfileScreen() {
           );
         }}
       />
+
+      {share.modals}
       </ScreenContainer>
   );
 }

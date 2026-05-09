@@ -1,20 +1,24 @@
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  TouchableOpacity,
   View,
 } from "react-native";
 
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import HobbySelector from "@/components/shared/ui/hobby-selector";
-import { Button, InfoInput, Text } from "@/components/ui";
-import { PageHeader } from "@/components/ui/PageHeader";
 import {
-  ADDRESS_SUGGESTIONS,
-  RELATIONSHIP_OPTIONS,
-} from "@/constants/editProfileOptions";
+  ActionDatePicker,
+  ActionInput,
+  ActionSelectPicker,
+  Button,
+  Text,
+} from "@/components/ui";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { RELATIONSHIP_OPTIONS } from "@/constants/editProfileOptions";
 import {
   PRESET_HOBBIES,
   PRESET_HOBBY_SET,
@@ -22,11 +26,12 @@ import {
 } from "@/constants/hobbyCatalog";
 import { useAuth } from "@/context/AuthContext";
 import { Gender } from "@/dtos";
+import { useVNLocationSuggestions } from "@/hooks/use-vn-locations";
 import { userService } from "@/services/user.service";
 import { paletteIcon } from "@/styles/colors";
 import { authUserFromProfile } from "@/utils/authUserFromProfile";
 
-const GENDER_OPTIONS: { label: string; value: Gender }[] = [
+const GENDER_OPTIONS: { label: string; value: string }[] = [
   { label: "Male", value: Gender.MALE },
   { label: "Female", value: Gender.FEMALE },
 ];
@@ -36,6 +41,62 @@ function toDateInputValue(iso?: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return d.toISOString().slice(0, 10);
+}
+
+interface LocationFieldProps {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  placeholder?: string;
+}
+
+function LocationField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: LocationFieldProps) {
+  const [focused, setFocused] = useState(false);
+  const suggestions = useVNLocationSuggestions(focused ? value : "", 6);
+
+  return (
+    <View>
+      <ActionInput
+        label={label}
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        maxLength={255}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          setTimeout(() => setFocused(false), 150);
+        }}
+      />
+      {focused && suggestions.length > 0 ? (
+        <View className="mt-2 rounded-2xl bg-input-light dark:bg-input-dark overflow-hidden">
+          {suggestions.map((item, idx) => (
+            <TouchableOpacity
+              key={item.id}
+              activeOpacity={0.65}
+              onPress={() => {
+                onChange(item.shortLabel);
+                setFocused(false);
+              }}
+              className={`px-4 py-3 ${
+                idx > 0
+                  ? "border-t border-border-light dark:border-border-dark"
+                  : ""
+              }`}
+            >
+              <Text className="text-sm text-text-light dark:text-text-dark">
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 export default function EditProfileScreen() {
@@ -88,6 +149,15 @@ export default function EditProfileScreen() {
       prev.includes(hobby) ? prev.filter((h) => h !== hobby) : [...prev, hobby]
     );
   };
+
+  const relationshipOptions = useMemo(
+    () =>
+      RELATIONSHIP_OPTIONS.map((o) => ({
+        label: o.label,
+        value: o.value,
+      })),
+    []
+  );
 
   const handleSave = async () => {
     const trimmed = name.trim();
@@ -144,51 +214,44 @@ export default function EditProfileScreen() {
   }
 
   return (
-      <ScreenContainer className="gap-4">
-        <PageHeader title="Edit Profile" />
-        {loading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={paletteIcon.lightMuted} />
-          </View>
-        ) : (
-          <ScrollView
-            className="flex-1"
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 32 }}
-          >
-            <View className="gap-2">
-            <InfoInput
+    <ScreenContainer className="gap-4">
+      <PageHeader title="Edit Profile" />
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={paletteIcon.lightMuted} />
+        </View>
+      ) : (
+        <ScrollView
+          className="flex-1"
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 32 }}
+        >
+          <View className="gap-4">
+            <ActionInput
               label="Full Name"
-              required
               value={name}
               onChangeText={setName}
               placeholder="Display name"
               autoCapitalize="words"
             />
 
-            <InfoInput
-              mode="select"
+            <ActionSelectPicker
               label="Gender"
-              required
               value={gender ?? ""}
               onValueChange={(v) => setGender(v as Gender)}
-              options={GENDER_OPTIONS.map((o) => ({
-                label: o.label,
-                value: String(o.value),
-              }))}
+              options={GENDER_OPTIONS}
               placeholder="Select gender"
             />
 
-            <InfoInput
-              mode="select"
+            <ActionSelectPicker
               label="Relationship Status"
               value={relationship}
               onValueChange={setRelationship}
-              options={RELATIONSHIP_OPTIONS}
+              options={relationshipOptions}
               placeholder="Select..."
             />
 
-            <InfoInput
+            <ActionInput
               label="Work"
               value={work}
               onChangeText={setWork}
@@ -196,35 +259,29 @@ export default function EditProfileScreen() {
               maxLength={150}
             />
 
-            <InfoInput
+            <LocationField
               label="Current Location"
               value={currentAddress}
-              onChangeText={setCurrentAddress}
-              placeholder="Enter address or select suggestion"
-              maxLength={255}
-              suggestions={ADDRESS_SUGGESTIONS}
-              mapPickEnabled
+              onChange={setCurrentAddress}
+              placeholder="Type to search Vietnam locations"
             />
 
-            <InfoInput
+            <LocationField
               label="Hometown"
               value={hometown}
-              onChangeText={setHometown}
-              placeholder="Enter or select suggestion"
-              maxLength={255}
-              suggestions={ADDRESS_SUGGESTIONS}
-              mapPickEnabled
+              onChange={setHometown}
+              placeholder="Type to search Vietnam locations"
             />
 
-            <InfoInput
-              mode="date"
+            <ActionDatePicker
               label="Date of Birth"
               value={dateOfBirth}
               onValueChange={setDateOfBirth}
+              placeholder="Select date of birth"
             />
 
-            <View className="mt-4">
-              <Text variant="muted" className="mb-2 font-medium">
+            <View className="mt-2">
+              <Text className="mb-2 font-medium text-base text-text-light dark:text-text-dark">
                 Hobbies
               </Text>
               <HobbySelector
@@ -238,8 +295,8 @@ export default function EditProfileScreen() {
           <Button className="mt-8" onPress={handleSave} loading={saving}>
             Save Changes
           </Button>
-          </ScrollView>
-        )}
-      </ScreenContainer>
+        </ScrollView>
+      )}
+    </ScreenContainer>
   );
 }
