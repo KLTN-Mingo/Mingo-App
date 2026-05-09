@@ -11,15 +11,14 @@ import { Audio, AVPlaybackStatus, ResizeMode, Video } from "expo-av";
 import { Text } from "@/components/ui";
 import { MessageResponseDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { colors } from "@/styles/colors";
 
-// Old Mingo_App MessageCard colors
+// Mingo MessageBubble colors
 const bubbleColors = {
-  own: colors.primary[100], // primary[100]
-  otherDark: colors.dark[400], // dark[400]
-  // currently not used (see ternary below), but keep consistent:
-  otherLight: colors.light[200],
-  dateMuted: colors.dark[300],
+  own: "#768D85", // primary light
+  ownDark: "#515E5A", // primary dark
+  otherLight: "#F1F4F3", // surface light
+  otherDark: "#252525", // surface dark
+  dateMuted: "#6B6B6B", // text secondary
 };
 
 interface MessageBubbleProps {
@@ -210,9 +209,11 @@ function FileMessage({ uri, fileName }: { uri: string; fileName: string }) {
 function MessageContent({
   message,
   isOwn,
+  textColor,
 }: {
   message: MessageResponseDto;
   isOwn: boolean;
+  textColor: string;
 }) {
   const messageType = useMemo(() => resolveMessageType(message), [message]);
   const uri = useMemo(() => resolveMediaUri(message), [message]);
@@ -222,7 +223,7 @@ function MessageContent({
   if (messageType === "text") {
     return (
       <Text
-        style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther]}
+        style={[styles.bubbleText, { color: textColor }]}
         selectable
       >
         {message.content || ""}
@@ -232,7 +233,7 @@ function MessageContent({
 
   if (!uri) {
     return (
-      <Text style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther]}>
+      <Text style={[styles.bubbleText, { color: textColor }]}>
         Unsupported message
       </Text>
     );
@@ -250,7 +251,7 @@ function MessageContent({
     default:
       return (
         <Text
-          style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther]}
+          style={[styles.bubbleText, { color: textColor }]}
           selectable
         >
           {message.content || ""}
@@ -268,8 +269,12 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   const isRevoked = message.isRevoked;
   const colorScheme = useColorScheme() ?? "light";
-  const otherBubbleBg =
-    colorScheme === "dark" ? bubbleColors.otherDark : bubbleColors.otherDark;
+  const isDark = colorScheme === "dark";
+
+  const otherBubbleBg = isDark ? bubbleColors.otherDark : bubbleColors.otherLight;
+  const ownBubbleBg = isDark ? bubbleColors.ownDark : bubbleColors.own;
+  const textColorOwn = "#FFFFFF";
+  const textColorOther = isDark ? "#FAFAFA" : "#1E2021";
 
   return (
     <View
@@ -300,21 +305,26 @@ export function MessageBubble({
         <View
           style={[
             styles.bubble,
-            isOwn ? styles.bubbleOwn : { backgroundColor: otherBubbleBg },
+            isOwn ? [styles.bubbleOwn, { backgroundColor: ownBubbleBg }] : { backgroundColor: otherBubbleBg },
+            isOwn ? styles.bubbleOwnRadius : styles.bubbleOtherRadius,
           ]}
         >
           {isRevoked ? (
             <Text
               style={[
                 styles.bubbleText,
-                isOwn ? styles.textOwn : styles.textOther,
+                { color: textColorOther },
                 styles.unsentText,
               ]}
             >
               Message unsent
             </Text>
           ) : (
-            <MessageContent message={message} isOwn={isOwn} />
+            <MessageContent
+              message={message}
+              isOwn={isOwn}
+              textColor={isOwn ? textColorOwn : textColorOther}
+            />
           )}
         </View>
       </View>
@@ -352,32 +362,25 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 50,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   bubble: {
     maxWidth: "75%",
     padding: 12,
-    borderRadius: 20,
-    shadowColor: colors.dark[500],
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
+    borderRadius: 18,
   },
   bubbleOwn: {
-    backgroundColor: bubbleColors.own,
+    borderBottomRightRadius: 4,
   },
-  bubbleOther: {},
+  bubbleOwnRadius: {},
+  bubbleOtherRadius: {
+    borderBottomLeftRadius: 4,
+  },
   bubbleText: {
     fontSize: 14,
-  },
-  textOwn: {
-    color: colors.light[400],
-  },
-  textOther: {
-    color: colors.light[400],
+    fontFamily: "Montserrat-Regular",
   },
   unsentText: {
     fontStyle: "italic",
@@ -397,9 +400,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   mediaMetaText: {
-    color: colors.light[400],
+    color: bubbleColors.dateMuted,
     fontSize: 12,
-    opacity: 0.9,
+    fontFamily: "Montserrat-Regular",
   },
   audioWrap: {
     flexDirection: "row",
@@ -413,9 +416,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.2)",
   },
   audioButtonText: {
-    color: colors.light[400],
+    color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "600",
+    fontFamily: "Montserrat-SemiBold",
   },
   fileWrap: {
     flexDirection: "row",
@@ -425,10 +429,11 @@ const styles = StyleSheet.create({
   },
   fileIcon: {
     fontSize: 18,
+    fontFamily: "Montserrat-Regular",
   },
   fileNameText: {
-    color: colors.light[400],
     fontSize: 13,
+    fontFamily: "Montserrat-Regular",
     flexShrink: 1,
   },
 });

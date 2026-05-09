@@ -7,7 +7,8 @@ import {
   NotificationResponseDto,
   NotificationType,
 } from '@/dtos';
-import { colors, statusColors } from '@/styles/colors';
+import { paletteIcon, statusColors } from '@/styles/colors';
+import { useTheme } from '@/context/ThemeContext';
 
 interface NotificationCardProps {
   notification: NotificationResponseDto;
@@ -21,7 +22,6 @@ function getNotificationIcon(type: NotificationType): {
   bgColor: string;
 } {
   const icons: Record<string, { name: string; color: string; bgColor: string }> = {
-    // Post
     [NotificationType.POST_LIKE]: {
       name: 'heart.fill',
       color: statusColors.error.light,
@@ -42,7 +42,6 @@ function getNotificationIcon(type: NotificationType): {
       color: statusColors.info.light,
       bgColor: 'bg-purple-100 dark:bg-purple-900/30',
     },
-    // Media
     [NotificationType.MEDIA_LIKE]: {
       name: 'heart.fill',
       color: statusColors.error.light,
@@ -53,7 +52,6 @@ function getNotificationIcon(type: NotificationType): {
       color: statusColors.info.light,
       bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     },
-    // Comment
     [NotificationType.COMMENT_LIKE]: {
       name: 'heart.fill',
       color: statusColors.error.light,
@@ -69,7 +67,6 @@ function getNotificationIcon(type: NotificationType): {
       color: statusColors.info.light,
       bgColor: 'bg-purple-100 dark:bg-purple-900/30',
     },
-    // Follow
     [NotificationType.FOLLOW_REQUEST]: {
       name: 'person.badge.plus',
       color: statusColors.warning.light,
@@ -82,10 +79,9 @@ function getNotificationIcon(type: NotificationType): {
     },
     [NotificationType.FOLLOW_NEW]: {
       name: 'person.fill.badge.plus',
-      color: colors.primary[100],
-      bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+      color: '#768D85',
+      bgColor: 'bg-primary/20 dark:bg-primary/30',
     },
-    // Close Friend
     [NotificationType.CLOSE_FRIEND_REQUEST]: {
       name: 'star.fill',
       color: statusColors.warning.light,
@@ -96,16 +92,14 @@ function getNotificationIcon(type: NotificationType): {
       color: statusColors.success.light,
       bgColor: 'bg-green-100 dark:bg-green-900/30',
     },
-    // Message
     [NotificationType.MESSAGE_NEW]: {
       name: 'envelope.fill',
       color: statusColors.info.light,
       bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     },
-    // System
     [NotificationType.SYSTEM]: {
       name: 'bell.fill',
-      color: colors.dark[300],
+      color: '#6B6B6B',
       bgColor: 'bg-gray-100 dark:bg-gray-800',
     },
   };
@@ -113,8 +107,8 @@ function getNotificationIcon(type: NotificationType): {
   return (
     icons[type] || {
       name: 'bell.fill',
-      color: colors.primary[100],
-      bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+      color: '#768D85',
+      bgColor: 'bg-primary/20 dark:bg-primary/30',
     }
   );
 }
@@ -137,6 +131,9 @@ export function NotificationCard({
   onPress,
   onDelete,
 }: NotificationCardProps) {
+  const { colorScheme } = useTheme();
+  const iconMutedColor = paletteIcon[colorScheme];
+
   const { actor, notificationType, content, thumbnailUrl, isRead, createdAt } =
     notification;
 
@@ -144,18 +141,12 @@ export function NotificationCard({
   const message = getNotificationMessage(notificationType, actor?.name);
   const timeAgo = getTimeAgo(createdAt);
 
-  const rowClass = `flex-row items-start p-4 ${
-    !isRead
-      ? 'bg-primary-50 dark:bg-primary-900/20'
-      : 'bg-surface-light dark:bg-surface-dark'
-  }`;
-
   return (
-    <View className="flex-row items-stretch border-b border-border-light dark:border-border-dark">
+    <View className="flex-row items-stretch bg-background-light dark:bg-background-dark">
       <TouchableOpacity
         onPress={() => onPress?.(notification)}
         activeOpacity={0.7}
-        className={`flex-1 flex-row items-start ${rowClass}`}
+        className="flex-1 flex-row items-start p-4"
       >
         {/* Avatar with Icon Badge */}
         <View className="relative">
@@ -173,19 +164,19 @@ export function NotificationCard({
 
         {/* Content */}
         <View className="flex-1 ml-3">
-          <Text className={`${!isRead ? 'font-semibold' : ''}`} numberOfLines={2}>
+          <Text className={`text-text-light dark:text-text-dark ${!isRead ? 'font-bold' : ''}`} numberOfLines={2}>
             {message}
           </Text>
 
           {content && (
-            <Text variant="muted" numberOfLines={1} className="mt-0.5">
+            <Text variant="muted" numberOfLines={1} className="mt-0.5 text-sm">
               &quot;{content}&quot;
             </Text>
           )}
 
           <Text
             variant="muted"
-            className={`text-xs mt-1 ${!isRead ? 'text-primary-500' : ''}`}
+            className="text-xs mt-1"
           >
             {timeAgo}
           </Text>
@@ -199,19 +190,20 @@ export function NotificationCard({
           />
         )}
 
+        {/* Unread dot */}
         {!isRead && (
-          <View className="w-2.5 h-2.5 rounded-full bg-primary-500 ml-2 mt-1 self-start" />
+          <View className="w-2 h-2 rounded-sm bg-primary ml-2 mt-1 self-start" />
         )}
       </TouchableOpacity>
 
       {onDelete ? (
         <TouchableOpacity
           onPress={() => onDelete(notification)}
-          className="justify-center px-3 bg-surface-light dark:bg-surface-dark"
+          className="justify-center px-3 bg-background-light dark:bg-background-dark"
           accessibilityLabel="Xóa thông báo"
           hitSlop={{ top: 12, bottom: 12, left: 8, right: 12 }}
         >
-          <Icon name="trash" size={18} color={colors.dark[300]} />
+          <Icon name="trash" size={18} color={iconMutedColor} />
         </TouchableOpacity>
       ) : null}
     </View>

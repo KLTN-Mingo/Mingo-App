@@ -1,0 +1,103 @@
+---
+description: API service layer conventions (services/**)
+globs: ["services/**/*.ts"]
+alwaysApply: false
+---
+
+# Service Layer Conventions
+
+All HTTP / socket integrations live in `services/*.service.ts`. The fetch wrapper lives in `@/services/api-client.ts`.
+
+## Always Use the Wrapper
+
+```ts
+import { apiRequest, apiMultipartRequest } from '@/services/api-client';
+
+// JSON request
+const post = await apiRequest<PostResponseDto>('/posts/' + id);
+
+// JSON POST
+await apiRequest<void>('/posts/' + id + '/like', { method: 'POST' });
+
+// Multipart upload (DO NOT set Content-Type — fetch boundary)
+const formData = new FormData();
+formData.append('file', { uri, name, type } as any);
+await apiMultipartRequest<MediaDto>('/media/upload', formData);
+```
+
+The wrapper:
+- Reads `accessToken` from `AsyncStorage` and attaches `Authorization: Bearer ...`
+- Unwraps `{ data | result | payload | user }` envelope automatically
+- Calls `authService.handleUnauthorizedResponse` on 401
+- Throws `Error(message)` on non-2xx
+
+## Don'ts
+
+```ts
+// ❌ raw fetch — bypasses auth + envelope handling
+const r = await fetch(`${API_URL}/posts`, { headers: { ... } });
+
+// ❌ axios — not installed; do not add it
+import axios from 'axios';
+
+// ❌ React Query — not used in this project
+import { useQuery } from '@tanstack/react-query';
+```
+
+## Service Class Shape
+
+Services are classes exported as a singleton instance:
+
+```ts
+class PostService {
+  async getById(id: string): Promise<PostResponseDto> {
+    return apiRequest<PostResponseDto>(`/posts/${id}`);
+  }
+
+  async create(dto: CreatePostRequestDto): Promise<PostResponseDto> {
+    return apiRequest<PostResponseDto>('/posts', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  /** Normalize backend variability: `_id` vs `id`, missing arrays, etc. */
+  private normalizePost(raw: unknown): PostResponseDto {
+    if (!raw || typeof raw !== 'object') {
+      throw new Error('Invalid post payload');
+    }
+    const r = raw as Record<string, unknown>;
+    const id =
+      (r.id as string | undefined) ??
+      (r._id as { toString(): string } | undefined)?.toString() ??
+      '';
+    return { ...r, id } as PostResponseDto;
+  }
+}
+
+export const postService = new PostService();
+```
+
+### Typing chaotic backend payloads
+
+Prefer `unknown` + narrow, NOT `any`. If backend shape is genuinely unstable and narrowing is impractical, document the reason explicitly:
+
+```ts
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+private normalizeLegacy(raw: any): SomeDto {
+  // raw: legacy /v1 endpoint, schema chưa ổn định — narrowing cost > benefit
+  return { ...raw };
+}
+```
+
+Pattern notes seen in this repo:
+- DTO types come from `@/dtos` — import them, don't redefine
+- Backend may return `_id` (Mongo) — normalize to `id` in services
+- Vietnamese error messages OK (matches existing UX): `"Phản hồi từ máy chủ không hợp lệ"`
+
+## Sockets
+
+Real-time uses `socket.io-client`. Pattern: `*-socket.service.ts` (see `notification-socket.service.ts`). Always:
+- Connect with auth token
+- Clean up listeners on `disconnect`
+- Expose typed event handlers, not raw `socket.on` calls

@@ -1,13 +1,21 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { paletteDark, paletteLight } from '@/constants/designTokens';
 import { Skeleton, SkeletonCircle, SkeletonText } from '@/components/ui/Skeleton';
 import { PostListSkeleton } from './PostCardSkeleton';
 
 export function HomeSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === 'dark' ? paletteDark : paletteLight;
+
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark" edges={['top']}>
+    <SafeAreaView
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
+      edges={['top']}
+    >
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3">
         <SkeletonText width={100} height={28} />
@@ -30,7 +38,10 @@ export function HomeSkeleton() {
       </View>
 
       {/* Create Post */}
-      <View className="flex-row items-center px-4 py-3 bg-surface-light dark:bg-surface-dark mb-2">
+      <View
+        className="flex-row items-center px-4 py-3 mb-2"
+        style={{ backgroundColor: colors.surface }}
+      >
         <SkeletonCircle size={40} />
         <View className="flex-1 ml-3">
           <Skeleton width="100%" height={40} borderRadius={20} />

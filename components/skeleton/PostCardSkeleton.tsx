@@ -1,11 +1,15 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, useColorScheme } from 'react-native';
 
+import { paletteDark, paletteLight } from '@/constants/designTokens';
 import { Skeleton, SkeletonCircle, SkeletonText } from '@/components/ui/Skeleton';
 
 export function PostCardSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === 'dark' ? paletteDark : paletteLight;
+
   return (
-    <View className="bg-surface-light dark:bg-surface-dark p-4">
+    <View style={{ backgroundColor: colors.background, padding: 16 }}>
       {/* Header */}
       <View className="flex-row items-center">
         <SkeletonCircle size={44} />
@@ -29,7 +33,7 @@ export function PostCardSkeleton() {
       </View>
 
       {/* Actions */}
-      <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-border-light dark:border-border-dark">
+      <View className="flex-row items-center justify-between mt-3 pt-3" style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
         <View className="flex-row items-center gap-2">
           <SkeletonCircle size={24} />
           <SkeletonText width={30} height={14} />
@@ -45,13 +49,16 @@ export function PostCardSkeleton() {
 }
 
 export function PostListSkeleton({ count = 3 }: { count?: number }) {
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === 'dark' ? paletteDark : paletteLight;
+
   return (
     <View>
       {Array.from({ length: count }).map((_, i) => (
         <View key={i}>
           <PostCardSkeleton />
           {i < count - 1 && (
-            <View className="h-2 bg-background-light dark:bg-background-dark" />
+            <View style={{ height: 8, backgroundColor: colors.background }} />
           )}
         </View>
       ))}

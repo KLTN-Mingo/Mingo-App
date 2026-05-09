@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
@@ -8,34 +9,30 @@ import {
 } from 'react-native';
 
 import { ScreenContainer } from '@/components/containers/ScreenContainer';
-import { EmptyState } from '@/components/shared/ui/EmptyState';
 import { FriendCard } from '@/components/friend/FriendCard';
 import { FriendRequestCard } from '@/components/friend/FriendRequestCard';
 import { SearchIcon } from '@/components/shared/icons/Icons';
+import { EmptyState } from '@/components/shared/ui/EmptyState';
 import { FriendListSkeleton, FriendRequestListSkeleton } from '@/components/skeleton';
 import { ActionInput, Button, Tab, Text } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import {
   CloseFriendDto,
   CloseFriendRequestDto,
-  FollowerDto,
-  FollowingDto,
   FollowRequestDto,
   FollowStatsDto,
   FriendDto,
 } from '@/dtos';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FollowApi } from '@/services/follow.service';
-import { colors, getSemantic } from '@/styles/colors';
+import { getSemantic, paletteIcon } from '@/styles/colors';
 
 type TabType =
   | 'requests'
   | 'sent'
   | 'closeRequests'
   | 'friends'
-  | 'bestfriends'
-  | 'followers'
-  | 'following';
+  | 'bestfriends';
 
 const TABS: { key: TabType; label: string }[] = [
   { key: 'requests', label: 'Requests' },
@@ -43,20 +40,18 @@ const TABS: { key: TabType; label: string }[] = [
   { key: 'closeRequests', label: 'Close requests' },
   { key: 'friends', label: 'Friends' },
   { key: 'bestfriends', label: 'Best friends' },
-  { key: 'followers', label: 'Followers' },
-  { key: 'following', label: 'Following' },
 ];
 
 export default function FriendScreen() {
-  const isDark = useColorScheme() === "dark";
+  const colorScheme = useColorScheme() ?? 'light';
 
   const theme = {
-    icon: isDark ? colors.dark[100] : colors.light[100],
-    iconMuted: isDark ? colors.dark[300] : colors.light[300],
+    icon: paletteIcon[colorScheme],
+    iconMuted: paletteIcon.lightMuted,
   };
 
   const { profile } = useAuth();
-  const colorScheme = useColorScheme() ?? 'light';
+  // const colorScheme = useColorScheme() ?? 'light';
   const semantic = getSemantic(colorScheme);
   const [activeTab, setActiveTab] = useState<TabType>('requests');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -68,8 +63,6 @@ export default function FriendScreen() {
   const [closeFriendRequests, setCloseFriendRequests] = useState<CloseFriendRequestDto[]>([]);
   const [friends, setFriends] = useState<FriendDto[]>([]);
   const [closeFriends, setCloseFriends] = useState<CloseFriendDto[]>([]);
-  const [followers, setFollowers] = useState<FollowerDto[]>([]);
-  const [following, setFollowing] = useState<FollowingDto[]>([]);
   const [stats, setStats] = useState<FollowStatsDto | null>(null);
 
   // Loading states
@@ -104,14 +97,6 @@ export default function FriendScreen() {
         case 'bestfriends':
           const bffData = await FollowApi.getCloseFriends(profile.id);
           setCloseFriends(bffData.closeFriends);
-          break;
-        case 'followers':
-          const followersData = await FollowApi.getFollowers(profile.id);
-          setFollowers(followersData.followers);
-          break;
-        case 'following':
-          const followingData = await FollowApi.getFollowing(profile.id);
-          setFollowing(followingData.following);
           break;
       }
 
@@ -175,10 +160,6 @@ export default function FriendScreen() {
         return renderCloseRequests();
       case 'bestfriends':
         return renderCloseFriends();
-      case 'followers':
-        return renderFollowers();
-      case 'following':
-        return renderFollowing();
       default:
         return null;
     }
@@ -331,52 +312,6 @@ export default function FriendScreen() {
     );
   };
 
-  const renderFollowers = () => {
-    if (followers.length === 0) {
-      return renderEmptyState('No followers yet');
-    }
-
-    return (
-      <FlatList
-        data={followers}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <FriendCard
-            user={item.follower}
-            onPress={() => {/* Navigate to profile */ }}
-          />
-        )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-      />
-    );
-  };
-
-  const renderFollowing = () => {
-    if (following.length === 0) {
-      return renderEmptyState('Not following anyone');
-    }
-
-    return (
-      <FlatList
-        data={following}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <FriendCard
-            user={item.following}
-            onPress={() => {/* Navigate to profile */ }}
-          />
-        )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-      />
-    );
-  };
-
   const renderEmptyState = (message: string) => (
     <EmptyState title={message} />
   );
@@ -387,12 +322,12 @@ export default function FriendScreen() {
       {/* Header */}
       <View className="">
         <View className="flex-row justify-between items-center">
-          <Text variant="title" className="font-semibold text-6">
+          <Text style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 24 }}>
             Friends
           </Text>
           <View className="flex-row gap-4">
             <TouchableOpacity
-              onPress={() => setIsSearchVisible(!isSearchVisible)}
+              onPress={() => router.push('/add-friend')}
               className=""
             >
               <SearchIcon size={24} color={theme.icon} />

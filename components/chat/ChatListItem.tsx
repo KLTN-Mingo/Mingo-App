@@ -40,7 +40,7 @@ export function ChatListItem({ conversation }: ChatListItemProps) {
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={() => router.push(`/chat/${conversation.id}`)}
-      className="flex-row items-center border-b border-border-light dark:border-border-dark px-4 py-3 bg-surface-light dark:bg-surface-dark"
+      className="flex-row items-center px-4 py-3 bg-background-light dark:bg-background-dark"
     >
       <Avatar
         source={
@@ -51,7 +51,7 @@ export function ChatListItem({ conversation }: ChatListItemProps) {
       />
       <View className="flex-1 ml-3 min-w-0">
         <View className="flex-row items-center justify-between">
-          <Text variant="semibold" numberOfLines={1} className="flex-1">
+          <Text variant="semibold" numberOfLines={1} className="flex-1 text-text-light dark:text-text-dark">
             {conversation.name || "Unknown"}
           </Text>
           <Text variant="muted" className="text-xs ml-2">
@@ -63,7 +63,7 @@ export function ChatListItem({ conversation }: ChatListItemProps) {
         </Text>
       </View>
       {conversation.unreadCount != null && conversation.unreadCount > 0 && (
-        <View className="w-5 h-5 rounded-full bg-primary-400 items-center justify-center ml-2">
+        <View className="w-5 h-5 rounded-full bg-primary items-center justify-center ml-2">
           <Text className="text-xs text-white font-semibold">
             {conversation.unreadCount > 99
               ? "99+"

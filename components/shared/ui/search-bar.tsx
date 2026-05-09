@@ -9,11 +9,11 @@ import {
 import { SearchIcon } from "@/components/shared/icons/Icons";
 import { Text } from "@/components/ui";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getSemantic } from "@/styles/colors";
+import { getSemantic, paletteIcon } from "@/styles/colors";
 
-/** Nền thanh tìm — khớp `Button` variant outline / token `component` */
+/** Nền thanh tìm — theo Mingo design guide */
 export const SEARCH_BAR_SURFACE_CLASS =
-  "bg-component-light dark:bg-component-dark";
+  "bg-surface-light dark:bg-surface-dark";
 
 export type SearchBarTriggerProps = {
   onPress: () => void;
@@ -28,20 +28,20 @@ export function SearchBarTrigger({
   className = "",
 }: SearchBarTriggerProps) {
   const colorScheme = useColorScheme() ?? "light";
-  const semantic = getSemantic(colorScheme);
+  const iconColor = paletteIcon[colorScheme];
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
-      className={`flex-row items-center mt-1 px-4 py-3 rounded-[20px] ${SEARCH_BAR_SURFACE_CLASS} ${className}`}
+      className={`flex-row items-center mt-1 px-4 rounded-full h-[44px] ${SEARCH_BAR_SURFACE_CLASS} ${className}`}
     >
       <Text
         variant="muted"
-        className="flex-1 text-[16px] h-[20px] text-text-muted-light dark:text-text-muted-dark"
+        className="flex-1 text-sm text-text-muted-light dark:text-text-muted-dark"
       >
         {placeholder}
       </Text>
-      <SearchIcon size={22} color={semantic.textMuted} />
+      <SearchIcon size={20} color={iconColor} />
     </TouchableOpacity>
   );
 }
@@ -59,11 +59,12 @@ export function SearchBarInput({
 }: SearchBarInputProps) {
   const colorScheme = useColorScheme() ?? "light";
   const sem = getSemantic(colorScheme);
+  const iconColor = paletteIcon[colorScheme];
   return (
     <View
-      className={`flex-1 flex-row items-center px-3 py-2 rounded-full ${SEARCH_BAR_SURFACE_CLASS} ${containerClassName}`}
+      className={`flex-1 flex-row items-center px-4 rounded-full h-[44px] ${SEARCH_BAR_SURFACE_CLASS} ${containerClassName}`}
     >
-      <SearchIcon size={20} color={sem.textMuted} />
+      <SearchIcon size={20} color={iconColor} />
       <TextInput
         className={`flex-1 ml-2 font-regular text-base text-text-light dark:text-text-dark py-0 ${className}`}
         placeholderTextColor={sem.placeholder}

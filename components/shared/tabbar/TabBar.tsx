@@ -308,12 +308,14 @@ const VISIBLE_TABS = ['home', 'friend', 'message', 'profile'];
 const SPRING_CONFIG = { damping: 25, stiffness: 80 };
 
 export default function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const { colors } = useTheme();
+  const { colors: navColors } = useTheme();
   const { buildHref } = useLinkBuilder();
   const colorScheme = useColorScheme();
   const backgroundColor = colorScheme === 'dark' ? '#1E2021' : '#FFFFFF';
   const sheetColor = colorScheme === 'dark' ? '#252525' : '#FFFFFF';
-  const plusColor = colorScheme === 'dark' ? '#EFE7DF' : '#1E2021';
+  const plusColor = colorScheme === 'dark' ? '#FAFAFA' : '#1E2021';
+  const inactiveColor = '#6B6B6B';
+  const activeTextColor = colorScheme === 'dark' ? '#1E2021' : '#FFFFFF';
 
   const routes = state.routes;
   const leftRoutes = routes.filter((r: any) => ['home', 'friend'].includes(r.name));
@@ -392,12 +394,11 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
     }, [isFocused]);
 
     const animatedTextStyle = useAnimatedStyle(() => ({
-      opacity: interpolate(scale.value, [0, 1], [1, 0]),
+      opacity: 1,
     }));
 
     const animatedIconStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: interpolate(scale.value, [0, 1], [1, 1.2]) }],
-      top: interpolate(scale.value, [0, 1], [0, 9]),
+      transform: [{ scale: interpolate(scale.value, [0, 1], [1, 1.1]) }],
     }));
 
     return (
@@ -413,13 +414,22 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
       >
         <Animated.View style={animatedIconStyle}>
           {IconComponent && (
-            <IconComponent color={isFocused ? '#EFE7DF' : colors.text} />
+            <IconComponent
+              color={isFocused ? activeTextColor : inactiveColor}
+              width={20}
+              height={20}
+            />
           )}
         </Animated.View>
-        <Animated.Text style={[animatedTextStyle, {
-          color: isFocused ? '#EFE7DF' : colors.text,
-          fontSize: 12,
-        }]}>
+        <Animated.Text
+          numberOfLines={1}
+          style={[animatedTextStyle, {
+            color: isFocused ? activeTextColor : inactiveColor,
+            fontSize: 11,
+            fontFamily: "Montserrat-Regular",
+            marginTop: 2,
+          }]}
+        >
           {label}
         </Animated.Text>
       </PlatformPressable>

@@ -8,7 +8,9 @@ export {
     getSemantic,
     getStatusColor,
     paletteDark,
+    paletteIcon,
     paletteLight,
+    palettePrimary,
     statusColors
 } from "@/constants/designTokens";
 export type {

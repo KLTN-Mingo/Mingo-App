@@ -19,6 +19,7 @@ import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { Avatar, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { CommentResponseDto, PostResponseDto, UserMinimalDto } from "@/dtos";
+import { useSharePost } from "@/hooks/use-share-post";
 import { commentService } from "@/services/comment.service";
 import { postService } from "@/services/post.service";
 import { BORDER_DEFAULT, colors, statusColors } from "@/styles/colors";
@@ -45,6 +46,24 @@ export default function PostDetailScreen() {
         verified: profile.verified,
       }
     : null;
+
+  const share = useSharePost({
+    currentUserId: profile?.id,
+    onShared: ({ postId, sentCount }) => {
+      setPost((prev) =>
+        prev && prev.id === postId
+          ? { ...prev, sharesCount: prev.sharesCount + sentCount }
+          : prev
+      );
+    },
+    onReposted: ({ postId }) => {
+      setPost((prev) =>
+        prev && prev.id === postId
+          ? { ...prev, sharesCount: prev.sharesCount + 1 }
+          : prev
+      );
+    },
+  });
 
   const fetchPost = useCallback(async () => {
     if (!id) return;
@@ -365,6 +384,7 @@ export default function PostDetailScreen() {
               prev && prev.id === postId ? { ...prev, sharesCount: nextCount } : prev
             )
           }
+          onSharePress={share.openSheet}
           onSaveChange={(postId, isSaved) =>
             setPost((prev) =>
               prev && prev.id === postId ? { ...prev, isSaved } : prev
@@ -455,6 +475,8 @@ export default function PostDetailScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {share.modals}
     </SafeAreaView>
   );
 }

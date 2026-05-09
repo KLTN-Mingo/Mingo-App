@@ -12,7 +12,7 @@
 // } from "react-native";
 // import { SafeAreaView } from "react-native-safe-area-context";
 
-// import { Avatar, Icon, Text } from "@/components/ui";
+// import { Avatar, Icon, ScreenHeader, Text } from "@/components/ui";
 // import { useAuth } from "@/context/AuthContext";
 // import { CommentResponseDto } from "@/dtos";
 // import { commentService } from "@/services/comment.service";
@@ -188,7 +188,7 @@
 //                 name={item.isLiked ? "heart.fill" : "heart"}
 //                 size={13}
 //                 color={
-//                   item.isLiked ? statusColors.error.dark : colors.dark[300]
+//                   item.isLiked ? statusColors.error.dark : iconMutedColor
 //                 }
 //               />
 //             </TouchableOpacity>
@@ -201,7 +201,7 @@
 //               className="text-sm text-text-dark border border-border-dark rounded-lg px-2 py-1.5 mb-1"
 //               multiline
 //               maxLength={500}
-//               placeholderTextColor={colors.dark[300]}
+//               placeholderTextColor={iconMutedColor}
 //             />
 //           ) : (
 //             <Text className="text-sm text-text-dark leading-relaxed">
@@ -278,7 +278,7 @@
 //                   <Icon
 //                     name="bubble.left"
 //                     size={40}
-//                     color={colors.dark[300]}
+//                     color={iconMutedColor}
 //                   />
 //                   <Text variant="muted" className="mt-3">
 //                     Chưa có bình luận nào
@@ -301,7 +301,7 @@
 //               value={commentText}
 //               onChangeText={setCommentText}
 //               placeholder="Viết bình luận..."
-//               placeholderTextColor={colors.dark[300]}
+//               placeholderTextColor={iconMutedColor}
 //               className="flex-1 bg-surface-dark rounded-full px-4 py-2.5 text-base font-regular text-text-dark"
 //               multiline
 //               maxLength={500}
@@ -338,17 +338,20 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  StatusBar,
   TextInput,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Avatar, Icon, Text } from "@/components/ui";
+import { Avatar, Icon, ScreenHeader, Text } from "@/components/ui";
+import { paletteDark, paletteLight } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
 import { CommentResponseDto } from "@/dtos";
 import { commentService } from "@/services/comment.service";
-import { BORDER_DEFAULT, colors, statusColors } from "@/styles/colors";
+import { BORDER_DEFAULT } from "@/styles/colors";
 
 interface CommentWithReplies extends CommentResponseDto {
   replies?: CommentResponseDto[];
@@ -367,6 +370,10 @@ export function CommentModal({
   onCommentCountChange,
 }: CommentModalProps) {
   const { profile } = useAuth();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const colors = isDark ? paletteDark : paletteLight;
+
   const [comments, setComments] = useState<CommentWithReplies[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -585,6 +592,8 @@ export function CommentModal({
   ) => {
     const isEditing = editingCommentId === item.id;
     const isOwner = profile?.id && item.userId === profile.id;
+    const textColor = colors.textPrimary;
+    const mutedColor = colors.textMuted;
 
     return (
       <View key={item.id} className="flex-row px-4 py-2.5">
@@ -596,13 +605,13 @@ export function CommentModal({
         <View className="ml-3 flex-1">
           {/* Name + mention + time */}
           <View className="flex-row items-center gap-1 mb-0.5 flex-wrap">
-            <Text className="font-semibold text-sm text-text-light leading-tight">
+            <Text className="font-semibold text-sm leading-tight" style={{ color: textColor }}>
               {item.user?.name ?? "Unknown"}
             </Text>
             {mentionName && (
               <>
-                <Icon name="chevron.right" size={10} color={colors.dark[400]} />
-                <Text className="font-semibold text-sm text-text-light leading-tight">
+                <Icon name="chevron.right" size={10} color={mutedColor} />
+                <Text className="font-semibold text-sm leading-tight" style={{ color: textColor }}>
                   {mentionName}
                 </Text>
               </>
@@ -614,14 +623,23 @@ export function CommentModal({
             <TextInput
               value={editCommentDraft}
               onChangeText={setEditCommentDraft}
-              className="text-sm text-text-light border border-border-light rounded-2xl px-3 py-2 mb-1 bg-surface-muted-light"
+              className="text-sm rounded-2xl px-3 py-2 mb-1"
+              style={{
+                backgroundColor: colors.surfaceMuted,
+                color: textColor,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
               multiline
               maxLength={500}
-              placeholderTextColor={colors.dark[300]}
+              placeholderTextColor={mutedColor}
             />
           ) : (
-            <View className="bg-surface-muted-light rounded-2xl px-3 py-2 self-start max-w-full mb-1">
-              <Text className="text-sm text-text-light leading-relaxed">
+            <View
+              className="rounded-2xl px-3 py-2 self-start max-w-full mb-1"
+              style={{ backgroundColor: colors.surfaceMuted }}
+            >
+              <Text className="text-sm leading-relaxed" style={{ color: textColor }}>
                 {item.contentText}
               </Text>
             </View>
@@ -630,32 +648,32 @@ export function CommentModal({
           {/* Meta row: time · Like N · Reply */}
           {!isEditing && (
             <View className="flex-row items-center gap-3 mt-0.5">
-              <Text variant="muted" className="text-xs leading-tight">
+              <Text className="text-xs leading-tight" style={{ color: mutedColor }}>
                 {formatTime(item.createdAt)}
               </Text>
 
               <TouchableOpacity onPress={() => handleLikeComment(item, parentId)} className="flex-row items-center gap-1">
-                <Text variant="muted" className="text-xs leading-tight">
+                <Text className="text-xs leading-tight" style={{ color: mutedColor }}>
                   Like
                 </Text>
                 {item.likesCount > 0 && (
-                  <Text className="text-xs text-red-400 leading-tight">
+                  <Text className="text-xs text-red-500 leading-tight">
                     {item.likesCount}
                   </Text>
                 )}
               </TouchableOpacity>
 
-              <Text variant="muted" className="text-xs leading-tight">·</Text>
+              <Text className="text-xs leading-tight" style={{ color: mutedColor }}>·</Text>
 
               <TouchableOpacity onPress={() => handleReply(item, item.id)}>
-                <Text variant="muted" className="text-xs leading-tight">Reply</Text>
+                <Text className="text-xs leading-tight" style={{ color: mutedColor }}>Reply</Text>
               </TouchableOpacity>
 
               {isOwner && (
                 <>
-                  <Text variant="muted" className="text-xs leading-tight">·</Text>
+                  <Text className="text-xs leading-tight" style={{ color: mutedColor }}>·</Text>
                   <TouchableOpacity onPress={() => handleDeleteComment(item, parentId)}>
-                    <Text className="text-xs text-red-400 leading-tight">Xóa</Text>
+                    <Text className="text-xs text-red-500 leading-tight">Delete</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -665,10 +683,10 @@ export function CommentModal({
           {isEditing && (
             <View className="flex-row gap-4 mt-1">
               <TouchableOpacity onPress={() => handleSaveEditComment(item.id, parentId)}>
-                <Text className="text-xs font-semibold text-primary-100 leading-tight">Lưu</Text>
+                <Text className="text-xs font-semibold text-primary-100 leading-tight">Save</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleCancelEditComment}>
-                <Text variant="muted" className="text-xs leading-tight">Hủy</Text>
+                <Text className="text-xs leading-tight" style={{ color: mutedColor }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -679,7 +697,7 @@ export function CommentModal({
           <Icon
             name={item.isLiked ? "heart.fill" : "heart"}
             size={14}
-            color={item.isLiked ? statusColors.error.dark : colors.dark[300]}
+            color={item.isLiked ? "#EF4444" : mutedColor}
           />
         </TouchableOpacity>
       </View>
@@ -703,8 +721,8 @@ export function CommentModal({
               onPress={() => handleToggleReplies(item.id)}
               className="flex-row items-center gap-2 px-4 pb-1"
             >
-              <View className="h-px w-6 bg-border-light" />
-              <Text variant="muted" className="text-xs font-medium">
+              <View className="h-px w-6" style={{ backgroundColor: colors.border }} />
+              <Text className="text-xs font-medium" style={{ color: colors.textMuted }}>
                 {isExpanded ? "Hide replies" : `${replyCount} replies`}
               </Text>
             </TouchableOpacity>
@@ -726,14 +744,17 @@ export function CommentModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView className="flex-1 bg-background-light" edges={["top"]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }} edges={["top"]}>
         {/* Header */}
-        <View className="flex-row items-center justify-between px-4 py-3 bg-background-light border-b border-border-light">
-          <Text className="font-semibold text-base text-text-light">Bình luận</Text>
-          <TouchableOpacity onPress={onClose} className="p-1">
-            <Icon name="xmark" size={20} color={colors.dark[400]} />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader
+          title="Comments"
+          rightSlot={
+            <TouchableOpacity onPress={onClose} className="p-2">
+              <Icon name="xmark" size={20} color={colors.textPrimary} />
+            </TouchableOpacity>
+          }
+        />
 
         <KeyboardAvoidingView
           className="flex-1"
@@ -742,7 +763,7 @@ export function CommentModal({
         >
           {loading ? (
             <View className="flex-1 items-center justify-center">
-              <ActivityIndicator color={colors.primary[100]} />
+              <ActivityIndicator color={colors.textMuted} />
             </View>
           ) : (
             <FlatList
@@ -751,9 +772,9 @@ export function CommentModal({
               renderItem={renderComment}
               ListEmptyComponent={
                 <View className="flex-1 items-center justify-center py-20">
-                  <Icon name="bubble.left" size={40} color={colors.dark[300]} />
-                  <Text variant="muted" className="mt-3">
-                    Chưa có bình luận nào
+                  <Icon name="bubble.left" size={40} color={colors.textMuted} />
+                  <Text className="mt-3" style={{ color: colors.textMuted }}>
+                    No comments yet
                   </Text>
                 </View>
               }
@@ -763,18 +784,24 @@ export function CommentModal({
 
           {/* Reply banner */}
           {replyingTo && (
-            <View className="flex-row items-center px-4 py-2 bg-surface-muted-light border-t border-border-light">
-              <Text variant="muted" className="text-xs flex-1">
-                Đang trả lời <Text className="font-semibold text-text-light">{replyingTo.name}</Text>
+            <View
+              className="flex-row items-center px-4 py-2"
+              style={{ backgroundColor: colors.surfaceMuted, borderTopWidth: 1, borderTopColor: colors.border }}
+            >
+              <Text className="text-xs flex-1" style={{ color: colors.textMuted }}>
+                Replying to <Text className="font-semibold" style={{ color: colors.textPrimary }}>{replyingTo.name}</Text>
               </Text>
               <TouchableOpacity onPress={() => setReplyingTo(null)}>
-                <Icon name="xmark" size={14} color={colors.dark[300]} />
+                <Icon name="xmark" size={14} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
           )}
 
           {/* Comment Input */}
-          <View className="flex-row items-center px-4 py-3 bg-background-light border-t border-border-light gap-3">
+          <View
+            className="flex-row items-center px-4 py-3 gap-3"
+            style={{ backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border }}
+          >
             <Avatar
               source={profile?.avatar ? { uri: profile.avatar } : undefined}
               fallback={profile?.name}
@@ -784,9 +811,13 @@ export function CommentModal({
               ref={inputRef}
               value={commentText}
               onChangeText={setCommentText}
-              placeholder="Write comment..."
-              placeholderTextColor={colors.dark[300]}
-              className="flex-1 bg-surface-muted-light rounded-full px-4 py-2.5 text-sm font-regular text-text-light"
+              placeholder="Write a comment..."
+              placeholderTextColor={colors.textMuted}
+              className="flex-1 rounded-full px-4 py-2.5 text-sm font-regular"
+              style={{
+                backgroundColor: colors.surfaceMuted,
+                color: colors.textPrimary,
+              }}
               multiline
               maxLength={500}
             />
@@ -796,12 +827,12 @@ export function CommentModal({
               className="p-2"
             >
               {submitting ? (
-                <ActivityIndicator size="small" color={colors.primary[100]} />
+                <ActivityIndicator size="small" color={isDark ? colors.textMuted : "#8E8E93"} />
               ) : (
                 <Icon
                   name="paperplane.fill"
                   size={22}
-                  color={commentText.trim() ? colors.primary[100] : BORDER_DEFAULT}
+                  color={commentText.trim() ? "#E11D48" : colors.textMuted}
                 />
               )}
             </TouchableOpacity>

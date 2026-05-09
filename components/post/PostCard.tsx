@@ -13,7 +13,7 @@ import {
 import { Avatar, Text } from "@/components/ui";
 import { PostResponseDto, UserMinimalDto } from "@/dtos";
 import { postService } from "@/services/post.service";
-import { colors, statusColors } from "@/styles/colors";
+import { paletteIcon, colors, statusColors } from "@/styles/colors";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -26,6 +26,11 @@ interface PostCardProps {
   onSaveChange?: (postId: string, isSaved: boolean) => void;
   onUserPress?: (userId: string) => void;
   onMorePress?: (post: PostResponseDto) => void;
+  /**
+   * Khi truyền vào, nút Share sẽ mở action sheet (DM share / Repost) thay vì
+   * gọi `postService.sharePost` luôn. Dùng cùng `useSharePost()` ở screen.
+   */
+  onSharePress?: (post: PostResponseDto) => void;
 }
 
 export function PostCard({
@@ -37,12 +42,13 @@ export function PostCard({
   onSaveChange,
   onUserPress,
   onMorePress,
+  onSharePress,
 }: PostCardProps) {
-  const isDark = useColorScheme() === "dark";
+  const colorScheme = useColorScheme() ?? 'light';
 
   const theme = {
-    icon: isDark ? colors.dark[100] : colors.light[100],
-    iconMuted: isDark ? colors.dark[300] : colors.light[300],
+    icon: paletteIcon[colorScheme],
+    iconMuted: paletteIcon.lightMuted,
   };
 
   const [isLiked, setIsLiked] = useState(post.isLiked ?? false);
@@ -85,6 +91,13 @@ export function PostCard({
   };
 
   const handleShare = async () => {
+    // Mới: parent tự xử lý chooser (DM share / Repost) qua `useSharePost`.
+    if (onSharePress) {
+      onSharePress(post);
+      return;
+    }
+
+    // Backward compat: vẫn dùng `postService.sharePost` cho các screen chưa migrate.
     if (shareLoading) return;
     setShareLoading(true);
     const optimistic = sharesCount + 1;

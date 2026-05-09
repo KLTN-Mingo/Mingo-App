@@ -5,7 +5,7 @@ import { TouchableOpacity, View } from "react-native";
 import { Text } from "@/components/ui";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-type ContentTabKey = "posts" | "photos" | "videos";
+export type ContentTabKey = "posts" | "photos" | "videos" | "reposts";
 
 interface ProfileTabsProps {
   activeTab: ContentTabKey;
@@ -22,6 +22,7 @@ const TABS: {
   { key: "posts", label: "Post", icon: "grid-outline" },
   { key: "photos", label: "Image", icon: "image-outline" },
   { key: "videos", label: "Video", icon: "videocam-outline" },
+  { key: "reposts", label: "Repost", icon: "repeat-outline" },
 ];
 
 export function ProfileTabs({

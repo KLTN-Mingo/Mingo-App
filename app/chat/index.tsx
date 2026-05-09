@@ -14,14 +14,13 @@ import { ArrowIcon } from "@/components/shared/icons/Icons";
 import { ActionInput, Text } from "@/components/ui";
 import { useChatList } from "@/hooks/use-chat-list";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { colors, getSemantic } from "@/styles/colors";
+import { colors, getSemantic, paletteIcon } from "@/styles/colors";
 
 export default function ChatListScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const semantic = getSemantic(colorScheme);
-  const isDark = colorScheme === "dark";
-  const iconColor = isDark ? colors.light[400] : semantic.textMuted;
-  const headerBg = isDark ? colors.dark[200] : semantic.background;
+  const iconColor = paletteIcon.lightMuted;
+  const headerBg = colorScheme === "dark" ? colors.dark[200] : semantic.background;
 
   const { filteredConversations, refetch, setSearchQuery } = useChatList();
   const [searchText, setSearchText] = useState("");

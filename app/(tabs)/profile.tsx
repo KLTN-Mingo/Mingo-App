@@ -12,18 +12,19 @@ import {
 } from "react-native";
 
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
-import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { CommentModal } from "@/components/post/CommentModal";
 import { PostCard } from "@/components/post/PostCard";
 import { ProfileBioEditModal } from "@/components/profile/ProfileBioEditModal";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfo } from "@/components/profile/ProfileInfo";
+import { ProfileRepostsList } from "@/components/profile/ProfileRepostsList";
 import { ProfileSettingsModal } from "@/components/profile/ProfileSettingsModal";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import {
   VideoIcon,
 } from "@/components/shared/icons/Icons";
 import { EmptyStateScreen } from "@/components/shared/ui/empty-state-screen";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { ProfileSkeleton } from "@/components/skeleton";
 import { Button, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
@@ -31,13 +32,14 @@ import { useNotification } from "@/context/NotificationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { PostResponseDto, UserMinimalDto, UserProfileDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSharePost } from "@/hooks/use-share-post";
 import { postService } from "@/services/post.service";
 import { userService } from "@/services/user.service";
-import { colors, getSemantic, getStatusColor } from "@/styles/colors";
+import { colors, getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
 import { authUserFromProfile } from "@/utils/authUserFromProfile";
 import { pickProfileImage } from "@/utils/profileMediaPicker";
 
-type TabKey = "posts" | "photos" | "videos";
+type TabKey = "posts" | "photos" | "videos" | "reposts";
 
 export default function ProfileScreen() {
   const { profile, setProfile, logout } = useAuth();
@@ -207,6 +209,24 @@ export default function ProfileScreen() {
     }
     : null;
 
+  const share = useSharePost({
+    currentUserId: userProfile?.id,
+    onShared: ({ postId, sentCount }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + sentCount } : p
+        )
+      );
+    },
+    onReposted: ({ postId }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
+        )
+      );
+    },
+  });
+
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}` as any);
   };
@@ -272,13 +292,7 @@ export default function ProfileScreen() {
                 );
               }}
               onCommentPress={(postId) => setCommentPostId(postId)}
-              onShareChange={(postId, nextCount) => {
-                setPosts((prev) =>
-                  prev.map((p) =>
-                    p.id === postId ? { ...p, sharesCount: nextCount } : p
-                  )
-                );
-              }}
+              onSharePress={share.openSheet}
               onSaveChange={(postId, isSaved) => {
                 setPosts((prev) =>
                   prev.map((p) => (p.id === postId ? { ...p, isSaved } : p))
@@ -339,7 +353,7 @@ export default function ProfileScreen() {
                 />
                 <View className="absolute inset-0 items-center justify-center">
                   <View className="bg-black/50 rounded-full p-2">
-                    <VideoIcon size={20} color={colors.light[400]} />
+                    <VideoIcon size={20} color={paletteIcon.light} />
                   </View>
                 </View>
               </TouchableOpacity>
@@ -349,6 +363,14 @@ export default function ProfileScreen() {
           <EmptyState title="No videos yet" />
         );
       }
+
+      case "reposts":
+        return userProfile ? (
+          <ProfileRepostsList
+            userId={userProfile.id}
+            currentUser={userMinimal}
+          />
+        ) : null;
 
       default:
         return null;
@@ -400,8 +422,8 @@ export default function ProfileScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={[colors.primary[100]]}
-              tintColor={colors.primary[100]}
+              colors={[colors.primary.light]}
+              tintColor={colors.primary.light}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -425,7 +447,8 @@ export default function ProfileScreen() {
         {/* Name and menu */}
         <View className="flex-row items-center justify-between">
           <Text
-            className="text-7 text-text-light dark:text-text-dark font-bold flex-1 mr-2"
+            style={{ fontFamily: 'Montserrat-Bold', fontSize: 18 }}
+            className="text-text-light dark:text-text-dark flex-1 mr-2"
             numberOfLines={1}
           >
             {userProfile.name || "Profile"}
@@ -454,7 +477,7 @@ export default function ProfileScreen() {
         <View className="relative">
           {(uploadAvatarBusy || uploadBackgroundBusy) && (
             <View className="absolute inset-0 z-10 rounded-3xl bg-black/25 items-center justify-center pointer-events-none">
-              <ActivityIndicator size="large" color={colors.light[400]} />
+              <ActivityIndicator size="large" color={paletteIcon.light} />
             </View>
           )}
           <ProfileHeader
@@ -551,6 +574,8 @@ export default function ProfileScreen() {
           );
         }}
       />
+
+      {share.modals}
       </ScreenContainer>
   );
 }

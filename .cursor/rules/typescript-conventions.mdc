@@ -1,0 +1,79 @@
+---
+description: TypeScript conventions for the codebase
+globs: ["**/*.ts"]
+alwaysApply: false
+---
+
+# TypeScript Conventions
+
+Project is **strict mode**. Avoid `any`. Prefer explicit, narrow types.
+
+## Imports
+
+```tsx
+// ✅ Always use @/ alias
+import { Button } from '@/components/ui';
+import { apiRequest } from '@/services/api-client';
+import type { PostResponseDto } from '@/dtos';
+
+// ❌ Long relative paths
+import { Button } from '../../../components/ui/Button';
+```
+
+Group: external → `@/` internal → relative (rare). Type-only imports use `import type`.
+
+## DTOs / Types
+
+- Backend request/response shapes live in `dtos/*.dto.ts` and are exported via `dtos/index.ts`
+- Component props: define `interface XxxProps` colocated with the component
+- Prefer `interface` for object shapes, `type` for unions / utility types
+
+```ts
+// ✅
+interface ButtonProps extends TouchableOpacityProps {
+  variant?: 'primary' | 'secondary';
+  loading?: boolean;
+}
+
+// ❌ avoid
+const Button = (props: any) => { ... }
+```
+
+## Async / Error Handling
+
+```ts
+// ✅ Surface meaningful errors; the api-client throws Error with message
+try {
+  const post = await postService.getById(id);
+  setPost(post);
+} catch (e) {
+  console.error('[post] load failed', e);
+  Alert.alert('Lỗi', e instanceof Error ? e.message : 'Không tải được bài viết');
+}
+
+// ❌ swallowing errors
+try { await fetchData(); } catch {}
+```
+
+## Functional Components
+
+ALWAYS functional components with hooks. Never class components.
+
+```tsx
+export function MyCard({ title }: { title: string }) {
+  const [open, setOpen] = useState(false);
+  return <View>...</View>;
+}
+```
+
+## Hooks Rules
+
+- Custom hooks: `use-*.ts` in `/hooks` (kebab-case file, camelCase export)
+- Don't call hooks conditionally
+- Stable deps: memoize callbacks with `useCallback` only when passed to memoized children or used as effect deps
+
+## Don'ts
+
+- ❌ `any` (use `unknown` if truly unknown, then narrow)
+- ❌ `// @ts-ignore` without a reason comment; prefer `// @ts-expect-error: <reason>`
+- ❌ Default exports for components — use named exports (matches `components/ui/index.ts` re-exports)

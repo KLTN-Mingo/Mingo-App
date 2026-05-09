@@ -11,6 +11,7 @@ import { Text } from "@/components/ui";
 import { matchPresetHobby } from "@/constants/hobbyCatalog";
 import { Gender, UserProfileDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { paletteIcon } from "@/styles/colors";
 
 interface ProfileInfoProps {
   user: UserProfileDto;
@@ -32,9 +33,6 @@ function genderDisplay(g?: Gender): string | null {
   return null;
 }
 
-const ICON_GREY_LIGHT = "#9CA3AF";
-const ICON_GREY_DARK = "#A1A1AA";
-
 function InfoRow({
   icon,
   children,
@@ -44,20 +42,20 @@ function InfoRow({
 }) {
   return (
     <View className="flex-row items-center gap-3">
-      <View className="w-6 items-center justify-center">{icon}</View>
+      <View className="w-5 items-center justify-center">{icon}</View>
       <View className="flex-1 min-w-0">{children}</View>
     </View>
   );
 }
 
-function genderIcon(g: Gender | undefined, color: string) {
+function genderIcon(g: Gender | undefined, iconColor: string) {
   if (g === Gender.FEMALE) {
-    return <Ionicons name="female-outline" size={22} color={color} />;
+    return <Ionicons name="female-outline" size={20} color={iconColor} />;
   }
   if (g === Gender.MALE) {
-    return <Ionicons name="male-outline" size={22} color={color} />;
+    return <Ionicons name="male-outline" size={20} color={iconColor} />;
   }
-  return <Ionicons name="male-female-outline" size={22} color={color} />;
+  return <Ionicons name="male-female-outline" size={20} color={iconColor} />;
 }
 
 export function ProfileInfo({
@@ -65,7 +63,7 @@ export function ProfileInfo({
   isOwnProfile: _isOwnProfile = true,
 }: ProfileInfoProps) {
   const colorScheme = useColorScheme() ?? "light";
-  const iconColor = colorScheme === "dark" ? ICON_GREY_DARK : ICON_GREY_LIGHT;
+  const iconColor = paletteIcon[colorScheme];
 
   const dob = formatIsoDateDisplay(user.dateOfBirth);
   const joined = formatIsoDateDisplay(user.createdAt);
@@ -93,9 +91,9 @@ export function ProfileInfo({
   if (location) {
     rows.push({
       key: "location",
-      icon: <Ionicons name="location-outline" size={22} color={iconColor} />,
+      icon: <Ionicons name="location-outline" size={20} color={iconColor} />,
       node: (
-        <Text className="text-4 text-text-light dark:text-text-dark">
+        <Text className="text-sm text-text-light dark:text-text-dark">
           {location}
         </Text>
       ),
@@ -104,9 +102,9 @@ export function ProfileInfo({
   if (work) {
     rows.push({
       key: "work",
-      icon: <Ionicons name="briefcase-outline" size={22} color={iconColor} />,
+      icon: <Ionicons name="briefcase-outline" size={20} color={iconColor} />,
       node: (
-        <Text className="text-4 text-text-light dark:text-text-dark">
+        <Text className="text-sm text-text-light dark:text-text-dark">
           {work}
         </Text>
       ),
@@ -115,9 +113,9 @@ export function ProfileInfo({
   if (relationship) {
     rows.push({
       key: "relationship",
-      icon: <Ionicons name="heart-outline" size={22} color={iconColor} />,
+      icon: <Ionicons name="heart-outline" size={20} color={iconColor} />,
       node: (
-        <Text className="text-4 text-text-light dark:text-text-dark">
+        <Text className="text-sm text-text-light dark:text-text-dark">
           {relationship}
         </Text>
       ),
@@ -129,12 +127,12 @@ export function ProfileInfo({
       icon: (
         <MaterialCommunityIcons
           name="cake-variant-outline"
-          size={22}
+          size={20}
           color={iconColor}
         />
       ),
       node: (
-        <Text className="text-4 text-text-light dark:text-text-dark">
+        <Text className="text-sm text-text-light dark:text-text-dark">
           {dob}
         </Text>
       ),
@@ -145,7 +143,7 @@ export function ProfileInfo({
       key: "gender",
       icon: genderIcon(user.gender, iconColor),
       node: (
-        <Text className="text-4 text-text-light dark:text-text-dark">
+        <Text className="text-sm text-text-light dark:text-text-dark">
           {gender}
         </Text>
       ),
@@ -154,9 +152,9 @@ export function ProfileInfo({
   if (email) {
     rows.push({
       key: "email",
-      icon: <Ionicons name="mail-outline" size={22} color={iconColor} />,
+      icon: <Ionicons name="mail-outline" size={20} color={iconColor} />,
       node: (
-        <Text className="text-4 text-text-light dark:text-text-dark">
+        <Text className="text-sm text-text-light dark:text-text-dark">
           {email}
         </Text>
       ),
@@ -165,9 +163,9 @@ export function ProfileInfo({
   if (joined) {
     rows.push({
       key: "joined",
-      icon: <Ionicons name="calendar-outline" size={22} color={iconColor} />,
+      icon: <Ionicons name="calendar-outline" size={20} color={iconColor} />,
       node: (
-        <Text className="text-4 text-text-light dark:text-text-dark">
+        <Text className="text-sm text-text-light dark:text-text-dark">
           {joined}
         </Text>
       ),
@@ -178,22 +176,14 @@ export function ProfileInfo({
 
   return (
     <View className="">
-      {/* <View className="flex-row items-center justify-between gap-5 mb-6 bg-sheet-light dark:bg-sheet-dark rounded-[12px]">
-        <ProfileStatItem value={user.postsCount} label="Post" />
-        <ProfileStatItem value={user.followersCount} label="Followers" />
-        <ProfileStatItem value={user.followingCount} label="Following" />
-      </View> */}
-
       {showInformationBlock ? (
         <>
-        <Text className="text-4 font-semibold text-neutral-600 dark:text-neutral-300 mb-3">
-              Information
-            </Text>
-          <View className="rounded-2xl bg-sheet-light dark:bg-sheet-dark py-5 px-6 gap-4">
-            
-
+          <Text className="text-sm font-semibold text-text-secondary-light dark:text-text-secondary-dark mb-3">
+            Information
+          </Text>
+          <View className="rounded-lg bg-sheet-light dark:bg-sheet-dark py-5 px-5 gap-4">
             {rows.length > 0 ? (
-              <View className="gap-4 ">
+              <View className="gap-4">
                 {rows.map((r) => (
                   <InfoRow key={r.key} icon={r.icon}>
                     {r.node}
@@ -203,8 +193,8 @@ export function ProfileInfo({
             ) : null}
 
             {hobbies.length > 0 ? (
-              <View className="gap-4 flex-row">
-                <HobbyIcon size={22} color={iconColor} />
+              <View className="gap-3">
+                <HobbyIcon size={20} color={iconColor} />
                 <View className="flex-row flex-wrap gap-2">
                   {hobbies.map((h) => (
                     <ProfileHobbyChip key={h} label={h} />
@@ -214,8 +204,6 @@ export function ProfileInfo({
             ) : null}
           </View>
         </>
-
-
       ) : null}
     </View>
   );

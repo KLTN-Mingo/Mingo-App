@@ -25,7 +25,7 @@ import {
 } from '@/dtos';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { notificationService } from '@/services/notification.service';
-import { colors, getSemantic, getStatusColor } from '@/styles/colors';
+import { colors, getSemantic, getStatusColor, paletteIcon } from '@/styles/colors';
 
 type FilterType = 'all' | 'unread' | 'follow' | 'like' | 'comment';
 
@@ -249,7 +249,7 @@ export default function NotificationScreen() {
           >
             <CircleTickIcon
               size={22}
-              color={count.unread > 0 ? colors.primary[100] : semantic.placeholder}
+              color={count.unread > 0 ? colors.primary.light : semantic.placeholder}
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleDeleteAll} className="p-2">
@@ -260,7 +260,7 @@ export default function NotificationScreen() {
         {/* Unread count badge */}
         {count.unread > 0 && (
           <View className="self-start">
-            <View className="bg-primary-100 rounded-full px-3 py-1">
+            <View className="bg-primary rounded-full px-3 py-1">
               <Text className="text-white text-xs font-semibold">
                 {count.unread > 99 ? '99+' : count.unread} unread
               </Text>
@@ -306,8 +306,8 @@ export default function NotificationScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={[colors.primary[100]]}
-              tintColor={colors.primary[100]}
+              colors={["#4A7C6A"]}
+              tintColor="#4A7C6A"
             />
           }
           onEndReached={onLoadMore}
