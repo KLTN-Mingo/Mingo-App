@@ -7,26 +7,32 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  TextInput,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { CommentComposer } from "@/components/post/CommentComposer";
 import { PostCard } from "@/components/post/PostCard";
-import { ArrowIcon, LikeIcon, SendIcon } from "@/components/shared/icons/Icons";
+import { CommentThreadItem } from "@/components/post/CommentThreadItem";
+import { ArrowIcon } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
-import { Avatar, Text } from "@/components/ui";
+import { Text } from "@/components/ui";
+import { paletteDark, paletteLight } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
 import { CommentResponseDto, PostResponseDto, UserMinimalDto } from "@/dtos";
 import { useSharePost } from "@/hooks/use-share-post";
 import { commentService } from "@/services/comment.service";
 import { postService } from "@/services/post.service";
-import { BORDER_DEFAULT, colors, statusColors } from "@/styles/colors";
+import { colors } from "@/styles/colors";
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
+  const colorScheme = useColorScheme();
+  const themeColors =
+    colorScheme === "dark" ? paletteDark : paletteLight;
 
   const [post, setPost] = useState<PostResponseDto | null>(null);
   const [comments, setComments] = useState<CommentResponseDto[]>([]);
@@ -244,11 +250,6 @@ export default function PostDetailScreen() {
     }
   };
 
-  const handleStartEditComment = (comment: CommentResponseDto) => {
-    setEditingCommentId(comment.id);
-    setEditCommentDraft(comment.contentText);
-  };
-
   const handleCancelEditComment = () => {
     setEditingCommentId(null);
     setEditCommentDraft("");
@@ -281,74 +282,22 @@ export default function PostDetailScreen() {
 
   const renderComment = ({ item }: { item: CommentResponseDto }) => {
     const isEditing = editingCommentId === item.id;
+    const isOwner = currentUser?.id && item.userId === currentUser.id;
+
     return (
-      <View className="px-4 py-2.5 flex-row">
-        <Avatar
-          source={item.user?.avatar ? { uri: item.user.avatar } : undefined}
-          fallback={item.user?.name}
-          size="sm"
-        />
-        <View className="ml-2.5 flex-1 pr-8">
-          {/* Row: username · time · heart */}
-          <View className="flex-row items-center gap-1.5 mb-1">
-            <Text className="font-semibold text-sm text-text-dark leading-tight">
-              {item.user?.name || "Unknown"}
-            </Text>
-            <Text variant="muted" className="text-xs leading-tight">·</Text>
-          <Text variant="muted" className="text-xs leading-tight flex-1">
-              {formatTime(item.createdAt)}
-            </Text>
-            <TouchableOpacity onPress={() => handleLikeComment(item)}>
-              <LikeIcon
-                size={13}
-                color={item.isLiked ? statusColors.error.dark : colors.dark[300]}
-              />
-            </TouchableOpacity>
-          </View>
-          {/* Comment text */}
-          {isEditing ? (
-            <TextInput
-              value={editCommentDraft}
-              onChangeText={setEditCommentDraft}
-              className="text-sm text-text-dark border border-border-dark rounded-lg px-2 py-1.5 mb-1"
-              multiline
-              maxLength={500}
-              placeholderTextColor={colors.dark[300]}
-            />
-          ) : (
-            <Text className="text-sm text-text-dark leading-relaxed">
-              {item.contentText}
-            </Text>
-          )}
-          {/* Action row */}
-          {!isEditing && (
-            <View className="flex-row items-center gap-4 mt-1.5">
-              {item.likesCount > 0 && (
-                <Text variant="muted" className="text-xs text-red-400 leading-tight">
-                  {item.likesCount} lượt thích
-                </Text>
-              )}
-              {currentUser?.id && item.userId === currentUser.id && (
-                <TouchableOpacity onPress={() => handleDeleteComment(item)}>
-                  <Text variant="muted" className="text-xs text-red-400 leading-tight">
-                    Xóa
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-          {isEditing && (
-            <View className="flex-row gap-4 mt-1">
-              <TouchableOpacity onPress={() => handleSaveEditComment(item.id)}>
-                <Text className="text-xs font-semibold text-primary-100 leading-tight">Lưu</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleCancelEditComment}>
-                <Text variant="muted" className="text-xs leading-tight">Hủy</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </View>
+      <CommentThreadItem
+        comment={item}
+        colors={themeColors}
+        formatTime={formatTime}
+        isEditing={isEditing}
+        editDraft={editCommentDraft}
+        onEditDraftChange={setEditCommentDraft}
+        onLike={() => handleLikeComment(item)}
+        onReply={() => inputRef.current?.focus()}
+        onDelete={isOwner ? () => handleDeleteComment(item) : undefined}
+        onSaveEdit={() => handleSaveEditComment(item.id)}
+        onCancelEdit={handleCancelEditComment}
+      />
     );
   };
 
@@ -393,10 +342,16 @@ export default function PostDetailScreen() {
           onCommentPress={() => inputRef.current?.focus()}
           onMorePress={handlePostMorePress}
         />
-        <View className="px-4 py-3 border-b border-border-dark">
-          <Text className="font-semibold text-text-dark">
+        <View
+          className="px-4 py-3 border-b border-border-dark"
+          style={{ borderBottomColor: themeColors.border }}
+        >
+          <Text
+            className="font-semibold"
+            style={{ color: themeColors.textPrimary }}
+          >
             {post.commentsCount > 0
-              ? `${post.commentsCount} bình luận`
+              ? `${post.commentsCount} comments`
               : "No comments yet"}
           </Text>
         </View>
@@ -440,40 +395,17 @@ export default function PostDetailScreen() {
           contentContainerStyle={{ paddingBottom: 16 }}
         />
 
-        {/* Comment Input */}
-        <View className="flex-row items-center px-4 py-3 bg-surface-dark border-t border-border-dark gap-3">
-          <Avatar
-            source={
-              currentUser?.avatar ? { uri: currentUser.avatar } : undefined
-            }
-            fallback={currentUser?.name}
-            size="sm"
-          />
-          <TextInput
-            ref={inputRef}
-            value={commentText}
-            onChangeText={setCommentText}
-            placeholder="Viết bình luận..."
-            placeholderTextColor={colors.dark[300]}
-            className="flex-1 bg-surface-dark rounded-full px-4 py-2.5 text-base font-regular text-text-dark"
-            multiline
-            maxLength={500}
-          />
-          <TouchableOpacity
-            onPress={handleSubmitComment}
-            disabled={!commentText.trim() || submitting}
-            className="p-2"
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color={colors.primary[100]} />
-            ) : (
-              <SendIcon
-                size={22}
-                color={commentText.trim() ? colors.primary[100] : BORDER_DEFAULT}
-              />
-            )}
-          </TouchableOpacity>
-        </View>
+        <CommentComposer
+          colors={themeColors}
+          avatarUri={currentUser?.avatar}
+          avatarFallback={currentUser?.name}
+          value={commentText}
+          onChangeText={setCommentText}
+          onSubmit={handleSubmitComment}
+          submitting={submitting}
+          inputRef={inputRef}
+          placeholder="Write comment..."
+        />
       </KeyboardAvoidingView>
 
       {share.modals}
