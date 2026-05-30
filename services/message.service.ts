@@ -113,6 +113,14 @@ export interface MessageFileInput {
   duration?: number;
 }
 
+export interface FriendOnlineItem {
+  id: string;
+  name: string;
+  avatar: string;
+  verified: boolean;
+  onlineStatus: boolean;
+}
+
 /**
  * Backend expects content as:
  * - Text: plain string.
@@ -278,6 +286,32 @@ class MessageServiceClass {
     };
   }
 
+  async getFriendsWithOnlineStatus(): Promise<FriendOnlineItem[]> {
+    const token = await AsyncStorage.getItem("accessToken");
+    const response = await fetch(`${API_URL}/messages/friends/online-status`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    const json = await response.json();
+    if (!response.ok) throw new Error(json.message ?? "Failed to fetch friends");
+    return (json.data?.friends ?? []) as FriendOnlineItem[];
+  }
+
+  async getOrCreateDirectBox(
+    targetUserId: string
+  ): Promise<{ boxId: string; isNew: boolean }> {
+    const conversations = await this.getConversations();
+    const existing = conversations.find(
+      (c) =>
+        c.type === ConversationType.DM &&
+        c.participantIds?.includes(targetUserId)
+    );
+    if (existing) return { boxId: existing.id, isNew: false };
+    return { boxId: targetUserId, isNew: true };
+  }
+
   /**
    * POST /:boxId/send — send text message.
    * Backend: content is required; multipart/form-data with field "content" (plain string).
@@ -430,6 +464,82 @@ class MessageServiceClass {
   async reportConversation(boxId: string): Promise<void> {
     // TODO: implement khi backend có endpoint /report
     console.log("Report conversation:", boxId);
+  }
+
+  /** GET /boxes/:boxId/detail — group members and info */
+  async getGroupDetail(boxId: string): Promise<{
+    members: Array<{
+      id: string;
+      name?: string;
+      avatarUrl?: string;
+      role: "admin" | "member";
+    }>;
+  }> {
+    const data = await this.request<{
+      group: {
+        members: Array<{
+          _id: string;
+          name?: string;
+          avatar?: string;
+          phoneNumber?: string;
+          onlineStatus?: boolean;
+        }>;
+        adminIds: Array<{ _id: string }>;
+      };
+    }>("GET", `/boxes/${encodeURIComponent(boxId)}/detail`);
+
+    const adminMap = new Set((data.group?.adminIds ?? []).map((a) => a._id));
+    return {
+      members: (data.group?.members ?? []).map((m) => ({
+        id: m._id,
+        name: m.name,
+        avatarUrl: m.avatar,
+        role: adminMap.has(m._id) ? ("admin" as const) : ("member" as const),
+      })),
+    };
+  }
+
+  /** POST /boxes/:boxId/members — add member(s) */
+  async addGroupMember(boxId: string, memberId: string): Promise<void> {
+    await this.request<{ message?: string }>(
+      "POST",
+      `/boxes/${encodeURIComponent(boxId)}/members`,
+      { body: { memberIds: [memberId] } }
+    );
+  }
+
+  /** DELETE /boxes/:boxId/members/:memberId — remove a member */
+  async removeGroupMember(boxId: string, memberId: string): Promise<void> {
+    await this.request<{ message?: string }>(
+      "DELETE",
+      `/boxes/${encodeURIComponent(boxId)}/members/${encodeURIComponent(memberId)}`
+    );
+  }
+
+  /** POST /boxes/:boxId/leave — leave the group */
+  async leaveGroup(boxId: string): Promise<void> {
+    await this.request<{ message?: string }>(
+      "POST",
+      `/boxes/${encodeURIComponent(boxId)}/leave`
+    );
+  }
+
+  /** PATCH /boxes/:boxId/admins/promote — promote member to admin */
+  async promoteToAdmin(boxId: string, memberId: string): Promise<void> {
+    await this.request<{ message?: string }>(
+      "PATCH",
+      `/boxes/${encodeURIComponent(boxId)}/admins/promote`,
+      { body: { memberId } }
+    );
+  }
+
+  /** PATCH /boxes/:boxId/admins/demote — demote admin to member */
+  async demoteFromAdmin(boxId: string, memberId: string): Promise<void> {
+    await this.request<{ message?: string }>(
+      "PATCH",
+      `/boxes/${encodeURIComponent(boxId)}/admins/demote`,
+      { body: { memberId } }
+    );
   }
 
   // ─── Helpers for existing UI (map to app DTOs) ───────────────────────────────

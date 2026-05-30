@@ -14,6 +14,7 @@ import "react-native-reanimated";
 import { BORDER_DEFAULT, colors } from "@/constants/designTokens";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { CallProvider } from "@/context/CallContext";
+import { ChatProvider } from "@/context/ChatContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import {
   ThemeProvider as AppThemeProvider,
@@ -116,12 +117,14 @@ export default function RootLayout() {
     <AuthProvider>
       <NotificationProviderWrapper>
         <CallProvider>
-          <View className="flex-1 font-sans" style={{ flex: 1 }}>
-            <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
-            <AppThemeProvider>
-              <ThemedNavigation />
-            </AppThemeProvider>
-          </View>
+          <ChatProvider>
+            <View className="flex-1 font-sans" style={{ flex: 1 }}>
+              <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
+              <AppThemeProvider>
+                <ThemedNavigation />
+              </AppThemeProvider>
+            </View>
+          </ChatProvider>
         </CallProvider>
       </NotificationProviderWrapper>
     </AuthProvider>

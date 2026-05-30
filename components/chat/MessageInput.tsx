@@ -3,7 +3,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
+  FlatList,
   Platform,
   Text as RNText,
   StyleSheet,
@@ -14,6 +14,7 @@ import {
 
 import {
   CameraIcon,
+  EmotionIcon,
   ImageIcon,
   MicroIcon,
   PlusIcon,
@@ -43,6 +44,699 @@ interface MessageInputProps {
   disabled?: boolean;
 }
 
+// ─── Emoji Picker ──────────────────────────────────────────────────────────────
+
+const EMOJI_CATEGORIES = [
+  {
+    label: "Smileys",
+    emojis: [
+      "😀",
+      "😃",
+      "😄",
+      "😁",
+      "😆",
+      "😅",
+      "🤣",
+      "😂",
+      "🙂",
+      "🙃",
+      "😉",
+      "😊",
+      "😇",
+      "🥰",
+      "😍",
+      "🤩",
+      "😘",
+      "😗",
+      "😚",
+      "😙",
+      "🥲",
+      "😋",
+      "😛",
+      "😜",
+      "🤪",
+      "😝",
+      "🤑",
+      "🤗",
+      "🤭",
+      "🤫",
+      "🤔",
+      "🤐",
+      "🤨",
+      "😐",
+      "😑",
+      "😶",
+      "😏",
+      "😒",
+      "🙄",
+      "😬",
+      "🤥",
+      "😌",
+      "😔",
+      "😪",
+      "🤤",
+      "😴",
+      "😷",
+      "🤒",
+      "🤕",
+    ],
+  },
+  {
+    label: "Gestures",
+    emojis: [
+      "👍",
+      "👎",
+      "👊",
+      "✊",
+      "🤛",
+      "🤜",
+      "🤝",
+      "👏",
+      "🙌",
+      "👐",
+      "🤲",
+      "🤞",
+      "✌️",
+      "🤟",
+      "🤘",
+      "👌",
+      "🤌",
+      "👈",
+      "👉",
+      "👆",
+      "👇",
+      "☝️",
+      "✋",
+      "🤚",
+      "🖐️",
+      "🖖",
+      "👋",
+      "🤏",
+      "✍️",
+      "🙏",
+      "💪",
+      "🦾",
+      "🦿",
+      "🦵",
+      "🦶",
+      "👂",
+      "👃",
+      "🧠",
+      "🫀",
+      "🫁",
+      "🦷",
+      "🦴",
+      "👀",
+      "👁️",
+      "👅",
+      "👄",
+    ],
+  },
+  {
+    label: "Hearts",
+    emojis: [
+      "❤️",
+      "🧡",
+      "💛",
+      "💚",
+      "💙",
+      "💜",
+      "🖤",
+      "🤍",
+      "🤎",
+      "💔",
+      "❣️",
+      "💕",
+      "💞",
+      "💓",
+      "💗",
+      "💖",
+      "💘",
+      "💝",
+      "💟",
+      "♥️",
+      "💝",
+      "❤️‍🔥",
+      "❤️‍🩹",
+    ],
+  },
+  {
+    label: "Nature",
+    emojis: [
+      "🌵",
+      "🎄",
+      "🌲",
+      "🌳",
+      "🌴",
+      "🪵",
+      "🌱",
+      "🌿",
+      "☘️",
+      "🍀",
+      "🎍",
+      "🪴",
+      "🎋",
+      "🍃",
+      "🍂",
+      "🍁",
+      "🍄",
+      "🌾",
+      "💐",
+      "🌷",
+      "🌹",
+      "🥀",
+      "🌺",
+      "🌸",
+      "🌼",
+      "🌻",
+      "🌞",
+      "🌝",
+      "🌛",
+      "🌜",
+      "🌚",
+      "🌕",
+      "🌖",
+      "🌗",
+      "🌘",
+      "🌑",
+      "🌒",
+      "🌓",
+      "🌔",
+      "🌙",
+      "🌎",
+      "🌍",
+      "🌏",
+      "🪐",
+      "💫",
+      "⭐",
+      "🌟",
+      "✨",
+      "⚡",
+      "☄️",
+      "💥",
+      "🔥",
+      "🌪",
+      "🌈",
+      "☀️",
+      "🌤️",
+      "⛅",
+      "🌥",
+      "☁️",
+      "🌧",
+      "⛈",
+      "🌩",
+      "🌨",
+    ],
+  },
+  {
+    label: "Food",
+    emojis: [
+      "🍎",
+      "🍐",
+      "🍊",
+      "🍋",
+      "🍌",
+      "🍉",
+      "🍇",
+      "🍓",
+      "🫐",
+      "🍈",
+      "🍒",
+      "🍑",
+      "🥭",
+      "🍍",
+      "🥥",
+      "🥝",
+      "🍅",
+      "🍆",
+      "🥑",
+      "🥦",
+      "🥬",
+      "🥒",
+      "🌶",
+      "🫑",
+      "🍕",
+      "🍔",
+      "🍟",
+      "🌭",
+      "🍿",
+      "🧂",
+      "🥓",
+      "🍳",
+      "🥞",
+      "🧇",
+      "🍜",
+      "🍝",
+      "🍛",
+      "🍣",
+      "🍱",
+      "🥟",
+      "🍮",
+      "🍦",
+      "🧁",
+      "🍰",
+      "🍪",
+      "🍩",
+      "🍫",
+      "🍿",
+      "☕",
+      "🧃",
+      "🧋",
+    ],
+  },
+  {
+    label: "Animals",
+    emojis: [
+      "🐶",
+      "🐱",
+      "🐭",
+      "🐹",
+      "🐰",
+      "🦊",
+      "🐻",
+      "🐼",
+      "🐨",
+      "🐯",
+      "🦁",
+      "🐮",
+      "🐷",
+      "🐸",
+      "🐵",
+      "🐔",
+      "🐧",
+      "🐦",
+      "🐤",
+      "🦆",
+      "🦅",
+      "🦉",
+      "🦇",
+      "🐺",
+      "🐗",
+      "🐴",
+      "🦄",
+      "🐝",
+      "🪱",
+      "🐛",
+      "🦋",
+      "🐌",
+      "🐞",
+      "🐜",
+      "🪰",
+      "🪲",
+      "🪳",
+      "🦟",
+      "🦗",
+      "🐢",
+      "🐍",
+      "🦎",
+      "🦖",
+      "🦕",
+      "🐙",
+      "🦑",
+      "🦐",
+      "🦞",
+      "🦀",
+      "🐡",
+      "🐠",
+      "🐟",
+      "🐬",
+      "🐳",
+      "🐋",
+      "🦈",
+      "🐊",
+      "🐅",
+      "🐆",
+    ],
+  },
+  {
+    label: "Activities",
+    emojis: [
+      "⚽",
+      "🏀",
+      "🏈",
+      "⚾",
+      "🥎",
+      "🎾",
+      "🏐",
+      "🏉",
+      "🥏",
+      "🎱",
+      "🪀",
+      "🏓",
+      "🏸",
+      "🏒",
+      "🏑",
+      "🥍",
+      "🏏",
+      "🪃",
+      "🥅",
+      "⛳",
+      "🪁",
+      "🏹",
+      "🎣",
+      "🤿",
+      "🥊",
+      "🥋",
+      "🎽",
+      "🛹",
+      "🛼",
+      "🛷",
+      "⛸",
+      "🥌",
+      "🎿",
+      "⛷",
+      "🏂",
+      "🪂",
+      "🏋️",
+      "🤼",
+      "🤸",
+      "🤺",
+      "⛹",
+      "🤾",
+      "🏌️",
+      "🏇",
+      "🧘",
+      "🏄",
+      "🏊",
+      "🤽",
+      "🚣",
+      "🧗",
+      "🚵",
+      "🚴",
+    ],
+  },
+  {
+    label: "Objects",
+    emojis: [
+      "⌚",
+      "📱",
+      "💻",
+      "⌨️",
+      "🖥️",
+      "🖨️",
+      "🖱️",
+      "🖲️",
+      "💽",
+      "💾",
+      "💿",
+      "📀",
+      "📼",
+      "📷",
+      "📸",
+      "📹",
+      "🎥",
+      "📽️",
+      "🎞️",
+      "📞",
+      "☎️",
+      "📟",
+      "📠",
+      "📺",
+      "📻",
+      "🎙️",
+      "🎚️",
+      "🎛️",
+      "🧭",
+      "⏱",
+      "⏲️",
+      "⏰",
+      "🕰️",
+      "⌛",
+      "⏳",
+      "📡",
+      "🔋",
+      "🔌",
+      "💡",
+      "🔦",
+      "🕯️",
+      "🧯",
+      "🛢️",
+      "💸",
+      "💵",
+      "💴",
+      "💶",
+      "💷",
+      "🪙",
+      "💰",
+      "💳",
+      "💎",
+      "⚖️",
+      "🪜",
+      "🧰",
+      "🪛",
+      "🔧",
+      "🔨",
+      "⚒️",
+      "🛠️",
+      "⛏️",
+      "🪚",
+      "🔩",
+      "⚙️",
+      "🪤",
+      "🧱",
+      "⛓️",
+      "🧲",
+      "🔫",
+      "💣",
+      "🧨",
+      "🪓",
+      "🔪",
+      "🗡️",
+      "⚔️",
+      "🛡️",
+      "🚬",
+      "⚰️",
+      "🪦",
+      "⚱️",
+      "🏺",
+      "🔮",
+      "📿",
+      "🧿",
+      "💈",
+      "⚗️",
+      "🔭",
+      "🔬",
+      "🕳️",
+      "🩹",
+      "🩺",
+      "💊",
+      "💉",
+      "🩸",
+      "🧬",
+      "🦠",
+      "🧫",
+      "🧪",
+      "🌡️",
+      "🧹",
+      "🪠",
+      "🧺",
+      "🧻",
+      "🚽",
+      "🚰",
+      "🚿",
+      "🛁",
+      "🛀",
+      "🧼",
+      "🪥",
+      "🪒",
+      "🧽",
+      "🪣",
+      "🧴",
+      "🛎️",
+      "🔑",
+      "🗝️",
+      "🚪",
+      "🪑",
+      "🛋️",
+      "🛏️",
+      "🛌",
+      "🧸",
+      "🪆",
+      "🖼️",
+      "🪞",
+      "🪟",
+      "🛒",
+      "🎁",
+      "🎈",
+      "🎏",
+      "🎀",
+      "🪄",
+      "🪅",
+      "🎊",
+      "🎉",
+      "🎎",
+      "🏮",
+      "🎐",
+      "🧧",
+      "✉️",
+      "📩",
+      "📨",
+      "📧",
+      "💌",
+      "📥",
+      "📤",
+      "📦",
+      "🏷️",
+      "🪧",
+      "📪",
+      "📫",
+      "📬",
+      "📭",
+      "📮",
+      "📯",
+      "📜",
+      "📃",
+      "📄",
+      "📑",
+      "🧾",
+      "📊",
+      "📈",
+      "📉",
+      "🗒️",
+      "🗓️",
+      "📆",
+      "📅",
+      "🗑️",
+      "📇",
+      "🗃️",
+      "🗳️",
+      "🗄️",
+      "📋",
+      "📁",
+      "📂",
+      "🗂️",
+      "🗞️",
+      "📰",
+      "📓",
+      "📔",
+      "📒",
+      "📕",
+      "📗",
+      "📘",
+      "📙",
+      "📚",
+      "📖",
+      "🔖",
+      "🧷",
+      "🔗",
+      "📎",
+      "🖇️",
+      "📐",
+      "📏",
+      "🧮",
+      "📌",
+      "📍",
+      "✂️",
+      "🖊️",
+      "🖋️",
+      "✒️",
+      "🖌️",
+      "🖍️",
+      "📝",
+      "✏️",
+      "🔍",
+      "🔎",
+      "🔏",
+      "🔐",
+      "🔒",
+      "🔓",
+    ],
+  },
+];
+
+interface EmojiPickerProps {
+  onSelect: (emoji: string) => void;
+  onClose: () => void;
+}
+
+function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
+  const colorScheme = useColorScheme() ?? "light";
+  const isDark = colorScheme === "dark";
+  const [activeCategory, setActiveCategory] = useState(0);
+
+  const emojis = EMOJI_CATEGORIES[activeCategory].emojis;
+  const rows: string[][] = [];
+  const cols = 8;
+  for (let i = 0; i < emojis.length; i += cols) {
+    rows.push(emojis.slice(i, i + cols));
+  }
+
+  return (
+    <View
+      style={{
+        borderTopWidth: 1,
+        borderTopColor: isDark ? "#333" : "#E5E7EB",
+        backgroundColor: isDark ? "#252525" : "#FAFAFA",
+        paddingBottom: 4,
+      }}
+    >
+      {/* Category tabs */}
+      <View
+        style={{
+          flexDirection: "row",
+          paddingHorizontal: 8,
+          paddingTop: 6,
+          gap: 2,
+        }}
+      >
+        {EMOJI_CATEGORIES.map((cat, idx) => (
+          <TouchableOpacity
+            key={cat.label}
+            onPress={() => setActiveCategory(idx)}
+            style={{
+              flex: 1,
+              alignItems: "center",
+              paddingVertical: 5,
+              borderRadius: 6,
+              backgroundColor:
+                activeCategory === idx
+                  ? isDark
+                    ? "#3a3a3a"
+                    : "#e8e8e8"
+                  : "transparent",
+            }}
+          >
+            <RNText style={{ fontSize: 14 }}>{cat.emojis[0]}</RNText>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Emoji grid */}
+      <FlatList
+        data={rows}
+        keyExtractor={(_, idx) => String(idx)}
+        style={{ maxHeight: 160 }}
+        renderItem={({ item: row }) => (
+          <View
+            style={{
+              flexDirection: "row",
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+            }}
+          >
+            {row.map((emoji) => (
+              <TouchableOpacity
+                key={emoji}
+                onPress={() => onSelect(emoji)}
+                style={{
+                  width: `${100 / cols}%`,
+                  alignItems: "center",
+                  paddingVertical: 4,
+                }}
+              >
+                <RNText style={{ fontSize: 22 }}>{emoji}</RNText>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
+  );
+}
+
+// ─── MessageInput ─────────────────────────────────────────────────────────────
+
 export function MessageInput({
   onSend,
   onSendFile,
@@ -56,8 +750,10 @@ export function MessageInput({
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [duration, setDuration] = useState(0);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const durationRef = useRef(0);
+  const inputRef = useRef<TextInput>(null);
   const colorScheme = useColorScheme() ?? "light";
   const colors = colorScheme === "dark" ? chatColors.dark : chatColors.light;
   const iconColor = colorScheme === "dark" ? "#ffffff" : "#92898A";
@@ -340,10 +1036,15 @@ export function MessageInput({
   const fileBusy = sendingFile;
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
+    <View style={styles.container}>
+      {showEmojiPicker && (
+        <EmojiPicker
+          onSelect={(emoji) => {
+            setText((prev) => prev + emoji);
+          }}
+          onClose={() => setShowEmojiPicker(false)}
+        />
+      )}
       <View style={styles.inputContainer}>
         {isRecording ? (
           // ── Recording UI ──────────────────────────────────────────────────
@@ -415,10 +1116,23 @@ export function MessageInput({
               disabled={disabled || fileBusy || sending}
               style={{ opacity: disabled || fileBusy || sending ? 0.5 : 1 }}
             >
-              <MicroIcon size={28} color={iconColor} onClick={handleMicro} />
+              <MicroIcon size={28} color={iconColor} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setShowEmojiPicker((prev) => !prev);
+                if (showEmojiPicker) {
+                  inputRef.current?.focus();
+                }
+              }}
+              style={{ opacity: showEmojiPicker ? 1 : 0.8 }}
+            >
+              <EmotionIcon size={30} color={iconColor} />
             </TouchableOpacity>
 
             <TextInput
+              ref={inputRef}
               value={text}
               onChangeText={setText}
               placeholder={placeholder}
@@ -426,6 +1140,7 @@ export function MessageInput({
               multiline
               maxLength={4000}
               editable={!disabled}
+              onFocus={() => setShowEmojiPicker(false)}
               style={[
                 styles.input,
                 {
@@ -448,24 +1163,23 @@ export function MessageInput({
           </>
         )}
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    justifyContent: "flex-end",
-    marginBottom: 5,
-    marginTop: 5,
+    // No justifyContent — input takes only its natural height
+    // Bottom padding handled by parent (chat screen) via insets
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingBottom: 20,
+    paddingBottom: 0,
     paddingHorizontal: 10,
-    gap: 6,
+    gap: 4,
     paddingTop: 4,
-    minHeight: 60,
+    minHeight: 54,
   },
   input: {
     flex: 1,

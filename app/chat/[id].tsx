@@ -2,12 +2,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
+  KeyboardAvoidingView,
   Platform,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { InfoChat, MessageBubble, MessageInput } from "@/components/chat";
 import {
@@ -59,6 +60,7 @@ export default function ChatScreen() {
   const currentUserId = profile?.id;
   const colorScheme = useColorScheme() ?? "light";
   const isDark = colorScheme === "dark";
+  const insets = useSafeAreaInsets();
   const messagesBg = isDark ? chatColors.dark[300] : chatColors.light[500];
   const headerTextColor = isDark ? chatColors.dark[100] : "#1E2021";
   const iconColor = isDark ? "#ffffff" : "#92898A";
@@ -96,6 +98,12 @@ export default function ChatScreen() {
     },
     [id, setConversations, setFilteredConversations]
   );
+  const handleNewBoxCreated = useCallback(
+    (newBoxId: string) => {
+      router.replace(`/chat/${newBoxId}`);
+    },
+    [router]
+  );
   const {
     messages,
     isLoading,
@@ -106,7 +114,7 @@ export default function ChatScreen() {
     sendFile,
     markAsRead,
     loadMore,
-  } = useChatMessages(id, isGroup, handleMessageSent);
+  } = useChatMessages(id, isGroup, handleMessageSent, handleNewBoxCreated);
   const flatListRef = useRef<FlatList>(null);
   const lastMessageIdRef = useRef<string>("");
   const initialScrollDoneRef = useRef(false);
@@ -202,15 +210,13 @@ export default function ChatScreen() {
   }, [id, markAsRead]);
 
   return (
-    <View
-      style={{
-        flex: 1,
-        paddingTop: Platform.OS === "android" ? 14 : 52,
-        backgroundColor: isDark ? chatColors.dark[500] : chatColors.light[500],
-      }}
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: isDark ? chatColors.dark[500] : chatColors.light[500] }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={insets.top}
     >
-      <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1 }}>
-        {/* Header: back Arrow (#FFAABB), avatar 45x45, name — match old chats/[id].tsx */}
+      <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
+        {/* Header */}
         <View
           style={{
             flexDirection: "row",
@@ -218,7 +224,7 @@ export default function ChatScreen() {
             justifyContent: "space-between",
             paddingHorizontal: 12,
             paddingTop: 12,
-            paddingBottom: 4,
+            paddingBottom: 8,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 1 },
             shadowOpacity: 0.1,
@@ -430,14 +436,17 @@ export default function ChatScreen() {
                 </View>
               }
             />
-            <MessageInput
-              onSend={sendMessage}
-              onSendFile={sendFile}
-              placeholder="Aa..."
-            />
+            {/* Input area — paddingBottom = keyboard height when visible, 0 when hidden */}
+            <View style={{ paddingBottom: insets.bottom }}>
+              <MessageInput
+                onSend={sendMessage}
+                onSendFile={sendFile}
+                placeholder="Aa..."
+              />
+            </View>
           </>
         )}
       </SafeAreaView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
