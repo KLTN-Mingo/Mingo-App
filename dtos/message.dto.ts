@@ -51,6 +51,7 @@ export interface MessageResponseDto {
   updatedAt?: string;
   isEdited?: boolean;
   isRevoked?: boolean;
+  isDeleted?: boolean;
   readBy?: string[];
 }
 

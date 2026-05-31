@@ -137,6 +137,13 @@ export default function ChatScreen() {
   const updateMessageLocallyRef = useRef<
     (messageId: string, newContent: string) => void
   >(() => {});
+  const revokeMessageLocallyRef = useRef<(messageId: string) => void>(
+    () => {}
+  );
+  const deleteMessageLocallyRef = useRef<(messageId: string) => void>(() => {});
+  const revertMessageLocallyRef = useRef<
+    (messageId: string, snapshot: import("@/dtos").MessageResponseDto) => void
+  >(() => {});
 
   const handleNewBoxCreated = useCallback(
     (newBoxId: string) => {
@@ -153,12 +160,19 @@ export default function ChatScreen() {
   );
 
   const handleMessageRevoked = useCallback((messageId: string) => {
-    chatRefetchRef.current();
+    revokeMessageLocallyRef.current(messageId);
   }, []);
 
   const handleMessageDeleted = useCallback((messageId: string) => {
-    chatRefetchRef.current();
+    deleteMessageLocallyRef.current(messageId);
   }, []);
+
+  const handleMessageReverted = useCallback(
+    (messageId: string, snapshot: import("@/dtos").MessageResponseDto) => {
+      revertMessageLocallyRef.current(messageId, snapshot);
+    },
+    []
+  );
 
   const {
     messages,
@@ -172,9 +186,15 @@ export default function ChatScreen() {
     loadMore,
     refetch: chatRefetch,
     updateMessageLocally,
+    revokeMessageLocally,
+    deleteMessageLocally,
+    revertMessageLocally,
   } = useChatMessages(id, isGroup, handleMessageSent, handleNewBoxCreated);
   chatRefetchRef.current = chatRefetch;
   updateMessageLocallyRef.current = updateMessageLocally;
+  revokeMessageLocallyRef.current = revokeMessageLocally;
+  deleteMessageLocallyRef.current = deleteMessageLocally;
+  revertMessageLocallyRef.current = revertMessageLocally;
 
   const handleMessageEdited = useCallback(
     (messageId: string, newContent: string) => {
@@ -519,6 +539,7 @@ export default function ChatScreen() {
                     onMessageRevoked={handleMessageRevoked}
                     onMessageDeleted={handleMessageDeleted}
                     onMessageEdited={handleMessageEdited}
+                    onMessageReverted={handleMessageReverted}
                   />
                 );
               }}

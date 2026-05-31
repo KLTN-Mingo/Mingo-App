@@ -153,6 +153,30 @@ export function useChatMessages(
           setMessages(update);
         });
 
+        channel.bind("delete-message", (data: any) => {
+          if (!mountedRef.current) return;
+          const update = (list: MessageResponseDto[]) =>
+            list.map((m) =>
+              m.id === data.id
+                ? { ...m, isDeleted: true, content: "Message deleted" }
+                : m
+            );
+          setAllMessages(update);
+          setMessages(update);
+        });
+
+        channel.bind("unsend-message", (data: any) => {
+          if (!mountedRef.current) return;
+          const update = (list: MessageResponseDto[]) =>
+            list.map((m) =>
+              m.id === data.id
+                ? { ...m, isRevoked: true, content: "Message unsent" }
+                : m
+            );
+          setAllMessages(update);
+          setMessages(update);
+        });
+
         channel.bind("pusher:subscription_error", (err: any) => {
           console.error("Pusher subscription error:", err);
         });
@@ -295,6 +319,48 @@ export function useChatMessages(
     []
   );
 
+  // ── Revoke message locally (optimistic + Pusher fallback) ─────────────────
+  const revokeMessageLocally = useCallback((messageId: string) => {
+    const update = (list: MessageResponseDto[]) =>
+      list.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, isRevoked: true, content: "Message revoked" }
+          : msg
+      );
+    setAllMessages(update);
+    setMessages(update);
+  }, []);
+
+  // ── Delete message locally (optimistic + Pusher fallback) ─────────────────
+  const deleteMessageLocally = useCallback((messageId: string) => {
+    const update = (list: MessageResponseDto[]) =>
+      list.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, isDeleted: true, content: "Message deleted" }
+          : msg
+      );
+    setAllMessages(update);
+    setMessages(update);
+  }, []);
+
+  // ── Revert message back to original (rollback on API fail) ───────────────
+  // Stores original state snapshot before optimistic update.
+  // Callers should store snapshot before calling revoke/delete locally.
+  const revertMessageLocally = useCallback(
+    (
+      messageId: string,
+      snapshot: MessageResponseDto
+    ) => {
+      setAllMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? snapshot : msg))
+      );
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? snapshot : msg))
+      );
+    },
+    []
+  );
+
   return {
     messages,
     isLoading,
@@ -308,5 +374,8 @@ export function useChatMessages(
     markAsRead,
     appendMessage,
     updateMessageLocally,
+    revokeMessageLocally,
+    deleteMessageLocally,
+    revertMessageLocally,
   };
 }

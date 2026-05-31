@@ -33,6 +33,10 @@ interface MessageBubbleProps {
   onMessageRevoked?: (messageId: string) => void;
   onMessageDeleted?: (messageId: string) => void;
   onMessageEdited?: (messageId: string, newContent: string) => void;
+  onMessageReverted?: (
+    messageId: string,
+    snapshot: MessageResponseDto
+  ) => void;
 }
 
 type BubbleMessageType = "text" | "image" | "video" | "audio" | "file";
@@ -302,6 +306,7 @@ export function MessageBubble({
   onMessageRevoked,
   onMessageDeleted,
   onMessageEdited,
+  onMessageReverted,
 }: MessageBubbleProps) {
   const isRevoked = message.isRevoked;
   const colorScheme = useColorScheme() ?? "light";
@@ -317,40 +322,32 @@ export function MessageBubble({
 
   const handleRevoke = async () => {
     setActionVisible(false);
-    Alert.alert("Unsend message", "Remove this message for everyone?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Unsend",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await messageService.deleteOrRevokeMessage(message.id, "revoke");
-            onMessageRevoked?.(message.id);
-          } catch (err: any) {
-            Alert.alert("Error", err?.message ?? "Failed to unsend");
-          }
-        },
-      },
-    ]);
+
+    // Snapshot để rollback nếu API fail
+    const snapshot = { ...message };
+    onMessageRevoked?.(message.id);
+
+    try {
+      await messageService.deleteOrRevokeMessage(message.id, "revoke");
+    } catch (err: any) {
+      onMessageReverted?.(message.id, snapshot);
+      Alert.alert("Error", err?.message ?? "Failed to unsend");
+    }
   };
 
   const handleDelete = async () => {
     setActionVisible(false);
-    Alert.alert("Delete message", "Delete this message for you only?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await messageService.deleteOrRevokeMessage(message.id, "delete");
-            onMessageDeleted?.(message.id);
-          } catch (err: any) {
-            Alert.alert("Error", err?.message ?? "Failed to delete");
-          }
-        },
-      },
-    ]);
+
+    // Snapshot để rollback nếu API fail
+    const snapshot = { ...message };
+    onMessageDeleted?.(message.id);
+
+    try {
+      await messageService.deleteOrRevokeMessage(message.id, "delete");
+    } catch (err: any) {
+      onMessageReverted?.(message.id, snapshot);
+      Alert.alert("Error", err?.message ?? "Failed to delete");
+    }
   };
 
   const handleEdit = () => {
