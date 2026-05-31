@@ -28,6 +28,16 @@ export function useChatMessages(
     };
   }, []);
 
+  // Reset toàn bộ state khi đổi conversation để tránh stale data
+  useEffect(() => {
+    setAllMessages([]);
+    setMessages([]);
+    setHasMore(false);
+    setError(null);
+    setIsLoading(true);
+    pageRef.current = 1;
+  }, [conversationId]);
+
   // ── Fetch messages ──────────────────────────────────────────────────────────
   const fetchMessages = useCallback(async () => {
     if (!conversationId) {
@@ -162,6 +172,15 @@ export function useChatMessages(
           conversationId,
           content.trim()
         );
+
+        // If a new box was created: navigate immediately, don't fetch.
+        // The hook will remount with the new conversationId and fetchMessages will run correctly.
+        if ((result as any)?.isNew && (result as any)?.boxId) {
+          onNewBoxCreated?.((result as any).boxId);
+          return;
+        }
+
+        // Existing box: fetch normally
         const actualBoxId = (result as any)?.boxId ?? conversationId;
         const latest = await messageService.getMessagesForBox(
           actualBoxId,
@@ -179,9 +198,6 @@ export function useChatMessages(
           return next;
         });
         onMessageSent?.(newMsg);
-        if ((result as any)?.isNew && (result as any)?.boxId) {
-          onNewBoxCreated?.((result as any).boxId);
-        }
       } catch (err: any) {
         console.error("Error sending message:", err);
         throw err;

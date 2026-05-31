@@ -73,24 +73,33 @@ export default function MessageScreen() {
   const handleFriendPress = async (friend: FriendOnlineItem) => {
     try {
       const { boxId, isNew } = await messageService.getOrCreateDirectBox(friend.id);
+
       if (isNew) {
+        // boxId = friend.id (userId) khi isNew=true — box thật chưa tồn tại trên server
+        // Tạo placeholder để ChatScreen hiển thị đúng tên/avatar
         const placeholder: ChatConversationDto = {
-          id: friend.id,
+          id: boxId,
           type: ConversationType.DM,
           name: friend.name,
           avatarUrl: friend.avatar,
           updatedAt: new Date().toISOString(),
           participantIds: [friend.id],
-          participants: [{ id: friend.id, name: friend.name, avatar: friend.avatar, verified: friend.verified }],
+          participants: [{
+            id: friend.id,
+            name: friend.name,
+            avatar: friend.avatar,
+            verified: friend.verified,
+          }],
           unreadCount: 0,
         };
         setConversations((prev) =>
-          prev.find((c) => c.id === friend.id) ? prev : [placeholder, ...prev]
+          prev.find((c) => c.id === boxId) ? prev : [placeholder, ...prev]
         );
         setFilteredConversations((prev) =>
-          prev.find((c) => c.id === friend.id) ? prev : [placeholder, ...prev]
+          prev.find((c) => c.id === boxId) ? prev : [placeholder, ...prev]
         );
       }
+
       router.push(`/chat/${boxId}`);
     } catch (err) {
       console.error("handleFriendPress error:", err);

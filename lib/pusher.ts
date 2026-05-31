@@ -17,8 +17,8 @@ const PUSHER_APP_KEY =
 const PUSHER_CLUSTER = process.env.EXPO_PUBLIC_PUSHER_CLUSTER || "ap1";
 
 const PUSHER_AUTH_ENDPOINT =
-  process.env.EXPO_PUBLIC_PUSHER_AUTH_ENDPOINT ||
-  "http://192.168.1.25:3000/api/pusher/auth";
+  `${process.env.EXPO_PUBLIC_API_URL}/pusher/auth` ||
+  "http://192.168.1.7:3000/api/pusher/auth";
 
 let dynamicToken: string | null = null;
 

@@ -1,7 +1,14 @@
 import { useCallback, useEffect } from "react";
 
+import { ChatConversationDto } from "@/dtos";
 import { useChatContext } from "@/context/ChatContext";
 import { messageService } from "@/services/message.service";
+
+const dedup = (list: ChatConversationDto[]) =>
+  list.filter(
+    (item, index, self) =>
+      self.findIndex((c) => c.id === item.id) === index
+  );
 
 export function useChatList() {
   const {
@@ -18,8 +25,8 @@ export function useChatList() {
         (a, b) =>
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
-      setConversations(sorted);
-      setFilteredConversations(sorted);
+      setConversations(dedup(sorted));
+      setFilteredConversations(dedup(sorted));
     } catch (error) {
       console.error("Error fetching conversations:", error);
       setConversations([]);

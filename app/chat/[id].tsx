@@ -26,6 +26,7 @@ import {
   ConversationType,
   MessageResponseDto,
 } from "@/dtos";
+import { useChatList } from "@/hooks/use-chat-list";
 import { useChatMessages } from "@/hooks/use-chat-messages";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { messageService } from "@/services/message.service";
@@ -55,8 +56,8 @@ export default function ChatScreen() {
   const { profile } = useAuth();
   const { conversations, setConversations, setFilteredConversations } =
     useChatContext();
-  const conversation = conversations.find((c) => c.id === id);
-  const isGroup = conversation?.type === ConversationType.GROUP;
+  const { refetch } = useChatList();
+  const isGroup = conversations.find((c) => c.id === id)?.type === ConversationType.GROUP;
   const currentUserId = profile?.id;
   const colorScheme = useColorScheme() ?? "light";
   const isDark = colorScheme === "dark";
@@ -69,6 +70,33 @@ export default function ChatScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<MessageResponseDto[]>([]);
   const [searching, setSearching] = useState(false);
+  const [localConversation, setLocalConversation] = useState<ChatConversationDto | undefined>(undefined);
+
+  const found = conversations.find((c) => c.id === id);
+
+  // Reset khi id thay đổi để tránh hiện data của conversation cũ
+  useEffect(() => {
+    setLocalConversation(undefined);
+  }, [id]);
+
+  // Cập nhật localConversation khi found có giá trị
+  useEffect(() => {
+    if (found) setLocalConversation(found);
+  }, [found]);
+
+  // Fetch từ server nếu không tìm thấy trong list (box mới hoặc direct link)
+  useEffect(() => {
+    if (!found && id && !localConversation) {
+      messageService
+        .getBoxInfo(id)
+        .then((info) => {
+          if (info) setLocalConversation(info);
+        })
+        .catch(() => {});
+    }
+  }, [found, id, localConversation]);
+
+  const conversation = found ?? localConversation;
 
   const { startVideoCall, startAudioCall } = useCall();
   const handleMessageSent = useCallback(
@@ -100,9 +128,18 @@ export default function ChatScreen() {
   );
   const handleNewBoxCreated = useCallback(
     (newBoxId: string) => {
+      // Xóa placeholder cũ (id = conversationId hiện tại = userId cũ)
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      setFilteredConversations((prev) => prev.filter((c) => c.id !== id));
+
       router.replace(`/chat/${newBoxId}`);
+
+      // Refetch sau để list hiện box thật với lastMessage đúng
+      setTimeout(() => {
+        refetch();
+      }, 500);
     },
-    [router]
+    [id, router, setConversations, setFilteredConversations, refetch]
   );
   const {
     messages,
@@ -118,6 +155,12 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   const lastMessageIdRef = useRef<string>("");
   const initialScrollDoneRef = useRef(false);
+
+  // Reset scroll state khi id thay đổi để scroll hoạt động đúng sau khi navigate
+  useEffect(() => {
+    initialScrollDoneRef.current = false;
+    lastMessageIdRef.current = "";
+  }, [id]);
 
   const roomId = id ?? "";
   const receiverId =

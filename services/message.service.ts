@@ -647,6 +647,22 @@ class MessageServiceClass {
     };
   }
 
+  /** Single box by ID — returns as ChatConversationDto. */
+  async getBoxInfo(boxId: string): Promise<ChatConversationDto | null> {
+    try {
+      const data = await this.request<{
+        box: MessageBoxResponse | GroupBoxResponse;
+        readStatus: boolean;
+      }>("GET", `/boxes/${encodeURIComponent(boxId)}`);
+      const userStr = await AsyncStorage.getItem("user");
+      const currentUserId = userStr ? (JSON.parse(userStr)?.id as string) : "";
+      if (!data.box) return null;
+      return this.mapBoxToConversation(data.box, currentUserId);
+    } catch {
+      return null;
+    }
+  }
+
   /** Combined conversation list (direct + groups) for list screen. */
   async getConversations(): Promise<ChatConversationDto[]> {
     const userStr = await AsyncStorage.getItem("user");
