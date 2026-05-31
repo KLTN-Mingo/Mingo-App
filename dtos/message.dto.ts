@@ -49,6 +49,7 @@ export interface MessageResponseDto {
   contentType?: MessageContentType;
   createdAt: string;
   updatedAt?: string;
+  isEdited?: boolean;
   isRevoked?: boolean;
   readBy?: string[];
 }

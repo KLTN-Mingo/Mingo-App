@@ -136,6 +136,23 @@ export function useChatMessages(
           setMessages(update);
         });
 
+        channel.bind("message-edited", (data: any) => {
+          if (!mountedRef.current) return;
+          const update = (list: MessageResponseDto[]) =>
+            list.map((m) =>
+              m.id === data.id
+                ? {
+                    ...m,
+                    content: data.text,
+                    isEdited: true,
+                    updatedAt: data.updatedAt,
+                  }
+                : m
+            );
+          setAllMessages(update);
+          setMessages(update);
+        });
+
         channel.bind("pusher:subscription_error", (err: any) => {
           console.error("Pusher subscription error:", err);
         });
@@ -262,6 +279,22 @@ export function useChatMessages(
     });
   }, []);
 
+  // ── Update single message locally (edit) ───────────────────────────────────
+  const updateMessageLocally = useCallback(
+    (messageId: string, newContent: string) => {
+      const now = new Date().toISOString();
+      const update = (list: MessageResponseDto[]) =>
+        list.map((msg) =>
+          msg.id === messageId
+            ? { ...msg, content: newContent, isEdited: true, updatedAt: now }
+            : msg
+        );
+      setAllMessages(update);
+      setMessages(update);
+    },
+    []
+  );
+
   return {
     messages,
     isLoading,
@@ -274,5 +307,6 @@ export function useChatMessages(
     sendFile,
     markAsRead,
     appendMessage,
+    updateMessageLocally,
   };
 }

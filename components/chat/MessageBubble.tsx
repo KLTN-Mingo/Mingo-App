@@ -32,6 +32,7 @@ interface MessageBubbleProps {
   otherAvatarUrl?: string | null;
   onMessageRevoked?: (messageId: string) => void;
   onMessageDeleted?: (messageId: string) => void;
+  onMessageEdited?: (messageId: string, newContent: string) => void;
 }
 
 type BubbleMessageType = "text" | "image" | "video" | "audio" | "file";
@@ -245,12 +246,19 @@ function MessageContent({
 
   if (messageType === "text") {
     return (
-      <Text
-        style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther]}
-        selectable
-      >
-        {message.content || ""}
-      </Text>
+      <View>
+        <Text
+          style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther]}
+          selectable
+        >
+          {message.content || ""}
+        </Text>
+        {message.isEdited && (
+          <Text style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther, styles.editedText]}>
+            (Edited)
+          </Text>
+        )}
+      </View>
     );
   }
 
@@ -293,6 +301,7 @@ export function MessageBubble({
   otherAvatarUrl,
   onMessageRevoked,
   onMessageDeleted,
+  onMessageEdited,
 }: MessageBubbleProps) {
   const isRevoked = message.isRevoked;
   const colorScheme = useColorScheme() ?? "light";
@@ -302,7 +311,6 @@ export function MessageBubble({
   const [actionVisible, setActionVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
   const [editText, setEditText] = useState(message.content ?? "");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const messageType = resolveMessageType(message);
   const isTextMessage = messageType === "text";
@@ -356,14 +364,19 @@ export function MessageBubble({
       setEditVisible(false);
       return;
     }
-    setIsSubmitting(true);
+    const newContent = editText.trim();
+    const oldContent = message.content ?? "";
+
+    // Optimistic update: cập nhật UI ngay lập tức
+    onMessageEdited?.(message.id, newContent);
+    setEditVisible(false);
+
     try {
-      await messageService.editMessage(message.id, editText.trim());
-      setEditVisible(false);
+      await messageService.editMessage(message.id, newContent);
     } catch (err: any) {
-      Alert.alert("Error", err?.message ?? "Failed to edit");
-    } finally {
-      setIsSubmitting(false);
+      // Rollback nếu API fail
+      onMessageEdited?.(message.id, oldContent);
+      Alert.alert("Error", err?.message ?? "Failed to edit message");
     }
   };
 
@@ -582,18 +595,15 @@ export function MessageBubble({
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleSubmitEdit}
-                  disabled={isSubmitting}
                   style={{
                     flex: 1,
                     paddingVertical: 13,
                     borderRadius: 12,
-                    backgroundColor: isSubmitting ? "#888" : "#FFAABB",
+                    backgroundColor: "#FFAABB",
                     alignItems: "center",
                   }}
                 >
-                  <Text style={{ color: "#fff", fontWeight: "600" }}>
-                    {isSubmitting ? "Saving..." : "Save"}
-                  </Text>
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>Save</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -665,6 +675,11 @@ const styles = StyleSheet.create({
   },
   unsentText: {
     fontStyle: "italic",
+  },
+  editedText: {
+    fontSize: 11,
+    opacity: 0.7,
+    marginTop: 2,
   },
   imageMessage: {
     width: 200,

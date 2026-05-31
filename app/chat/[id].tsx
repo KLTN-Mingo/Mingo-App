@@ -134,6 +134,9 @@ export default function ChatScreen() {
     [id, setConversations, setFilteredConversations]
   );
   const chatRefetchRef = useRef<() => void>(() => {});
+  const updateMessageLocallyRef = useRef<
+    (messageId: string, newContent: string) => void
+  >(() => {});
 
   const handleNewBoxCreated = useCallback(
     (newBoxId: string) => {
@@ -168,8 +171,17 @@ export default function ChatScreen() {
     markAsRead,
     loadMore,
     refetch: chatRefetch,
+    updateMessageLocally,
   } = useChatMessages(id, isGroup, handleMessageSent, handleNewBoxCreated);
   chatRefetchRef.current = chatRefetch;
+  updateMessageLocallyRef.current = updateMessageLocally;
+
+  const handleMessageEdited = useCallback(
+    (messageId: string, newContent: string) => {
+      updateMessageLocallyRef.current(messageId, newContent);
+    },
+    []
+  );
 
   const flatListRef = useRef<FlatList>(null);
   const lastMessageIdRef = useRef<string>("");
@@ -506,6 +518,7 @@ export default function ChatScreen() {
                     otherAvatarUrl={conversation?.avatarUrl}
                     onMessageRevoked={handleMessageRevoked}
                     onMessageDeleted={handleMessageDeleted}
+                    onMessageEdited={handleMessageEdited}
                   />
                 );
               }}
