@@ -140,6 +140,13 @@ export function useChatList() {
           });
         });
 
+        channel.bind("removed-from-group", (data: any) => {
+          setConversations((prev) => prev.filter((c) => c.id !== data.boxId));
+          setFilteredConversations((prev) =>
+            prev.filter((c) => c.id !== data.boxId)
+          );
+        });
+
         channel.bind("pusher:subscription_error", (err: any) => {
           console.error("Pusher personal channel error:", err);
         });

@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -161,6 +162,24 @@ export default function ChatScreen() {
     initialScrollDoneRef.current = false;
     lastMessageIdRef.current = "";
   }, [id]);
+
+  // Detect khi bị kick khỏi group
+  useEffect(() => {
+    if (conversations.length === 0) return;
+    if (found) return;
+    if (!localConversation) return;
+
+    Alert.alert(
+      "Removed from group",
+      `You have been removed from "${localConversation.name}".`,
+      [
+        {
+          text: "OK",
+          onPress: () => router.replace("/(tabs)/message"),
+        },
+      ]
+    );
+  }, [conversations, found, localConversation, router]);
 
   const roomId = id ?? "";
   const receiverId =
