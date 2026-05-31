@@ -9,7 +9,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { InfoChat, MessageBubble, MessageInput } from "@/components/chat";
 import {
@@ -58,7 +61,8 @@ export default function ChatScreen() {
   const { conversations, setConversations, setFilteredConversations } =
     useChatContext();
   const { refetch } = useChatList();
-  const isGroup = conversations.find((c) => c.id === id)?.type === ConversationType.GROUP;
+  const isGroup =
+    conversations.find((c) => c.id === id)?.type === ConversationType.GROUP;
   const currentUserId = profile?.id;
   const colorScheme = useColorScheme() ?? "light";
   const isDark = colorScheme === "dark";
@@ -71,7 +75,9 @@ export default function ChatScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<MessageResponseDto[]>([]);
   const [searching, setSearching] = useState(false);
-  const [localConversation, setLocalConversation] = useState<ChatConversationDto | undefined>(undefined);
+  const [localConversation, setLocalConversation] = useState<
+    ChatConversationDto | undefined
+  >(undefined);
 
   const found = conversations.find((c) => c.id === id);
 
@@ -127,21 +133,30 @@ export default function ChatScreen() {
     },
     [id, setConversations, setFilteredConversations]
   );
+  const chatRefetchRef = useRef<() => void>(() => {});
+
   const handleNewBoxCreated = useCallback(
     (newBoxId: string) => {
-      // Xóa placeholder cũ (id = conversationId hiện tại = userId cũ)
       setConversations((prev) => prev.filter((c) => c.id !== id));
       setFilteredConversations((prev) => prev.filter((c) => c.id !== id));
 
       router.replace(`/chat/${newBoxId}`);
 
-      // Refetch sau để list hiện box thật với lastMessage đúng
       setTimeout(() => {
-        refetch();
+        chatRefetchRef.current();
       }, 500);
     },
-    [id, router, setConversations, setFilteredConversations, refetch]
+    [id, router, setConversations, setFilteredConversations]
   );
+
+  const handleMessageRevoked = useCallback((messageId: string) => {
+    chatRefetchRef.current();
+  }, []);
+
+  const handleMessageDeleted = useCallback((messageId: string) => {
+    chatRefetchRef.current();
+  }, []);
+
   const {
     messages,
     isLoading,
@@ -152,7 +167,10 @@ export default function ChatScreen() {
     sendFile,
     markAsRead,
     loadMore,
+    refetch: chatRefetch,
   } = useChatMessages(id, isGroup, handleMessageSent, handleNewBoxCreated);
+  chatRefetchRef.current = chatRefetch;
+
   const flatListRef = useRef<FlatList>(null);
   const lastMessageIdRef = useRef<string>("");
   const initialScrollDoneRef = useRef(false);
@@ -273,7 +291,10 @@ export default function ChatScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: isDark ? chatColors.dark[500] : chatColors.light[500] }}
+      style={{
+        flex: 1,
+        backgroundColor: isDark ? chatColors.dark[500] : chatColors.light[500],
+      }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={insets.top}
     >
@@ -483,6 +504,8 @@ export default function ChatScreen() {
                     showDateSeparator={showDateSeparator}
                     dateLabel={formatDateLabel(item.createdAt)}
                     otherAvatarUrl={conversation?.avatarUrl}
+                    onMessageRevoked={handleMessageRevoked}
+                    onMessageDeleted={handleMessageDeleted}
                   />
                 );
               }}

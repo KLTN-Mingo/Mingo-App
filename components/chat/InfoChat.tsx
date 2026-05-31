@@ -1,16 +1,4 @@
 import {
-  Alert,
-  Image,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import {
   ArrowIcon,
   BlockIcon,
   FileIcon,
@@ -23,15 +11,27 @@ import {
   UserIcon,
 } from "@/components/shared/icons/Icons";
 import { Avatar } from "@/components/ui";
-import { UserMinimalDto } from "@/dtos/user.dto";
-import { FollowApi } from "@/services/follow.service";
 import { useAuth } from "@/context/AuthContext";
 import type { ChatConversationDto } from "@/dtos";
 import { ConversationType } from "@/dtos";
+import { UserMinimalDto } from "@/dtos/user.dto";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { FollowApi } from "@/services/follow.service";
 import { FileResponse, messageService } from "@/services/message.service";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const chatColors = {
   dark: {
@@ -91,6 +91,11 @@ export function InfoChat({
   const [addingMembers, setAddingMembers] = useState(false);
   const [friendSearch, setFriendSearch] = useState("");
 
+  const [selectedMember, setSelectedMember] = useState<GroupMember | null>(
+    null
+  );
+  const [memberActionVisible, setMemberActionVisible] = useState(false);
+
   const textColor = isDark ? chatColors.dark[100] : chatColors.light[500];
   const bgColor = isDark ? chatColors.dark[500] : chatColors.light[700];
   const iconColor = isDark ? "#ffffff" : "#92898A";
@@ -110,7 +115,9 @@ export function InfoChat({
     Promise.all([
       messageService.getImageList(conversation.id),
       messageService.getFileList(conversation.id),
-      isGroup ? messageService.getGroupDetail(conversation.id) : Promise.resolve({ members: [] }),
+      isGroup
+        ? messageService.getGroupDetail(conversation.id)
+        : Promise.resolve({ members: [] }),
     ])
       .then(([imgs, fils, detail]) => {
         setImages(imgs);
@@ -236,7 +243,10 @@ export function InfoChat({
           style: "destructive",
           onPress: async () => {
             try {
-              await messageService.removeGroupMember(conversation.id, member.id);
+              await messageService.removeGroupMember(
+                conversation.id,
+                member.id
+              );
               setMembers((prev) => prev.filter((m) => m.id !== member.id));
             } catch (err: any) {
               Alert.alert("Error", err?.message ?? "Failed to remove member");
@@ -249,27 +259,23 @@ export function InfoChat({
 
   const handleLeaveGroup = () => {
     if (!conversation?.id) return;
-    Alert.alert(
-      "Leave group",
-      "Are you sure you want to leave this group?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Leave",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await messageService.leaveGroup(conversation.id);
-              onDeleteChat?.(conversation.id);
-              onClose();
-              router.back();
-            } catch (err: any) {
-              Alert.alert("Error", err?.message ?? "Failed to leave group");
-            }
-          },
+    Alert.alert("Leave group", "Are you sure you want to leave this group?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Leave",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await messageService.leaveGroup(conversation.id);
+            onDeleteChat?.(conversation.id);
+            onClose();
+            router.back();
+          } catch (err: any) {
+            Alert.alert("Error", err?.message ?? "Failed to leave group");
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handlePromoteAdmin = async (member: GroupMember) => {
@@ -302,71 +308,52 @@ export function InfoChat({
 
   const renderMemberRow = (member: GroupMember) => {
     const isSelf = member.id === currentUserId;
+
+    const handleLongPress = () => {
+      if (!isAdmin || isSelf) return;
+      setSelectedMember(member);
+      setMemberActionVisible(true);
+    };
+
     return (
-      <View
+      <TouchableOpacity
         key={member.id}
+        onLongPress={handleLongPress}
+        activeOpacity={isAdmin && !isSelf ? 0.6 : 1}
         style={{
           flexDirection: "row",
           alignItems: "center",
-          paddingVertical: 8,
-          paddingHorizontal: 4,
+          paddingVertical: 10,
+          paddingHorizontal: 8,
+          borderRadius: 10,
         }}
       >
         <Avatar
           source={member.avatarUrl ? { uri: member.avatarUrl } : undefined}
           fallback={member.name?.charAt(0)?.toUpperCase() ?? "?"}
           size="sm"
-          className="w-8 h-8"
+          className="w-10 h-10"
         />
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text style={{ color: textColor, fontSize: 15 }} numberOfLines={1}>
-            {member.name ?? "Unknown"}
+
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text
+              style={{ color: textColor, fontSize: 15, fontWeight: "500" }}
+              numberOfLines={1}
+            >
+              {member.name ?? "Unknown"}
+            </Text>
             {isSelf && (
-              <Text style={{ opacity: 0.6, fontSize: 13 }}> (You)</Text>
+              <Text style={{ color: "#92898A", fontSize: 12 }}>(You)</Text>
             )}
-          </Text>
-        </View>
-        {member.role === "admin" && (
-          <View
-            style={{
-              backgroundColor: "#FFAABB",
-              borderRadius: 4,
-              paddingHorizontal: 6,
-              paddingVertical: 2,
-              marginRight: 6,
-            }}
-          >
-            <Text style={{ color: "#fff", fontSize: 11, fontWeight: "600" }}>
+          </View>
+          {member.role === "admin" && (
+            <Text style={{ color: "#FFAABB", fontSize: 12, marginTop: 1 }}>
               Admin
             </Text>
-          </View>
-        )}
-        {isAdmin && !isSelf && (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            {member.role === "member" ? (
-              <TouchableOpacity
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                onPress={() => handlePromoteAdmin(member)}
-              >
-                <Text style={{ color: "#64B5F6", fontSize: 12 }}>Make admin</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                onPress={() => handleDemoteAdmin(member)}
-              >
-                <Text style={{ color: "#FFAABB", fontSize: 12 }}>Remove admin</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              onPress={() => handleRemoveMember(member)}
-            >
-              <Text style={{ color: "#E57373", fontSize: 18, fontWeight: "600" }}>×</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+          )}
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -413,7 +400,11 @@ export function InfoChat({
             justifyContent: "center",
           }}
         >
-          {selected && <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }}>✓</Text>}
+          {selected && (
+            <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }}>
+              ✓
+            </Text>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -504,26 +495,28 @@ export function InfoChat({
               marginBottom: 24,
             }}
           >
-            <TouchableOpacity
-              onPress={handleProfile}
-              style={{ alignItems: "center", width: 72 }}
-            >
-              <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 22,
-                  backgroundColor: surfaceColor,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+            {!isGroup && (
+              <TouchableOpacity
+                onPress={handleProfile}
+                style={{ alignItems: "center", width: 72 }}
               >
-                <UserIcon size={26} color={iconColor} />
-              </View>
-              <Text style={{ color: textColor, fontSize: 12, marginTop: 6 }}>
-                Profile
-              </Text>
-            </TouchableOpacity>
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: surfaceColor,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <UserIcon size={26} color={iconColor} />
+                </View>
+                <Text style={{ color: textColor, fontSize: 12, marginTop: 6 }}>
+                  Profile
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               onPress={() => setNotificationsOn((v) => !v)}
@@ -580,19 +573,42 @@ export function InfoChat({
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    marginBottom: 8,
+                    marginBottom: 10,
+                    marginTop: 8,
                   }}
                 >
-                  <Text style={{ color: textColor, fontSize: 16, fontWeight: "600" }}>
+                  <Text
+                    style={{
+                      color: textColor,
+                      fontSize: 15,
+                      fontWeight: "600",
+                    }}
+                  >
                     Members ({members.length})
                   </Text>
                   {isAdmin && (
                     <TouchableOpacity
                       onPress={openAddMemberModal}
-                      style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                        backgroundColor: isDark ? "#2a2a2a" : "#F0F0F0",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 999,
+                      }}
                     >
-                      <PlusIcon size={18} color="#64B5F6" />
-                      <Text style={{ color: "#64B5F6", fontSize: 14 }}>Add</Text>
+                      <PlusIcon size={14} color="#64B5F6" />
+                      <Text
+                        style={{
+                          color: "#64B5F6",
+                          fontSize: 13,
+                          fontWeight: "500",
+                        }}
+                      >
+                        Add
+                      </Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -600,17 +616,22 @@ export function InfoChat({
                 <View
                   style={{
                     backgroundColor: surfaceColor,
-                    borderRadius: 8,
-                    padding: 8,
-                    marginBottom: 16,
+                    borderRadius: 12,
+                    paddingVertical: 4,
+                    paddingHorizontal: 4,
+                    marginBottom: 20,
                   }}
                 >
                   {loadingMembers ? (
-                    <Text style={{ color: textColor, opacity: 0.7, fontSize: 14 }}>
+                    <Text
+                      style={{ color: textColor, opacity: 0.7, fontSize: 14 }}
+                    >
                       Loading members...
                     </Text>
                   ) : members.length === 0 ? (
-                    <Text style={{ color: textColor, opacity: 0.7, fontSize: 14 }}>
+                    <Text
+                      style={{ color: textColor, opacity: 0.7, fontSize: 14 }}
+                    >
                       No members found
                     </Text>
                   ) : (
@@ -761,7 +782,9 @@ export function InfoChat({
                 }}
               >
                 <BlockIcon size={24} color={iconColor} />
-                <Text style={{ color: textColor, fontSize: 16, marginLeft: 12 }}>
+                <Text
+                  style={{ color: textColor, fontSize: 16, marginLeft: 12 }}
+                >
                   Block
                 </Text>
               </TouchableOpacity>
@@ -781,7 +804,9 @@ export function InfoChat({
                 <View style={{ transform: [{ rotate: "180deg" }] }}>
                   <ArrowIcon size={24} color="#E57373" />
                 </View>
-                <Text style={{ color: "#E57373", fontSize: 16, marginLeft: 12 }}>
+                <Text
+                  style={{ color: "#E57373", fontSize: 16, marginLeft: 12 }}
+                >
                   Leave group
                 </Text>
               </TouchableOpacity>
@@ -834,11 +859,17 @@ export function InfoChat({
                 marginBottom: 12,
               }}
             >
-              <Text style={{ color: textColor, fontSize: 17, fontWeight: "600" }}>
+              <Text
+                style={{ color: textColor, fontSize: 17, fontWeight: "600" }}
+              >
                 Add members
               </Text>
               <TouchableOpacity onPress={() => setShowAddMemberModal(false)}>
-                <Text style={{ color: "#E57373", fontSize: 28, fontWeight: "300" }}>×</Text>
+                <Text
+                  style={{ color: "#E57373", fontSize: 28, fontWeight: "300" }}
+                >
+                  ×
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -872,11 +903,25 @@ export function InfoChat({
             {/* Friend list */}
             <ScrollView style={{ maxHeight: 400 }}>
               {loadingFriends ? (
-                <Text style={{ color: textColor, opacity: 0.7, fontSize: 14, paddingVertical: 8 }}>
+                <Text
+                  style={{
+                    color: textColor,
+                    opacity: 0.7,
+                    fontSize: 14,
+                    paddingVertical: 8,
+                  }}
+                >
                   Loading friends...
                 </Text>
               ) : filteredFriends.length === 0 ? (
-                <Text style={{ color: textColor, opacity: 0.7, fontSize: 14, paddingVertical: 8 }}>
+                <Text
+                  style={{
+                    color: textColor,
+                    opacity: 0.7,
+                    fontSize: 14,
+                    paddingVertical: 8,
+                  }}
+                >
                   {friends.length === 0
                     ? "No friends available to add"
                     : "No friends match your search"}
@@ -899,7 +944,9 @@ export function InfoChat({
                   marginTop: 12,
                 }}
               >
-                <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
+                <Text
+                  style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}
+                >
                   {addingMembers
                     ? "Adding..."
                     : `Add ${selectedIds.size} member${selectedIds.size > 1 ? "s" : ""}`}
@@ -907,6 +954,255 @@ export function InfoChat({
               </TouchableOpacity>
             )}
           </View>
+        </View>
+      </Modal>
+
+      {/* Member Action Bottom Sheet */}
+      <Modal
+        transparent
+        animationType="slide"
+        visible={memberActionVisible}
+        onRequestClose={() => setMemberActionVisible(false)}
+      >
+        {/* Backdrop */}
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)" }}
+          activeOpacity={1}
+          onPress={() => setMemberActionVisible(false)}
+        />
+
+        {/* Sheet */}
+        <View
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: isDark ? "#252525" : "#FFFFFF",
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingBottom: 36,
+            paddingTop: 12,
+          }}
+        >
+          {/* Handle */}
+          <View
+            style={{
+              width: 40,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: isDark ? "#555" : "#DEDEDE",
+              alignSelf: "center",
+              marginBottom: 20,
+            }}
+          />
+
+          {/* Avatar + tên + role */}
+          <View
+            style={{
+              alignItems: "center",
+              marginBottom: 24,
+              paddingHorizontal: 20,
+            }}
+          >
+            <Avatar
+              source={
+                selectedMember?.avatarUrl
+                  ? { uri: selectedMember.avatarUrl }
+                  : undefined
+              }
+              fallback={selectedMember?.name?.charAt(0)?.toUpperCase() ?? "?"}
+              className="w-[56px] h-[56px]"
+            />
+            <Text
+              style={{
+                color: textColor,
+                fontSize: 17,
+                fontWeight: "700",
+                marginTop: 10,
+              }}
+            >
+              {selectedMember?.name ?? "Unknown"}
+            </Text>
+            <View
+              style={{
+                marginTop: 4,
+                paddingHorizontal: 10,
+                paddingVertical: 3,
+                borderRadius: 999,
+                backgroundColor:
+                  selectedMember?.role === "admin"
+                    ? "rgba(255,170,187,0.15)"
+                    : isDark
+                      ? "#333"
+                      : "#F0F0F0",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color:
+                    selectedMember?.role === "admin" ? "#FFAABB" : "#92898A",
+                }}
+              >
+                {selectedMember?.role === "admin" ? "Admin" : "Member"}
+              </Text>
+            </View>
+          </View>
+
+          {/* Divider */}
+          <View
+            style={{
+              height: 1,
+              backgroundColor: isDark ? "#333" : "#F0F0F0",
+              marginBottom: 8,
+            }}
+          />
+
+          {/* Make Admin */}
+          {selectedMember?.role === "member" && (
+            <TouchableOpacity
+              onPress={() => {
+                setMemberActionVisible(false);
+                if (selectedMember) handlePromoteAdmin(selectedMember);
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 24,
+                paddingVertical: 15,
+              }}
+            >
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: "rgba(100,181,246,0.15)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 16,
+                }}
+              >
+                <Text style={{ fontSize: 20 }}>⭐</Text>
+              </View>
+              <View>
+                <Text
+                  style={{ color: textColor, fontSize: 15, fontWeight: "600" }}
+                >
+                  Make Admin
+                </Text>
+                <Text style={{ color: "#92898A", fontSize: 12, marginTop: 2 }}>
+                  Grant admin permissions
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Remove Admin */}
+          {selectedMember?.role === "admin" && (
+            <TouchableOpacity
+              onPress={() => {
+                setMemberActionVisible(false);
+                if (selectedMember) handleDemoteAdmin(selectedMember);
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 24,
+                paddingVertical: 15,
+              }}
+            >
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: isDark ? "#333" : "#F0F0F0",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 16,
+                }}
+              >
+                <Text style={{ fontSize: 20 }}>👤</Text>
+              </View>
+              <View>
+                <Text
+                  style={{ color: textColor, fontSize: 15, fontWeight: "600" }}
+                >
+                  Remove Admin
+                </Text>
+                <Text style={{ color: "#92898A", fontSize: 12, marginTop: 2 }}>
+                  Revoke admin permissions
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Divider */}
+          <View
+            style={{
+              height: 1,
+              backgroundColor: isDark ? "#333" : "#F0F0F0",
+              marginVertical: 8,
+            }}
+          />
+
+          {/* Remove from group */}
+          <TouchableOpacity
+            onPress={() => {
+              setMemberActionVisible(false);
+              if (selectedMember) handleRemoveMember(selectedMember);
+            }}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 24,
+              paddingVertical: 15,
+            }}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "rgba(229,57,53,0.1)",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 16,
+              }}
+            >
+              <Text style={{ fontSize: 20 }}>🚫</Text>
+            </View>
+            <View>
+              <Text
+                style={{ color: "#E53935", fontSize: 15, fontWeight: "600" }}
+              >
+                Remove from group
+              </Text>
+              <Text style={{ color: "#92898A", fontSize: 12, marginTop: 2 }}>
+                Kick this member out
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Cancel */}
+          <TouchableOpacity
+            onPress={() => setMemberActionVisible(false)}
+            style={{
+              marginHorizontal: 16,
+              marginTop: 12,
+              backgroundColor: isDark ? "#333" : "#F5F5F5",
+              borderRadius: 14,
+              paddingVertical: 15,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: textColor, fontSize: 16, fontWeight: "600" }}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
         </View>
       </Modal>
     </Modal>

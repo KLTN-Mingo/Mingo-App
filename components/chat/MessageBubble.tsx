@@ -1,9 +1,12 @@
 import { Audio, AVPlaybackStatus, ResizeMode, Video } from "expo-av";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Image,
   Linking,
+  Modal,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -11,6 +14,7 @@ import {
 import { Text } from "@/components/ui";
 import { MessageResponseDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { messageService } from "@/services/message.service";
 
 // Old Mingo_App MessageCard colors
 const bubbleColors = {
@@ -26,6 +30,8 @@ interface MessageBubbleProps {
   showDateSeparator?: boolean;
   dateLabel?: string;
   otherAvatarUrl?: string | null;
+  onMessageRevoked?: (messageId: string) => void;
+  onMessageDeleted?: (messageId: string) => void;
 }
 
 type BubbleMessageType = "text" | "image" | "video" | "audio" | "file";
@@ -285,11 +291,81 @@ export function MessageBubble({
   showDateSeparator,
   dateLabel,
   otherAvatarUrl,
+  onMessageRevoked,
+  onMessageDeleted,
 }: MessageBubbleProps) {
   const isRevoked = message.isRevoked;
   const colorScheme = useColorScheme() ?? "light";
   const otherBubbleBg =
     colorScheme === "dark" ? bubbleColors.otherDark : bubbleColors.otherDark;
+
+  const [actionVisible, setActionVisible] = useState(false);
+  const [editVisible, setEditVisible] = useState(false);
+  const [editText, setEditText] = useState(message.content ?? "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const messageType = resolveMessageType(message);
+  const isTextMessage = messageType === "text";
+
+  const handleRevoke = async () => {
+    setActionVisible(false);
+    Alert.alert("Unsend message", "Remove this message for everyone?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Unsend",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await messageService.deleteOrRevokeMessage(message.id, "revoke");
+            onMessageRevoked?.(message.id);
+          } catch (err: any) {
+            Alert.alert("Error", err?.message ?? "Failed to unsend");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleDelete = async () => {
+    setActionVisible(false);
+    Alert.alert("Delete message", "Delete this message for you only?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await messageService.deleteOrRevokeMessage(message.id, "delete");
+            onMessageDeleted?.(message.id);
+          } catch (err: any) {
+            Alert.alert("Error", err?.message ?? "Failed to delete");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEdit = () => {
+    setActionVisible(false);
+    setEditText(message.content ?? "");
+    setEditVisible(true);
+  };
+
+  const handleSubmitEdit = async () => {
+    if (!editText.trim() || editText.trim() === message.content) {
+      setEditVisible(false);
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await messageService.editMessage(message.id, editText.trim());
+      setEditVisible(false);
+    } catch (err: any) {
+      Alert.alert("Error", err?.message ?? "Failed to edit");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <View
@@ -317,27 +393,213 @@ export function MessageBubble({
           </View>
         )}
 
-        <View
-          style={[
-            styles.bubble,
-            isOwn ? styles.bubbleOwn : { backgroundColor: otherBubbleBg },
-          ]}
+        <TouchableOpacity
+          onLongPress={() => {
+            if (!isRevoked) setActionVisible(true);
+          }}
+          activeOpacity={0.85}
+          delayLongPress={350}
         >
-          {isRevoked ? (
-            <Text
+          <View
+            style={[
+              styles.bubble,
+              isOwn ? styles.bubbleOwn : { backgroundColor: otherBubbleBg },
+              { alignSelf: "flex-start" },
+            ]}
+          >
+            {isRevoked ? (
+              <Text
+                style={[
+                  styles.bubbleText,
+                  isOwn ? styles.textOwn : styles.textOther,
+                  styles.unsentText,
+                ]}
+              >
+                Message unsent
+              </Text>
+            ) : (
+              <MessageContent message={message} isOwn={isOwn} />
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Action Bottom Sheet */}
+      <Modal
+        transparent
+        animationType="slide"
+        visible={actionVisible}
+        onRequestClose={() => setActionVisible(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)" }}
+          activeOpacity={1}
+          onPress={() => setActionVisible(false)}
+        />
+        <View style={actionStyles.sheet}>
+          <View style={actionStyles.handle} />
+
+          {isOwn && isTextMessage && (
+            <TouchableOpacity style={actionStyles.row} onPress={handleEdit}>
+              <View
+                style={[
+                  actionStyles.iconWrap,
+                  { backgroundColor: "rgba(100,181,246,0.15)" },
+                ]}
+              >
+                <Text style={{ fontSize: 20 }}>✏️</Text>
+              </View>
+              <View>
+                <Text style={actionStyles.rowTitle}>Edit</Text>
+                <Text style={actionStyles.rowSub}>Change message content</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {isOwn && (
+            <>
+              <View style={actionStyles.divider} />
+              <TouchableOpacity style={actionStyles.row} onPress={handleRevoke}>
+                <View
+                  style={[
+                    actionStyles.iconWrap,
+                    { backgroundColor: "rgba(229,57,53,0.1)" },
+                  ]}
+                >
+                  <Text style={{ fontSize: 20 }}>↩️</Text>
+                </View>
+                <View>
+                  <Text style={[actionStyles.rowTitle, { color: "#E53935" }]}>
+                    Unsend
+                  </Text>
+                  <Text style={actionStyles.rowSub}>Remove for everyone</Text>
+                </View>
+              </TouchableOpacity>
+            </>
+          )}
+
+          <View style={actionStyles.divider} />
+          <TouchableOpacity style={actionStyles.row} onPress={handleDelete}>
+            <View
               style={[
-                styles.bubbleText,
-                isOwn ? styles.textOwn : styles.textOther,
-                styles.unsentText,
+                actionStyles.iconWrap,
+                { backgroundColor: "rgba(229,57,53,0.1)" },
               ]}
             >
-              Message unsent
-            </Text>
-          ) : (
-            <MessageContent message={message} isOwn={isOwn} />
-          )}
+              <Text style={{ fontSize: 20 }}>🗑️</Text>
+            </View>
+            <View>
+              <Text style={[actionStyles.rowTitle, { color: "#E53935" }]}>
+                Delete
+              </Text>
+              <Text style={actionStyles.rowSub}>Remove for you only</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={actionStyles.cancelBtn}
+            onPress={() => setActionVisible(false)}
+          >
+            <Text style={actionStyles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
         </View>
-      </View>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        transparent
+        animationType="fade"
+        visible={editVisible}
+        onRequestClose={() => setEditVisible(false)}
+      >
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.45)",
+            justifyContent: "center",
+            padding: 20,
+          }}
+          activeOpacity={1}
+          onPress={() => setEditVisible(false)}
+        >
+          <TouchableOpacity activeOpacity={1}>
+            <View
+              style={{
+                backgroundColor: colorScheme === "dark" ? "#252525" : "#FFFFFF",
+                borderRadius: 20,
+                padding: 20,
+              }}
+            >
+              <Text
+                style={{
+                  color: colorScheme === "dark" ? "#CFBFAD" : "#1E2021",
+                  fontSize: 17,
+                  fontWeight: "700",
+                  marginBottom: 16,
+                }}
+              >
+                Edit message
+              </Text>
+
+              <TextInput
+                value={editText}
+                onChangeText={setEditText}
+                multiline
+                autoFocus
+                style={{
+                  backgroundColor: colorScheme === "dark" ? "#333" : "#F5F5F5",
+                  borderRadius: 12,
+                  padding: 12,
+                  color: colorScheme === "dark" ? "#CFBFAD" : "#1E2021",
+                  fontSize: 15,
+                  minHeight: 80,
+                  maxHeight: 160,
+                  textAlignVertical: "top",
+                  marginBottom: 16,
+                }}
+              />
+
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <TouchableOpacity
+                  onPress={() => setEditVisible(false)}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 13,
+                    borderRadius: 12,
+                    backgroundColor:
+                      colorScheme === "dark" ? "#333" : "#F0F0F0",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colorScheme === "dark" ? "#CFBFAD" : "#1E2021",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSubmitEdit}
+                  disabled={isSubmitting}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 13,
+                    borderRadius: 12,
+                    backgroundColor: isSubmitting ? "#888" : "#FFAABB",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>
+                    {isSubmitting ? "Saving..." : "Save"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -377,9 +639,11 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   bubble: {
-    maxWidth: "75%",
-    padding: 12,
+    maxWidth: "100%",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 20,
+    alignSelf: "flex-start",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -450,5 +714,70 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 13,
     flexShrink: 1,
+  },
+});
+
+const actionStyles = StyleSheet.create({
+  sheet: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#252525",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 36,
+    paddingTop: 12,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#555",
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#333",
+    marginHorizontal: 20,
+    marginVertical: 4,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+  },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  rowTitle: {
+    color: "#CFBFAD",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  rowSub: {
+    color: "#92898A",
+    fontSize: 12,
+    marginTop: 2,
+  },
+  cancelBtn: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: "#333",
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  cancelText: {
+    color: "#CFBFAD",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
