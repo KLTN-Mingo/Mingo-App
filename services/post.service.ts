@@ -367,6 +367,21 @@ class PostService {
     return this.normalizePaginatedPosts(raw, page, limit);
   }
 
+  /** GET /api/posts?hashtag=tag — bài viết theo hashtag. */
+  async getPostsByHashtag(
+    tag: string,
+    page = 1,
+    limit = 20
+  ): Promise<PaginatedPostsDto> {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      hashtag: tag.replace(/^#/, ""),
+    });
+    const raw = await this.request<any>(`?${params.toString()}`);
+    return this.normalizePaginatedPosts(raw, page, limit);
+  }
+
   async getPostStats(postId: string): Promise<Record<string, number>> {
     return this.request<Record<string, number>>(
       `/${encodeURIComponent(postId)}/stats`

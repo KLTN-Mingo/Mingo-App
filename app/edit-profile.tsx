@@ -50,6 +50,23 @@ interface LocationFieldProps {
   placeholder?: string;
 }
 
+function splitAddressParts(input: string): {
+  prefix: string;
+  locationQuery: string;
+} {
+  const raw = input.trim();
+  if (!raw) return { prefix: "", locationQuery: "" };
+
+  const commaIndex = raw.lastIndexOf(",");
+  if (commaIndex < 0) {
+    return { prefix: "", locationQuery: raw };
+  }
+
+  const prefix = raw.slice(0, commaIndex).trim();
+  const locationQuery = raw.slice(commaIndex + 1).trim();
+  return { prefix, locationQuery };
+}
+
 function LocationField({
   label,
   value,
@@ -57,7 +74,20 @@ function LocationField({
   placeholder,
 }: LocationFieldProps) {
   const [focused, setFocused] = useState(false);
-  const suggestions = useVNLocationSuggestions(focused ? value : "", 6);
+  const { prefix, locationQuery } = useMemo(
+    () => splitAddressParts(value),
+    [value]
+  );
+  const suggestions = useVNLocationSuggestions(
+    focused ? locationQuery : "",
+    6
+  );
+
+  const handlePickSuggestion = (picked: string) => {
+    const next = prefix ? `${prefix}, ${picked}` : picked;
+    onChange(next);
+    setFocused(false);
+  };
 
   return (
     <View>
@@ -72,16 +102,16 @@ function LocationField({
           setTimeout(() => setFocused(false), 150);
         }}
       />
+      <Text variant="muted" className="mt-1 text-xs">
+        Nhập dạng: số nhà, đường..., rồi nhập tỉnh/thành sau dấu phẩy để gợi ý.
+      </Text>
       {focused && suggestions.length > 0 ? (
         <View className="mt-2 rounded-2xl bg-input-light dark:bg-input-dark overflow-hidden">
           {suggestions.map((item, idx) => (
             <TouchableOpacity
               key={item.id}
               activeOpacity={0.65}
-              onPress={() => {
-                onChange(item.shortLabel);
-                setFocused(false);
-              }}
+              onPress={() => handlePickSuggestion(item.shortLabel)}
               className={`px-4 py-3 ${
                 idx > 0
                   ? "border-t border-border-light dark:border-border-dark"

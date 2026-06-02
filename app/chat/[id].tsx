@@ -1,15 +1,15 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   FlatList,
-  Platform,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { InfoChat, MessageBubble, MessageInput } from "@/components/chat";
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import {
   ArrowIcon,
   CallIcon,
@@ -20,11 +20,26 @@ import { Avatar, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useCall } from "@/context/CallContext";
 import { useChatContext } from "@/context/ChatContext";
-import { ChatConversationDto, ConversationType, MessageResponseDto } from "@/dtos";
+import {
+  ChatConversationDto,
+  ConversationType,
+  MessageResponseDto,
+} from "@/dtos";
 import { useChatMessages } from "@/hooks/use-chat-messages";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  emitJoinBox,
+  emitLeaveBox,
+  emitMessageRead,
+  emitTyping,
+  subscribeMessageEvents,
+} from "@/services/message-socket.service";
 import { messageService } from "@/services/message.service";
-import { BORDER_DEFAULT, colors, getSemantic, paletteIcon } from "@/styles/colors";
+import {
+  colors,
+  getSemantic,
+  paletteIcon,
+} from "@/styles/colors";
 
 function formatDateLabel(dateStr: string): string {
   const date = new Date(dateStr);
@@ -44,8 +59,12 @@ export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile } = useAuth();
-  const { conversations, setConversations, setFilteredConversations } =
-    useChatContext();
+  const {
+    conversations,
+    setConversations,
+    setFilteredConversations,
+    onlineUsers,
+  } = useChatContext();
   const conversation = conversations.find((c) => c.id === id);
   const isGroup = conversation?.type === ConversationType.GROUP;
   const currentUserId = profile?.id;
@@ -53,6 +72,7 @@ export default function ChatScreen() {
   const isDark = colorScheme === "dark";
   const semantic = getSemantic(colorScheme);
   const messagesBg = isDark ? colors.dark[300] : semantic.surface;
+  const borderColor = isDark ? colors.dark[400] : colors.light[200];
   const headerTextColor = semantic.text;
   const iconColor = paletteIcon.lightMuted;
   const [infoModalVisible, setInfoModalVisible] = useState(false);
@@ -99,6 +119,11 @@ export default function ChatScreen() {
     sendFile,
     markAsRead,
     loadMore,
+    appendMessage,
+    replaceMessage,
+    markMessageRevoked,
+    editMessage,
+    recallMessage,
   } = useChatMessages(id, isGroup, handleMessageSent);
   const flatListRef = useRef<FlatList>(null);
   const lastMessageIdRef = useRef<string>("");
@@ -194,58 +219,197 @@ export default function ChatScreen() {
     if (id) markAsRead();
   }, [id, markAsRead]);
 
-  return (
-    <View
-      style={{
-        flex: 1,
-        paddingTop: Platform.OS === "android" ? 14 : 52,
-        backgroundColor: semantic.background,
-      }}
-    >
-      <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1 }}>
-        {/* Header: back Arrow (accent), avatar 45x45, name — match old chats/[id].tsx */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 12,
-            paddingTop: 12,
-            paddingBottom: 4,
-            shadowColor: colors.dark[500],
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 2,
-            elevation: 2,
-            backgroundColor: semantic.background,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={{ paddingTop: 8, paddingRight: 8 }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <ArrowIcon size={30} color={semantic.primary} />
-            </TouchableOpacity>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingBottom: 8,
-                paddingLeft: 8,
-                gap: 8,
-              }}
-            >
-              <Avatar
-                source={
-                  conversation?.avatarUrl
-                    ? { uri: conversation.avatarUrl }
-                    : undefined
+  // ─── Socket realtime: join box, listen new/edit/recall, typing, online ──────
+  const [typingUserIds, setTypingUserIds] = useState<string[]>([]);
+  const typingTimeoutsRef = useRef<
+    Record<string, ReturnType<typeof setTimeout>>
+  >({});
+
+  useEffect(() => {
+    if (!id) return;
+    emitJoinBox(id);
+    emitMessageRead(id);
+
+    const unsubscribe = subscribeMessageEvents({
+      onNewMessage: (msg) => {
+        if (msg.conversationId !== id) return;
+        appendMessage(msg);
+        emitMessageRead(id);
+      },
+      onMessageUpdated: (msg) => {
+        if (msg.conversationId !== id) return;
+        replaceMessage(msg);
+      },
+      onMessageDeleted: ({ messageId, boxId }) => {
+        if (boxId !== id) return;
+        markMessageRevoked(messageId);
+      },
+      onTyping: ({ boxId, userId, isTyping }) => {
+        if (boxId !== id) return;
+        if (userId === currentUserId) return;
+        setTypingUserIds((prev) => {
+          const exists = prev.includes(userId);
+          if (isTyping && !exists) {
+            // Auto-clear sau 4s nếu không nhận tiếp tín hiệu.
+            if (typingTimeoutsRef.current[userId])
+              clearTimeout(typingTimeoutsRef.current[userId]);
+            typingTimeoutsRef.current[userId] = setTimeout(() => {
+              setTypingUserIds((p) => p.filter((u) => u !== userId));
+              delete typingTimeoutsRef.current[userId];
+            }, 4000);
+            return [...prev, userId];
+          }
+          if (!isTyping && exists) {
+            if (typingTimeoutsRef.current[userId]) {
+              clearTimeout(typingTimeoutsRef.current[userId]);
+              delete typingTimeoutsRef.current[userId];
+            }
+            return prev.filter((u) => u !== userId);
+          }
+          return prev;
+        });
+      },
+    });
+
+    return () => {
+      emitLeaveBox(id);
+      unsubscribe();
+      Object.values(typingTimeoutsRef.current).forEach(clearTimeout);
+      typingTimeoutsRef.current = {};
+    };
+  }, [id, currentUserId, appendMessage, replaceMessage, markMessageRevoked]);
+
+  // Throttle typing emit
+  const lastTypingEmitRef = useRef(0);
+  const handleTypingActivity = useCallback(() => {
+    if (!id) return;
+    const now = Date.now();
+    if (now - lastTypingEmitRef.current < 1500) return;
+    lastTypingEmitRef.current = now;
+    emitTyping(id, true);
+    setTimeout(() => emitTyping(id, false), 2500);
+  }, [id]);
+
+  const isReceiverOnline = receiverId ? onlineUsers.has(receiverId) : false;
+  const isReceiverTyping = receiverId
+    ? typingUserIds.includes(receiverId)
+    : typingUserIds.length > 0;
+
+  const handleBubbleLongPress = useCallback(
+    (msg: MessageResponseDto) => {
+      if (msg.isRevoked) return;
+      Alert.alert("Tin nhắn", undefined, [
+        {
+          text: "Sửa",
+          onPress: () => {
+            Alert.prompt(
+              "Sửa tin nhắn",
+              undefined,
+              async (text) => {
+                if (!text?.trim()) return;
+                try {
+                  await editMessage(msg.id, text.trim());
+                } catch (err) {
+                  Alert.alert(
+                    "Lỗi",
+                    err instanceof Error ? err.message : "Không sửa được"
+                  );
                 }
-                fallback={conversation?.name?.charAt(0)?.toUpperCase() ?? "?"}
-                className="w-[45px] h-[45px]"
-              />
+              },
+              "plain-text",
+              msg.content ?? ""
+            );
+          },
+        },
+        {
+          text: "Thu hồi",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Thu hồi tin nhắn này?",
+              "Tin nhắn sẽ bị xóa với tất cả mọi người.",
+              [
+                { text: "Hủy", style: "cancel" },
+                {
+                  text: "Thu hồi",
+                  style: "destructive",
+                  onPress: async () => {
+                    try {
+                      await recallMessage(msg.id);
+                    } catch (err) {
+                      Alert.alert(
+                        "Lỗi",
+                        err instanceof Error
+                          ? err.message
+                          : "Không thu hồi được"
+                      );
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+        { text: "Đóng", style: "cancel" },
+      ]);
+    },
+    [editMessage, recallMessage]
+  );
+
+  return (
+    <ScreenContainer
+      horizontalPadding="none"
+      style={{ backgroundColor: semantic.background }}
+    >
+      {/* Header: back Arrow (accent), avatar 45x45, name — match old chats/[id].tsx */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 12,
+          paddingTop: 10,
+          paddingBottom: 10,
+          backgroundColor: semantic.background,
+          borderTopWidth: 0,
+          borderBottomWidth: 0,
+          shadowColor: "transparent",
+          shadowOpacity: 0,
+          shadowRadius: 0,
+          elevation: 0,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{
+              width: 36,
+              height: 36,
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 8,
+            }}
+            // hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <ArrowIcon size={24} color={semantic.primary} />
+          </TouchableOpacity>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Avatar
+              source={
+                conversation?.avatarUrl
+                  ? { uri: conversation.avatarUrl }
+                  : undefined
+              }
+              fallback={conversation?.name?.charAt(0)?.toUpperCase() ?? "?"}
+              className="w-[45px] h-[45px]"
+            />
+            <View>
               <Text
                 style={{
                   color: headerTextColor,
@@ -256,183 +420,198 @@ export default function ChatScreen() {
               >
                 {conversation?.name ?? "Chat"}
               </Text>
+              <Text
+                style={{
+                  color: isReceiverTyping
+                    ? semantic.primary
+                    : isReceiverOnline
+                      ? "#22C55E"
+                      : semantic.placeholder,
+                  fontSize: 11,
+                }}
+              >
+                {isReceiverTyping
+                  ? "Đang gõ..."
+                  : isReceiverOnline
+                    ? "Đang hoạt động"
+                    : "Không hoạt động"}
+              </Text>
             </View>
           </View>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: 16,
-              gap: 8,
-            }}
-          >
-            <TouchableOpacity onPress={handleAudioCall}>
-              <CallIcon size={28} color={iconColor} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleVideoCall}>
-              <VideoCallIcon size={30} color={iconColor} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setInfoModalVisible(true)}>
-              <InfoIcon size={30} color={iconColor} />
-            </TouchableOpacity>
-          </View>
         </View>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <TouchableOpacity onPress={handleAudioCall}>
+            <CallIcon size={28} color={iconColor} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleVideoCall}>
+            <VideoCallIcon size={30} color={iconColor} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setInfoModalVisible(true)}>
+            <InfoIcon size={30} color={iconColor} />
+          </TouchableOpacity>
+        </View>
+      </View>
 
-        {searchVisible && (
-          <View
+      {searchVisible && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            gap: 8,
+            backgroundColor: semantic.background,
+            borderBottomWidth: 1,
+            borderBottomColor: semantic.border,
+          }}
+        >
+          <TextInput
+            autoFocus
+            value={searchQuery}
+            onChangeText={handleSearch}
+            placeholder="Search messages..."
+            placeholderTextColor={semantic.placeholder}
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 12,
+              flex: 1,
+              fontSize: 14,
               paddingVertical: 8,
-              gap: 8,
-              backgroundColor: semantic.background,
-              borderBottomWidth: 1,
-              borderBottomColor: BORDER_DEFAULT,
+              paddingHorizontal: 16,
+              borderRadius: 9999,
+              borderWidth: 1,
+              borderColor,
+              color: semantic.text,
+            }}
+          />
+          <TouchableOpacity
+            onPress={() => {
+              setSearchVisible(false);
+              setSearchQuery("");
+              setSearchResults([]);
             }}
           >
-            <TextInput
-              autoFocus
-              value={searchQuery}
-              onChangeText={handleSearch}
-              placeholder="Search messages..."
-              placeholderTextColor={semantic.placeholder}
-              style={{
-                flex: 1,
-                fontSize: 14,
-                paddingVertical: 8,
-                paddingHorizontal: 16,
-                borderRadius: 9999,
-                borderWidth: 1,
-                borderColor: BORDER_DEFAULT,
-                color: semantic.text,
-              }}
-            />
-            <TouchableOpacity
-              onPress={() => {
-                setSearchVisible(false);
-                setSearchQuery("");
-                setSearchResults([]);
-              }}
-            >
-              <Text style={{ color: semantic.primary, fontSize: 14 }}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <InfoChat
-          visible={infoModalVisible}
-          onClose={() => setInfoModalVisible(false)}
-          conversation={conversation ?? null}
-          onDeleteChat={(conversationId) => {
-            const next = conversations.filter((c) => c.id !== conversationId);
-            setConversations(next);
-            setFilteredConversations(next);
-          }}
-          onOpenSearch={() => setSearchVisible(true)}
-        />
-
-        {/* Messages */}
-        {error ? (
-          <View className="flex-1 items-center justify-center p-4">
-            <Text variant="muted" className="text-center">
-              {error}
+            <Text style={{ color: semantic.primary, fontSize: 14 }}>
+              Cancel
             </Text>
-          </View>
-        ) : isLoading ? (
-          <View className="flex-1 items-center justify-center p-4">
-            <Text variant="muted">Loading messages...</Text>
-          </View>
-        ) : (
-          <>
-            <FlatList
-              ref={flatListRef}
-              data={
-                searchVisible && searchQuery.trim() ? searchResults : messages
-              }
-              keyExtractor={(item) => item.id}
-              style={{ flex: 1, backgroundColor: messagesBg }}
-              contentContainerStyle={{
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                paddingBottom: 8,
-                flexGrow: 1,
-              }}
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
-              maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-              ListHeaderComponent={
-                isLoadingMore ? (
-                  <View
-                    style={{ paddingVertical: 12, alignItems: "center" }}
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <InfoChat
+        visible={infoModalVisible}
+        onClose={() => setInfoModalVisible(false)}
+        conversation={conversation ?? null}
+        onDeleteChat={(conversationId) => {
+          const next = conversations.filter((c) => c.id !== conversationId);
+          setConversations(next);
+          setFilteredConversations(next);
+        }}
+        onOpenSearch={() => setSearchVisible(true)}
+      />
+
+      {/* Messages */}
+      {error ? (
+        <View className="flex-1 items-center justify-center p-4">
+          <Text variant="muted" className="text-center">
+            {error}
+          </Text>
+        </View>
+      ) : isLoading ? (
+        <View className="flex-1 items-center justify-center p-4">
+          <Text variant="muted">Loading messages...</Text>
+        </View>
+      ) : (
+        <>
+          <FlatList
+            ref={flatListRef}
+            data={
+              searchVisible && searchQuery.trim() ? searchResults : messages
+            }
+            keyExtractor={(item) => item.id}
+            style={{ flex: 1, backgroundColor: messagesBg }}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              paddingBottom: 8,
+              flexGrow: 1,
+            }}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+            ListHeaderComponent={
+              isLoadingMore ? (
+                <View style={{ paddingVertical: 12, alignItems: "center" }}>
+                  <Text
+                    style={{
+                      color: semantic.textMuted,
+                      fontSize: 13,
+                    }}
                   >
-                    <Text
-                      style={{
-                        color: semantic.textMuted,
-                        fontSize: 13,
-                      }}
-                    >
-                      Loading older messages...
-                    </Text>
-                  </View>
-                ) : hasMore ? (
-                  <View
-                    style={{ paddingVertical: 12, alignItems: "center" }}
-                  >
-                    <Text
-                      style={{
-                        color: semantic.textMuted,
-                        fontSize: 13,
-                      }}
-                    >
-                      Scroll up for older messages
-                    </Text>
-                  </View>
-                ) : null
-              }
-              renderItem={({ item, index }) => {
-                const source =
-                  searchVisible && searchQuery.trim()
-                    ? searchResults
-                    : messages;
-                const prev = index > 0 ? source[index - 1] : null;
-                const prevDate = prev
-                  ? new Date(prev.createdAt).toDateString()
-                  : "";
-                const currDate = new Date(item.createdAt).toDateString();
-                const showDateSeparator = prevDate !== currDate;
-                return (
-                  <MessageBubble
-                    message={item}
-                    isOwn={item.senderId === currentUserId}
-                    showDateSeparator={showDateSeparator}
-                    dateLabel={formatDateLabel(item.createdAt)}
-                    otherAvatarUrl={conversation?.avatarUrl}
-                  />
-                );
-              }}
-              ListEmptyComponent={
-                <View className="py-12 items-center">
-                  <Text variant="muted">
-                    {searchVisible && searchQuery.trim()
-                      ? searching
-                        ? "Searching..."
-                        : "No results found"
-                      : "No messages yet. Say hi!"}
+                    Loading older messages...
                   </Text>
                 </View>
-              }
-            />
-            <MessageInput
-              onSend={sendMessage}
-              onSendFile={sendFile}
-              placeholder="Aa..."
-            />
-          </>
-        )}
-      </SafeAreaView>
-    </View>
+              ) : hasMore ? (
+                <View style={{ paddingVertical: 12, alignItems: "center" }}>
+                  <Text
+                    style={{
+                      color: semantic.textMuted,
+                      fontSize: 13,
+                    }}
+                  >
+                    Scroll up for older messages
+                  </Text>
+                </View>
+              ) : null
+            }
+            renderItem={({ item, index }) => {
+              const source =
+                searchVisible && searchQuery.trim() ? searchResults : messages;
+              const prev = index > 0 ? source[index - 1] : null;
+              const prevDate = prev
+                ? new Date(prev.createdAt).toDateString()
+                : "";
+              const currDate = new Date(item.createdAt).toDateString();
+              const showDateSeparator = prevDate !== currDate;
+              return (
+                <MessageBubble
+                  message={item}
+                  isOwn={item.senderId === currentUserId}
+                  showDateSeparator={showDateSeparator}
+                  dateLabel={formatDateLabel(item.createdAt)}
+                  otherAvatarUrl={conversation?.avatarUrl}
+                  onLongPress={
+                    item.senderId === currentUserId
+                      ? handleBubbleLongPress
+                      : undefined
+                  }
+                />
+              );
+            }}
+            ListEmptyComponent={
+              <View className="py-12 items-center">
+                <Text variant="muted">
+                  {searchVisible && searchQuery.trim()
+                    ? searching
+                      ? "Searching..."
+                      : "No results found"
+                    : "No messages yet. Say hi!"}
+                </Text>
+              </View>
+            }
+          />
+          <MessageInput
+            onSend={sendMessage}
+            onSendFile={sendFile}
+            onTypingActivity={handleTypingActivity}
+            placeholder="Aa..."
+          />
+        </>
+      )}
+    </ScreenContainer>
   );
 }

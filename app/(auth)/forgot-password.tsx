@@ -1,35 +1,36 @@
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router } from "expo-router";
+import React, { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  View,
+} from "react-native";
 
-import { ActionInput, Button, Text } from '@/components/ui';
-import { ArrowIcon } from '@/components/shared/icons/Icons';
-import { colors } from '@/styles/colors';
+import { SafeScreenView } from "@/components/containers/SafeLayout";
+import { ActionInput, BackButton, Button, Text } from "@/components/ui";
+import { authService } from "@/services/auth.service";
+import { validateAuthFields } from "@/utils/authValidation";
 
 export default function ForgotPasswordScreen() {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const validate = (): boolean => {
-    if (!phoneNumber.trim()) {
-      setError('Vui lòng nhập số điện thoại');
-      return false;
-    }
-    if (!/^[0-9]{10,11}$/.test(phoneNumber)) {
-      setError('Số điện thoại không hợp lệ');
-      return false;
-    }
-    setError('');
-    return true;
+    const nextErrors = validateAuthFields(
+      { phoneNumber },
+      {
+        phoneNumber: {
+          label: "số điện thoại",
+          rules: ["required", "phone"],
+        },
+      }
+    );
+
+    setError(nextErrors.phoneNumber ?? "");
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSubmit = async () => {
@@ -37,66 +38,68 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     try {
-      // TODO: Call API to send reset password OTP
+      await authService.forgotPassword({ phoneNumber });
+      router.push({
+        pathname: "/(auth)/reset-password" as never,
+        params: { phoneNumber },
+      } as never);
+    } catch (err: unknown) {
+      console.error("[auth] forgot password failed", err);
       Alert.alert(
-        'Thành công',
-        'Mã xác nhận đã được gửi đến số điện thoại của bạn',
-        [{ text: 'OK', onPress: () => router.back() }]
+        "Lỗi",
+        err instanceof Error ? err.message : "Không gửi được mã xác nhận"
       );
-    } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Có lỗi xảy ra');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+    <SafeScreenView>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        {/* Back Button */}
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="px-4 py-2 flex-row items-center"
-        >
-          <ArrowIcon size={24} color={colors.primary[100]} />
-          <Text className="ml-1 text-primary-400">Back</Text>
-        </TouchableOpacity>
+        <BackButton className="absolute left-0 top-0 z-10" />
 
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            paddingTop: 10,
+            paddingBottom: 100,
+          }}
           keyboardShouldPersistTaps="handled"
-          className="px-6"
+          className=""
         >
           {/* Title */}
-          <Text variant="title" className="text-center mb-4">
+          <Text
+            variant="title"
+            className="text-title-light dark:text-title-dark text-[34px] leading-[44px] font-bold text-center mb-4"
+          >
             Forgot Password
           </Text>
 
           <Text variant="muted" className="text-center mb-10">
-            Enter your phone number and we'll send you a code to reset your
+            Enter your phone number and we will send you a code to reset your
             password
           </Text>
 
           {/* Form */}
           <View className="gap-4">
-            <View>
-              <Text variant="muted" className="mb-1">
-                Phone Number <Text className="text-red-500">*</Text>
-              </Text>
-              <ActionInput
-                placeholder="Nhập số điện thoại"
-                value={phoneNumber}
-                onChangeText={(text) => {
-                  setPhoneNumber(text);
-                  if (error) setError('');
-                }}
-                keyboardType="phone-pad"
-                error={error}
-              />
-            </View>
+            <ActionInput
+              label="Phone Number"
+              isRequired
+              variant="auth"
+              placeholder="Nhập số điện thoại"
+              value={phoneNumber}
+              onChangeText={(text) => {
+                setPhoneNumber(text);
+                if (error) setError("");
+              }}
+              keyboardType="phone-pad"
+              error={error}
+            />
 
             <Button onPress={handleSubmit} loading={loading} className="mt-4">
               Send Reset Code
@@ -104,6 +107,6 @@ export default function ForgotPasswordScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </SafeScreenView>
   );
 }

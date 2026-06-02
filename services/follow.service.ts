@@ -110,7 +110,7 @@ function mapMingoStats(raw: unknown): FollowStatsDto {
   }
   const o = raw as Record<string, unknown>;
   if (typeof o.followersCount === "number") {
-    return o as FollowStatsDto;
+    return o as unknown as FollowStatsDto;
   }
   return {
     followersCount: Number(o.followers ?? o.followersCount ?? 0),
@@ -247,7 +247,7 @@ export const FollowApi = {
   respondToRequest: (requestId: string, accept: boolean) =>
     fetchFollow(`/request/${requestId}/respond`, {
       method: "PUT",
-      body: JSON.stringify({ accept }),
+      body: JSON.stringify({ action: accept ? "accept" : "reject" }),
     }),
 
   cancelRequest: (userId: string) =>
@@ -292,16 +292,22 @@ export const FollowApi = {
   sendFollowRequest: (userId: string) =>
     fetchFollow("/request", {
       method: "POST",
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({ targetUserId: userId }),
     }),
 
   unfollow: (userId: string) =>
     fetchFollow<void>(`/${encodeURIComponent(userId)}`, { method: "DELETE" }),
 
+  /** Xóa follower — user X từng follow mình, mình muốn họ unfollow mình. */
+  removeFollower: (userId: string) =>
+    fetchFollow<void>(`/follower/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+    }),
+
   sendCloseFriendRequest: (userId: string) =>
     fetchFollow("/close-friend/request", {
       method: "POST",
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({ targetUserId: userId }),
     }),
 
   removeCloseFriend: (userId: string) =>
@@ -326,7 +332,7 @@ export const FollowApi = {
   respondCloseFriendRequest: (requestId: string, accept: boolean) =>
     fetchFollow(`/close-friend/request/${encodeURIComponent(requestId)}/respond`, {
       method: "PUT",
-      body: JSON.stringify({ accept }),
+      body: JSON.stringify({ action: accept ? "accept" : "reject" }),
     }),
 
   blockUser: (userId: string) =>

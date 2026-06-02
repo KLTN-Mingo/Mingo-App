@@ -1,7 +1,15 @@
 import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useState } from "react";
-import { Dimensions, Image, TouchableOpacity, useColorScheme, View } from "react-native";
+import {
+  Dimensions,
+  Image,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
 
+import { CultureHighlightedText } from "@/components/post/CultureHighlightedText";
+import { ModerationBanner } from "@/components/post/ModerationBanner";
 import {
   CommentIcon,
   LikeIcon,
@@ -11,9 +19,9 @@ import {
   ThreeDotsIcon,
 } from "@/components/shared/icons/Icons";
 import { Avatar, Text } from "@/components/ui";
-import { PostResponseDto, UserMinimalDto } from "@/dtos";
+import { CultureTermDto, PostResponseDto, UserMinimalDto } from "@/dtos";
 import { postService } from "@/services/post.service";
-import { paletteIcon, colors, statusColors } from "@/styles/colors";
+import { colors, paletteIcon, statusColors } from "@/styles/colors";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -23,7 +31,7 @@ interface PostCardProps {
   onLikeChange?: (postId: string, isLiked: boolean) => void;
   onCommentPress?: (postId: string) => void;
   onShareChange?: (postId: string, nextCount: number) => void;
-  onSaveChange?: (postId: string, isSaved: boolean) => void;
+  onSaveChange?: (postId: string, isSaved: boolean, savesCount: number) => void;
   onUserPress?: (userId: string) => void;
   onMorePress?: (post: PostResponseDto) => void;
   /**
@@ -31,6 +39,10 @@ interface PostCardProps {
    * gọi `postService.sharePost` luôn. Dùng cùng `useSharePost()` ở screen.
    */
   onSharePress?: (post: PostResponseDto) => void;
+  /** Hiển thị lý do ẩn trong moderation banner (chỉ có ở PostDetailDto). */
+  hiddenReason?: string;
+  /** Highlight slang/idiom trong nội dung (Culture Translation). */
+  cultureTerms?: CultureTermDto[];
 }
 
 export function PostCard({
@@ -43,13 +55,25 @@ export function PostCard({
   onUserPress,
   onMorePress,
   onSharePress,
+  hiddenReason,
+  cultureTerms,
 }: PostCardProps) {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
 
   const theme = {
     icon: paletteIcon[colorScheme],
     iconMuted: paletteIcon.lightMuted,
   };
+  const cardShadowStyle =
+    colorScheme === "light"
+      ? {
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 17.5,
+          elevation: 4,
+        }
+      : undefined;
 
   const [isLiked, setIsLiked] = useState(post.isLiked ?? false);
   const [likesCount, setLikesCount] = useState(post.likesCount);
@@ -57,11 +81,13 @@ export function PostCard({
   const [sharesCount, setSharesCount] = useState(post.sharesCount);
   const [shareLoading, setShareLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(post.isSaved ?? false);
+  const [savesCount, setSavesCount] = useState(post.savesCount ?? 0);
   const [saveLoading, setSaveLoading] = useState(false);
 
   useEffect(() => {
     setIsSaved(post.isSaved ?? false);
-  }, [post.id, post.isSaved]);
+    setSavesCount(post.savesCount ?? 0);
+  }, [post.id, post.isSaved, post.savesCount]);
 
   const handleLike = async () => {
     if (likeLoading) return;
@@ -116,19 +142,26 @@ export function PostCard({
 
   const handleSave = async () => {
     if (!currentUser?.id || saveLoading) return;
+
+    const prevSaved = isSaved;
+    const prevCount = savesCount;
+    const nextSaved = !prevSaved;
+    const nextCount = nextSaved ? prevCount + 1 : Math.max(0, prevCount - 1);
+
     setSaveLoading(true);
-    const next = !isSaved;
-    setIsSaved(next);
-    onSaveChange?.(post.id, next);
+    setIsSaved(nextSaved);
+    setSavesCount(nextCount);
+    onSaveChange?.(post.id, nextSaved, nextCount);
     try {
-      if (next) {
-        await postService.savePost(post.id);
+      if (nextSaved) {
+        await postService.savePost(post.id, "default");
       } else {
         await postService.unsavePost(post.id);
       }
     } catch (error) {
-      setIsSaved(!next);
-      onSaveChange?.(post.id, !next);
+      setIsSaved(prevSaved);
+      setSavesCount(prevCount);
+      onSaveChange?.(post.id, prevSaved, prevCount);
       console.error("Save post error:", error);
     } finally {
       setSaveLoading(false);
@@ -188,61 +221,80 @@ export function PostCard({
         )
       : baseMediaWidth;
 
+  const isOwnPost =
+    currentUser?.id && post.userId && currentUser.id === post.userId;
+
   return (
-    <View className="p-4 overflow-hidden rounded-[10px] bg-surface-muted-light dark:bg-surface-muted-dark gap-4">
-      {/* Header */}
-      <View className="flex-row items-start">
-        <TouchableOpacity
-          onPress={() => onUserPress?.(post.userId)}
-          className="flex-row items-center flex-1"
-        >
-          <Avatar
-            source={post.user?.avatar ? { uri: post.user.avatar } : undefined}
-            fallback={post.user?.name}
-            size="md"
-            className="h-10 w-10"
+    <View style={cardShadowStyle} className="rounded-[10px]">
+      <View className="p-4 overflow-hidden rounded-[10px] bg-white dark:bg-surface-dark gap-4">
+        {isOwnPost ? (
+          <ModerationBanner
+            status={post.moderationStatus}
+            isHidden={post.isHidden}
+            hiddenReason={hiddenReason}
           />
-          <View className="ml-3 flex-1">
-            <View className="flex-row flex-wrap items-center">
-              <Text className="text-[16px] font-semibold text-text-light dark:text-text-dark">
-                {post.user?.name || "Unknown"}
-              </Text>
-              {renderMentions()}
-            </View>
-            <Text className="mt-0.5 text-xs text-text-light dark:text-text-dark">
-              {formatTime(post.createdAt)}
-            </Text>
-          </View>
-        </TouchableOpacity>
-
-        {onMorePress && currentUser?.id ? (
-          <TouchableOpacity onPress={() => onMorePress(post)} className="p-2">
-            <ThreeDotsIcon size={20} color={theme.icon} />
-          </TouchableOpacity>
         ) : null}
-      </View>
-
-      {/* Content */}
-      {post.contentText && (
-        <View className="">
-          <Text className="text-[27px] leading-[27px] text-text-light dark:text-text-dark">
-            {post.contentText}
-          </Text>
-        </View>
-      )}
-
-      {/* Location & Music Tags */}
-      {(post.location?.name || firstMusicTag) && (
-            <View className="flex-row flex-wrap items-center">
-          {post.location?.name && (
-            <View className="flex-row items-center">
-              <LocationIcon size={14} color={theme.icon} />
-              <Text className="text-xs text-text-light dark:text-text-dark">
-                {post.location.name}
+        {/* Header */}
+        <View className="flex-row items-start">
+          <TouchableOpacity
+            onPress={() => onUserPress?.(post.userId)}
+            className="flex-row items-center flex-1"
+          >
+            <Avatar
+              source={post.user?.avatar ? { uri: post.user.avatar } : undefined}
+              fallback={post.user?.name}
+              size="md"
+              className="h-10 w-10"
+            />
+            <View className="ml-3 flex-1">
+              <View className="flex-row flex-wrap items-center">
+                <Text className="text-[16px] font-semibold text-text-light dark:text-text-dark">
+                  {post.user?.name || "Unknown"}
+                </Text>
+                {renderMentions()}
+              </View>
+              <Text className="mt-0.5 text-xs text-text-light dark:text-text-dark">
+                {formatTime(post.createdAt)}
               </Text>
             </View>
-          )}
-          {/* {firstMusicTag && (
+          </TouchableOpacity>
+
+          {onMorePress && currentUser?.id ? (
+            <TouchableOpacity onPress={() => onMorePress(post)} className="p-2">
+              <ThreeDotsIcon size={20} color={theme.icon} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {/* Content */}
+        {post.contentText && (
+          <View className="">
+            {cultureTerms && cultureTerms.length > 0 ? (
+              <CultureHighlightedText
+                text={post.contentText}
+                terms={cultureTerms}
+                baseTextClassName="text-[27px] leading-[27px] text-text-light dark:text-text-dark"
+              />
+            ) : (
+              <Text className="text-[27px] leading-[27px] text-text-light dark:text-text-dark">
+                {post.contentText}
+              </Text>
+            )}
+          </View>
+        )}
+
+        {/* Location & Music Tags */}
+        {(post.location?.name || firstMusicTag) && (
+          <View className="flex-row flex-wrap items-center">
+            {post.location?.name && (
+              <View className="flex-row items-center">
+                <LocationIcon size={14} color={theme.icon} />
+                <Text className="text-xs text-text-light dark:text-text-dark">
+                  {post.location.name}
+                </Text>
+              </View>
+            )}
+            {/* {firstMusicTag && (
             <View className="max-w-[70%] flex-row items-center">
               <Text className="text-xs text-text-muted-dark">-</Text>
               <MusicIcon size={14} color={colors.dark[300]} />
@@ -255,119 +307,121 @@ export function PostCard({
               </Text>
             </View>
           )} */}
-        </View>
-      )}
+          </View>
+        )}
 
-      {/* Media */}
-      {post.media && post.media.length > 0 && (
-            <View className="bg-surface-muted-light dark:bg-surface-muted-dark">
-          {post.media.length === 1 ? (
-            <Image
-              source={{ uri: post.media[0].mediaUrl }}
-              style={{ width: "100%", height: singleMediaHeight }}
-              resizeMode="cover"
-            />
-          ) : (
-            <View className="flex-row flex-wrap">
-              {post.media.slice(0, 4).map((media, index) => (
-                <Image
-                  key={media.id}
-                  source={{ uri: media.mediaUrl }}
-                  style={{
-                    width: index % 2 === 0 ? "50%" : "50%",
-                    height: baseMediaWidth / 2,
-                  }}
-                  resizeMode="cover"
-                />
-              ))}
-            </View>
-          )}
-        </View>
-      )}
+        {/* Media */}
+        {post.media && post.media.length > 0 && (
+          <View className="bg-white dark:bg-surface-dark">
+            {post.media.length === 1 ? (
+              <Image
+                source={{ uri: post.media[0].mediaUrl }}
+                style={{ width: "100%", height: singleMediaHeight }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View className="flex-row flex-wrap">
+                {post.media.slice(0, 4).map((media, index) => (
+                  <Image
+                    key={media.id}
+                    source={{ uri: media.mediaUrl }}
+                    style={{
+                      width: index % 2 === 0 ? "50%" : "50%",
+                      height: baseMediaWidth / 2,
+                    }}
+                    resizeMode="cover"
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
-      {/* Actions */}
-      <View className="flex-row items-center gap-5">
-        {/* Like */}
-        <TouchableOpacity
-          onPress={handleLike}
-          className="flex-row items-center gap-3"
-          disabled={likeLoading}
-        >
-          <LikeIcon
-            size={24}
-            color={isLiked ? statusColors.error.dark : theme.icon}
-          />
-          {likesCount > 0 && (
-            <Text className="text-[17px] text-text-muted-dark">
-              {likesCount} likes
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Comment */}
-        <TouchableOpacity
-          onPress={() => onCommentPress?.(post.id)}
-          className="flex-row items-center gap-3"
-        >
-          <CommentIcon size={23} color={theme.icon} />
-          {post.commentsCount > 0 && (
-            <Text className="text-[17px] text-text-muted-dark">
-              {post.commentsCount} comments
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Share */}
-        <TouchableOpacity
-          onPress={handleShare}
-          className="flex-row items-center gap-3"
-          disabled={shareLoading}
-        >
-          <ShareIcon size={22} color={theme.icon} />
-          {sharesCount > 0 && (
-            <Text className="text-[17px] text-text-muted-dark">
-              {sharesCount} shares
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        {currentUser?.id ? (
+        {/* Actions */}
+        <View className="flex-row items-center gap-5">
+          {/* Like */}
           <TouchableOpacity
-            onPress={handleSave}
-            className="flex-row items-center gap-3 ml-auto"
-            disabled={saveLoading}
-            accessibilityLabel={isSaved ? "Bỏ lưu" : "Lưu bài"}
+            onPress={handleLike}
+            className="flex-row items-center gap-3"
+            disabled={likeLoading}
           >
-            <SaveIcon
-              size={22}
-              color={isSaved ? colors.primary[100] : theme.icon}
+            <LikeIcon
+              size={24}
+              color={isLiked ? statusColors.error.dark : theme.icon}
             />
-          </TouchableOpacity>
-        ) : null}
-      </View>
-
-      {/* Comment Input */}
-      <View className="flex-row items-center gap-3">
-        <Avatar
-          size="md"
-          source={currentUser?.avatar ? { uri: currentUser.avatar } : undefined}
-          fallback={currentUser?.name}
-        />
-         <TouchableOpacity
-              onPress={() => onCommentPress?.(post.id)}
-              activeOpacity={0.85}
-              className="flex-1 flex-row items-center px-4 py-3 rounded-[20px] bg-input-light dark:bg-input-dark"
-            >
-              {/* <LocationPinIcon size={22} color={semantic.textMuted} /> */}
-              <Text
-                variant="muted"
-                className="flex-1 text-[16px] h-[20px] text-text-muted-light dark:text-text-muted-dark"
-              >
-                Write comment...
+            {likesCount > 0 && (
+              <Text className="text-[17px] text-text-muted-dark">
+                {likesCount}
               </Text>
-              {/* <SearchIcon size={22} color={semantic.textMuted} /> */}
+            )}
+          </TouchableOpacity>
+
+          {/* Comment */}
+          <TouchableOpacity
+            onPress={() => onCommentPress?.(post.id)}
+            className="flex-row items-center gap-3"
+          >
+            <CommentIcon size={23} color={theme.icon} />
+            {post.commentsCount > 0 && (
+              <Text className="text-[17px] text-text-muted-dark">
+                {post.commentsCount}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Share */}
+          <TouchableOpacity
+            onPress={handleShare}
+            className="flex-row items-center gap-3"
+            disabled={shareLoading}
+          >
+            <ShareIcon size={22} color={theme.icon} />
+            {sharesCount > 0 && (
+              <Text className="text-[17px] text-text-muted-dark">
+                {sharesCount}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {currentUser?.id ? (
+            <TouchableOpacity
+              onPress={handleSave}
+              className="flex-row items-center gap-3 ml-auto"
+              disabled={saveLoading}
+              accessibilityLabel={isSaved ? "Bỏ lưu" : "Lưu bài"}
+            >
+              <SaveIcon
+                size={22}
+                color={isSaved ? colors.primary[100] : theme.icon}
+              />
             </TouchableOpacity>
-        
+          ) : null}
+        </View>
+
+        {/* Comment Input */}
+        <View className="flex-row items-center gap-3">
+          <Avatar
+            size="md"
+            source={
+              currentUser?.avatar ? { uri: currentUser.avatar } : undefined
+            }
+            fallback={currentUser?.name}
+          />
+          <TouchableOpacity
+            onPress={() => onCommentPress?.(post.id)}
+            activeOpacity={0.85}
+            className="flex-1 flex-row items-center px-4 py-3 rounded-[20px] bg-input-light dark:bg-input-dark"
+          >
+            {/* <LocationPinIcon size={22} color={semantic.textMuted} /> */}
+            <Text
+              variant="muted"
+              className="flex-1 text-[16px] h-[20px] text-text-muted-light dark:text-text-muted-dark"
+            >
+              Write comment...
+            </Text>
+            {/* <SearchIcon size={22} color={semantic.textMuted} /> */}
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );

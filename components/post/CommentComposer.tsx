@@ -73,11 +73,17 @@ export function CommentComposer({
         blurOnSubmit
       />
       {canSend ? (
-        <TouchableOpacity onPress={onSubmit} disabled={submitting} className="p-1">
+        <TouchableOpacity
+          onPress={onSubmit}
+          disabled={submitting}
+          className="px-2 py-1"
+        >
           {submitting ? (
             <ActivityIndicator size="small" color={colors.textMuted} />
           ) : (
-            <Text className="text-sm font-semibold text-primary-100">Post</Text>
+            <Text className="text-sm font-semibold" style={{ color: "#FF6B3D" }}>
+              Send
+            </Text>
           )}
         </TouchableOpacity>
       ) : null}

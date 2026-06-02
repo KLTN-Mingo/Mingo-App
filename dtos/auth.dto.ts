@@ -42,8 +42,21 @@ export interface AuthUserDto {
 export interface AuthResponseDto {
   accessToken: string;
   user: AuthUserDto;
+  /** Khi user bật 2FA, BE trả về `requiresTwoFactor=true` + `pendingToken` (chưa có accessToken). */
+  requiresTwoFactor?: boolean;
+  pendingToken?: string;
 }
 
 export interface RefreshTokenResponseDto {
   accessToken: string;
+}
+
+// ─── 2FA ──────────────────────────────────────────────────────────────────────
+
+export interface TwoFactorSetupResponseDto {
+  /** Base32 secret để user lưu vào Authenticator app (vd Google Authenticator). */
+  secret: string;
+  /** otpauth:// URL để render QR code. */
+  otpauthUrl: string;
+  qrCodeDataUrl?: string;
 }

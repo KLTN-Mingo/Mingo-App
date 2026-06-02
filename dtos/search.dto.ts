@@ -3,7 +3,12 @@
  * Response shape: { query, users, posts, pagination }
  */
 
-export type GlobalSearchType = "all" | "users" | "posts";
+export type GlobalSearchType = "all" | "users" | "posts" | "hashtags";
+
+export interface SearchHashtagItemDto {
+  tag: string;
+  postsCount: number;
+}
 
 export interface SearchUserItemDto {
   id: string;
@@ -37,12 +42,14 @@ export interface GlobalSearchPaginationDto {
   limit: number;
   usersTotal: number;
   postsTotal: number;
+  hashtagsTotal?: number;
 }
 
 export interface GlobalSearchResultDto {
   query: string;
   users: SearchUserItemDto[];
   posts: SearchPostItemDto[];
+  hashtags: SearchHashtagItemDto[];
   pagination: GlobalSearchPaginationDto;
 }
 

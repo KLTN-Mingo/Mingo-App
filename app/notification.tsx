@@ -144,7 +144,7 @@ export default function NotificationScreen() {
     await markAsRead(notification.id);
 
     // Navigate based on notification type
-    const { notificationType, postId, actor } = notification;
+    const { notificationType, postId, actor, entityId, entityType } = notification;
 
     switch (notificationType) {
       case NotificationType.POST_LIKE:
@@ -170,6 +170,13 @@ export default function NotificationScreen() {
       case NotificationType.CLOSE_FRIEND_ACCEPTED:
         if (actor?.id) router.push(`/profile/${actor.id}` as any);
         break;
+      case NotificationType.MESSAGE_NEW: {
+        // Deep link tới chat — entityId thường là boxId hoặc conversationId.
+        const boxId = entityId ?? (entityType === 'message' ? entityId : undefined);
+        if (boxId) router.push(`/chat/${boxId}` as any);
+        else router.push('/chat' as any);
+        break;
+      }
       default:
         break;
     }

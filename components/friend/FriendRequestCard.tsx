@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { Avatar, AvatarStack, Button, Text } from '@/components/ui';
 import { UserMinimalDto } from '@/dtos';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 
 interface FriendRequestCardProps {
@@ -23,12 +24,27 @@ export function FriendRequestCard({
   onDecline,
   loading = false,
 }: FriendRequestCardProps) {
+  const colorScheme = useColorScheme() ?? "light";
+  const cardShadowStyle =
+    colorScheme === "light"
+      ? {
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 17.5,
+          elevation: 4,
+        }
+      : undefined;
+
   const mutualAvatars = mutualFriends
     .filter((f) => f.avatar)
     .map((f) => f.avatar!);
 
   return (
-    <View className="flex-row items-start px-4 py-5 bg-surface-light dark:bg-surface-dark rounded-lg mb-4">
+    <View
+      className="flex-row items-start px-4 py-5 bg-white dark:bg-surface-dark rounded-lg mb-4"
+      style={cardShadowStyle}
+    >
       {/* Avatar */}
       <Avatar
         source={user.avatar ? { uri: user.avatar } : undefined}

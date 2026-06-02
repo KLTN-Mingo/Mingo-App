@@ -1,26 +1,18 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import {
-  FlatList,
-  Platform,
-  RefreshControl,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { FlatList, RefreshControl, TouchableOpacity, View } from "react-native";
 
 import { ChatListItem } from "@/components/chat";
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
-import { ArrowIcon } from "@/components/shared/icons/Icons";
 import { ActionInput, Text } from "@/components/ui";
 import { useChatList } from "@/hooks/use-chat-list";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { colors, getSemantic, paletteIcon } from "@/styles/colors";
+import { getSemantic } from "@/styles/colors";
 
 export default function ChatListScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const semantic = getSemantic(colorScheme);
-  const iconColor = paletteIcon.lightMuted;
-  const headerBg = colorScheme === "dark" ? colors.dark[200] : semantic.background;
 
   const { filteredConversations, refetch, setSearchQuery } = useChatList();
   const [searchText, setSearchText] = useState("");
@@ -38,87 +30,63 @@ export default function ChatListScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: semantic.background }}>
-      <SafeAreaView
-        edges={["top", "bottom"]}
-        style={{ flex: 1, backgroundColor: semantic.background }}
+    <ScreenContainer
+      horizontalPadding="default"
+      style={{ backgroundColor: semantic.background }}
+    >
+      <Text
+        className="text-title-light dark:text-title-dark leading-[32px] mb-2"
+        style={{
+          fontFamily: "Montserrat-SemiBold",
+          fontSize: 24,
+        }}
       >
-        <View
-          style={{
-            paddingTop: Platform.OS === "android" ? 14 : 0,
-            flex: 1,
-          }}
-        >
-          {/* Header row: Arrow + "Messages" — match old message.tsx */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              maxHeight: 64,
-              backgroundColor: headerBg,
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-            }}
-          >
-            <TouchableOpacity>
-              <ArrowIcon size={28} color={iconColor} />
-            </TouchableOpacity>
-            <Text
-              style={{
-                color: semantic.text,
-                fontSize: 18,
-                fontWeight: "600",
-                marginLeft: 4,
-              }}
-            >
-              Messages
-            </Text>
-          </View>
+        Messages
+      </Text>
 
-          {/* Search row: Input + Plus */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              width: "100%",
-              paddingHorizontal: 8,
-              paddingVertical: 8,
-              backgroundColor: semantic.surface,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <ActionInput
-                surface="component"
-                placeholder="Search"
-                value={searchText}
-                onChangeText={handleSearchChange}
-                returnKeyType="search"
-                className="rounded-xl"
-              />
-            </View>
-            {/* <TouchableOpacity style={{ padding: 4 }}>
-              <PlusIcon color={iconColor} size={40} />
-            </TouchableOpacity> */}
+      <View className="px-1 py-1 flex-1">
+        <View className="flex-row items-center gap-2">
+          <View className="flex-1">
+            <ActionInput
+              surface="component"
+              placeholder="search"
+              value={searchText}
+              onChangeText={handleSearchChange}
+              returnKeyType="search"
+              className="rounded-full"
+              leftIcon={
+                <Ionicons
+                  name="search-outline"
+                  size={20}
+                  color={semantic.textMuted}
+                />
+              }
+            />
           </View>
-
-          <FlatList
-            data={filteredConversations}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <ChatListItem conversation={item} />}
-            contentContainerStyle={{
-              paddingBottom: 16,
-              paddingHorizontal: 16,
-            }}
-            style={{ flex: 1, backgroundColor: semantic.surface }}
-            ListEmptyComponent={
-              <EmptyState title="No conversations yet" />
-            }
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-          />
+          <TouchableOpacity
+            className="w-9 h-9 rounded-full items-center justify-center bg-component-light dark:bg-component-dark"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add" size={24} color={semantic.text} />
+          </TouchableOpacity>
         </View>
-      </SafeAreaView>
-    </View>
+
+        <FlatList
+          data={filteredConversations}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <ChatListItem conversation={item} />}
+          contentContainerStyle={{
+            paddingTop: 10,
+            paddingBottom: 12,
+          }}
+          style={{ flex: 1 }}
+          ItemSeparatorComponent={() => <View className="h-2" />}
+          ListEmptyComponent={<EmptyState title="No conversations yet" />}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        />
+      </View>
+    </ScreenContainer>
   );
 }

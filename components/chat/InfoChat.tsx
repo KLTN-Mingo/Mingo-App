@@ -21,14 +21,14 @@ import {
   Alert,
   Image,
   Modal,
-  Platform,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
-import { colors, getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
+import { SafeScreenView } from "@/components/containers/SafeLayout";
+import { getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
 
 interface InfoChatProps {
   visible: boolean;
@@ -141,11 +141,10 @@ export function InfoChat({
       visible={visible}
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1, backgroundColor: bgColor }}>
+      <SafeScreenView style={{ backgroundColor: bgColor }}>
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{
-            paddingTop: Platform.OS === "android" ? 8 : 36,
             paddingBottom: 40,
           }}
         >
@@ -452,7 +451,7 @@ export function InfoChat({
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </View>
+      </SafeScreenView>
     </Modal>
   );
 }

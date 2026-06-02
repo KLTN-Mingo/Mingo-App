@@ -7,17 +7,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import {
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { CommentModal } from "@/components/post/CommentModal";
 import { PostCard } from "@/components/post/PostCard";
-import {
-  NotificationIcon,
-  ReportIcon,
-} from "@/components/shared/icons/Icons";
+import { TrendingPostsRow } from "@/components/post/TrendingPostsRow";
+import { NotificationIcon, ReportIcon } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { SearchBarTrigger } from "@/components/shared/ui/search-bar";
 import { HomeSkeleton } from "@/components/skeleton";
@@ -28,10 +24,13 @@ import {
   NotificationCountDto,
   PaginationDto,
   PostResponseDto,
+  ReportEntityType,
   UserMinimalDto,
 } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useReport } from "@/hooks/use-report";
 import { useSharePost } from "@/hooks/use-share-post";
+import { interactionService } from "@/services/interaction.service";
 import { notificationService } from "@/services/notification.service";
 import { postService } from "@/services/post.service";
 import { getSemantic, getStatusColor } from "@/styles/colors";
@@ -58,7 +57,8 @@ export default function HomeScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
-  const [notificationCount, setNotificationCount] = useState<NotificationCountDto | null>(null);
+  const [notificationCount, setNotificationCount] =
+    useState<NotificationCountDto | null>(null);
 
   // Convert profile to UserMinimalDto for components
   const userMinimal: UserMinimalDto | null = profile
@@ -152,7 +152,26 @@ export default function HomeScreen() {
           : p
       )
     );
+    if (isLiked) {
+      interactionService.trackAction(postId, "like", activeTab);
+    }
   };
+
+  const handleViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: { item: PostResponseDto }[] }) => {
+      viewableItems.forEach((vi) => {
+        if (vi?.item?.id) {
+          interactionService.trackView(vi.item.id, activeTab);
+        }
+      });
+    },
+    [activeTab]
+  );
+
+  const viewabilityConfig = React.useRef({
+    itemVisiblePercentThreshold: 60,
+    minimumViewTime: 2000,
+  }).current;
 
   const handleCommentPress = (postId: string) => {
     setCommentPostId(postId);
@@ -164,6 +183,9 @@ export default function HomeScreen() {
         p.id === postId ? { ...p, commentsCount: p.commentsCount + delta } : p
       )
     );
+    if (delta > 0) {
+      interactionService.trackAction(postId, "comment", activeTab);
+    }
   };
 
   const handleShareChange = (postId: string, nextCount: number) => {
@@ -172,10 +194,19 @@ export default function HomeScreen() {
     );
   };
 
-  const handleSaveChange = (postId: string, isSaved: boolean) => {
+  const handleSaveChange = (
+    postId: string,
+    isSaved: boolean,
+    savesCount: number
+  ) => {
     setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, isSaved } : p))
+      prev.map((p) =>
+        p.id === postId ? { ...p, isSaved, savesCount } : p
+      )
     );
+    if (isSaved) {
+      interactionService.trackAction(postId, "save", activeTab);
+    }
   };
 
   const share = useSharePost({
@@ -186,6 +217,7 @@ export default function HomeScreen() {
           p.id === postId ? { ...p, sharesCount: p.sharesCount + sentCount } : p
         )
       );
+      interactionService.trackAction(postId, "share", activeTab);
     },
     onReposted: ({ postId }) => {
       setPosts((prev) =>
@@ -193,8 +225,11 @@ export default function HomeScreen() {
           p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
         )
       );
+      interactionService.trackAction(postId, "share", activeTab);
     },
   });
+
+  const report = useReport();
 
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}` as any);
@@ -208,7 +243,10 @@ export default function HomeScreen() {
         {
           text: "Edit",
           onPress: () =>
-            router.push({ pathname: "/create-post", params: { id: post.id } } as any),
+            router.push({
+              pathname: "/create-post",
+              params: { id: post.id },
+            } as any),
         },
         {
           text: "Delete",
@@ -224,7 +262,8 @@ export default function HomeScreen() {
                     await postService.deletePost(post.id);
                     setPosts((prev) => prev.filter((p) => p.id !== post.id));
                   } catch (e: unknown) {
-                    const msg = e instanceof Error ? e.message : "Cannot delete";
+                    const msg =
+                      e instanceof Error ? e.message : "Cannot delete";
                     Alert.alert("Error", msg);
                   }
                 },
@@ -270,12 +309,27 @@ export default function HomeScreen() {
         text: "See more like this",
         onPress: async () => {
           try {
-            await postService.submitFeedFeedback(post.id, "see_more", activeTab);
+            await postService.submitFeedFeedback(
+              post.id,
+              "see_more",
+              activeTab
+            );
+            interactionService.trackAction(post.id, "see_more", activeTab);
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Cannot send feedback";
             Alert.alert("Error", msg);
           }
         },
+      },
+      {
+        text: "Báo cáo",
+        style: "destructive",
+        onPress: () =>
+          report.openReport({
+            entityType: ReportEntityType.POST,
+            entityId: post.id,
+            entityLabel: "bài viết này",
+          }),
       },
       { text: "Cancel", style: "cancel" },
     ]);
@@ -307,6 +361,7 @@ export default function HomeScreen() {
 
     return (
       <ScreenContainer
+        horizontalPadding="default"
         className="items-center justify-center px-4"
         style={{ paddingBottom: TAB_BAR_FLOAT_RESERVE + insets.bottom }}
       >
@@ -316,46 +371,51 @@ export default function HomeScreen() {
           onPress={handleTryAgain}
           className="mt-4 bg-primary px-6 py-3 rounded-full"
         >
-          <Text className="text-white font-semibold">
-            Đăng nhập lại
-          </Text>
+          <Text className="text-white font-semibold">Đăng nhập lại</Text>
         </TouchableOpacity>
       </ScreenContainer>
     );
   }
 
-    return (
-    <ScreenContainer
-    >
+  return (
+    <ScreenContainer horizontalPadding="default">
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
-        className="gap-6"
+        className=""
         ListHeaderComponent={
           <View className="gap-5 mb-5">
             {/* Header: logo + thông báo */}
             <View className="flex-row items-center justify-between">
-              <Text style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 24 }}>
-                <Text className="text-text-light dark:text-text-dark" style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 20 }}>
+              <Text style={{ fontFamily: "Montserrat-SemiBold", fontSize: 24 }}>
+                <Text
+                  className="text-text-light dark:text-text-dark"
+                  style={{ fontFamily: "Montserrat-SemiBold", fontSize: 20 }}
+                >
                   Min
                 </Text>
-                <Text className="text-primary" style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 20 }}>
+                <Text
+                  className="text-title-light dark:text-title-dark"
+                  style={{ fontFamily: "Montserrat-SemiBold", fontSize: 20 }}
+                >
                   gle
                 </Text>
               </Text>
               <TouchableOpacity
                 onPress={handleNotifications}
                 className="p-2 relative"
-                // hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <NotificationIcon size={24} color={semantic.text} />
-                {Boolean(notificationCount?.unread) && notificationCount!.unread > 0 && (
-                  <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full px-1 bg-primary dark:bg-primary-light border border-white dark:border-background-dark items-center justify-center">
-                    <Text className="text-[10px] leading-[10px] text-white font-semibold">
-                      {notificationCount!.unread > 99 ? "99+" : notificationCount!.unread}
-                    </Text>
-                  </View>
-                )}
+                {Boolean(notificationCount?.unread) &&
+                  notificationCount!.unread > 0 && (
+                    <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full px-1 bg-primary dark:bg-primary-light border border-white dark:border-background-dark items-center justify-center">
+                      <Text className="text-[10px] leading-[10px] text-white font-semibold">
+                        {notificationCount!.unread > 99
+                          ? "99+"
+                          : notificationCount!.unread}
+                      </Text>
+                    </View>
+                  )}
               </TouchableOpacity>
             </View>
 
@@ -372,6 +432,9 @@ export default function HomeScreen() {
                 />
               ))}
             </View>
+
+            {/* Trending carousel — chỉ ở tab Explore */}
+            {activeTab === "explore" ? <TrendingPostsRow /> : null}
           </View>
         }
         renderItem={({ item }) => (
@@ -398,6 +461,8 @@ export default function HomeScreen() {
         }
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.5}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
         ListEmptyComponent={
           <EmptyState
             title={
@@ -425,6 +490,7 @@ export default function HomeScreen() {
       />
 
       {share.modals}
+      {report.modal}
     </ScreenContainer>
   );
 }

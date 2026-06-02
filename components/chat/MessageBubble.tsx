@@ -11,6 +11,7 @@ import { Audio, AVPlaybackStatus, ResizeMode, Video } from "expo-av";
 import { Text } from "@/components/ui";
 import { MessageResponseDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { SharedPostMessageCard } from "./SharedPostMessageCard";
 
 // Mingo MessageBubble colors
 const bubbleColors = {
@@ -27,9 +28,18 @@ interface MessageBubbleProps {
   showDateSeparator?: boolean;
   dateLabel?: string;
   otherAvatarUrl?: string | null;
+  /** Khi long-press bubble — caller decide hiển thị action sheet (edit/recall). */
+  onLongPress?: (message: MessageResponseDto) => void;
 }
 
 type BubbleMessageType = "text" | "image" | "video" | "audio" | "file";
+type SharedPostPayload = {
+  type?: string;
+  postId?: string;
+  sharedId?: string;
+  message?: string;
+  createdAt?: string;
+};
 
 type ContentIdLike = {
   type?: string | null;
@@ -67,6 +77,20 @@ function resolveMessageType(message: MessageResponseDto): BubbleMessageType {
   }
 
   return "text";
+}
+
+function parseSharedPostPayload(message: MessageResponseDto): SharedPostPayload | null {
+  const content = message.content?.trim();
+  if (!content) return null;
+  if (!content.startsWith("{") || !content.endsWith("}")) return null;
+
+  try {
+    const parsed = JSON.parse(content) as SharedPostPayload;
+    if (parsed?.type === "post_share") return parsed;
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function resolveMediaUri(message: MessageResponseDto): string | null {
@@ -215,10 +239,21 @@ function MessageContent({
   isOwn: boolean;
   textColor: string;
 }) {
+  const sharedPost = useMemo(() => parseSharedPostPayload(message), [message]);
   const messageType = useMemo(() => resolveMessageType(message), [message]);
   const uri = useMemo(() => resolveMediaUri(message), [message]);
   const fileName = useMemo(() => resolveFileName(message), [message]);
   const durationLabel = useMemo(() => resolveAudioDuration(message), [message]);
+
+  if (sharedPost) {
+    return (
+      <SharedPostMessageCard
+        postId={sharedPost.postId}
+        message={sharedPost.message}
+        isOwn={isOwn}
+      />
+    );
+  }
 
   if (messageType === "text") {
     return (
@@ -266,6 +301,7 @@ export function MessageBubble({
   showDateSeparator,
   dateLabel,
   otherAvatarUrl,
+  onLongPress,
 }: MessageBubbleProps) {
   const isRevoked = message.isRevoked;
   const colorScheme = useColorScheme() ?? "light";
@@ -302,7 +338,12 @@ export function MessageBubble({
           </View>
         )}
 
-        <View
+        <TouchableOpacity
+          activeOpacity={onLongPress && !isRevoked ? 0.85 : 1}
+          onLongPress={
+            onLongPress && !isRevoked ? () => onLongPress(message) : undefined
+          }
+          delayLongPress={350}
           style={[
             styles.bubble,
             isOwn ? [styles.bubbleOwn, { backgroundColor: ownBubbleBg }] : { backgroundColor: otherBubbleBg },
@@ -320,13 +361,28 @@ export function MessageBubble({
               Message unsent
             </Text>
           ) : (
-            <MessageContent
-              message={message}
-              isOwn={isOwn}
-              textColor={isOwn ? textColorOwn : textColorOther}
-            />
+            <>
+              <MessageContent
+                message={message}
+                isOwn={isOwn}
+                textColor={isOwn ? textColorOwn : textColorOther}
+              />
+              {message.updatedAt &&
+              message.updatedAt !== message.createdAt ? (
+                <Text
+                  style={{
+                    color: isOwn ? "rgba(255,255,255,0.6)" : bubbleColors.dateMuted,
+                    fontSize: 10,
+                    marginTop: 4,
+                    fontStyle: "italic",
+                  }}
+                >
+                  đã chỉnh sửa
+                </Text>
+              ) : null}
+            </>
           )}
-        </View>
+        </TouchableOpacity>
       </View>
     </View>
   );

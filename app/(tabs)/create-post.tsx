@@ -13,25 +13,21 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
+import { LocationPickerModal } from "@/components/post/LocationPickerModal";
+import { TagFriendsModal } from "@/components/post/TagFriendsModal";
 import {
   ArrowIcon,
   ImageIcon,
   VideoIcon,
 } from "@/components/shared/icons/Icons";
-import { LocationPickerModal } from "@/components/post/LocationPickerModal";
-import { TagFriendsModal } from "@/components/post/TagFriendsModal";
 import { Avatar, Button, Text } from "@/components/ui";
 import { TextArea } from "@/components/ui/TextArea";
 import { getSemantic } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import {
-  PostVisibility,
-  UpdatePostRequestDto,
-  UserMinimalDto,
-} from "@/dtos";
+import { PostVisibility, UpdatePostRequestDto, UserMinimalDto } from "@/dtos";
 import { postService } from "@/services/post.service";
 
 const VISIBILITY_OPTIONS: { value: PostVisibility; label: string }[] = [
@@ -40,13 +36,14 @@ const VISIBILITY_OPTIONS: { value: PostVisibility; label: string }[] = [
   { value: PostVisibility.BESTFRIENDS, label: "Bạn thân" },
   { value: PostVisibility.PRIVATE, label: "Chỉ mình tôi" },
 ];
-
 function extractHashtags(text: string): string[] {
   const re = /#[\p{L}\p{N}_]+/gu;
   const found = text.match(re) ?? [];
   const tags = [
     ...new Set(
-      found.map((t) => t.slice(1).replace(/^#+/, "").toLowerCase()).filter(Boolean)
+      found
+        .map((t) => t.slice(1).replace(/^#+/, "").toLowerCase())
+        .filter(Boolean)
     ),
   ];
   return tags.slice(0, 30);
@@ -117,9 +114,8 @@ export default function CreatePostScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [existingMediaNote, setExistingMediaNote] = useState(false);
   const [initialContent, setInitialContent] = useState("");
-  const [initialVisibility, setInitialVisibility] = useState<PostVisibility | null>(
-    null
-  );
+  const [initialVisibility, setInitialVisibility] =
+    useState<PostVisibility | null>(null);
   const [tagFriendsOpen, setTagFriendsOpen] = useState(false);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
 
@@ -190,7 +186,10 @@ export default function CreatePostScreen() {
   const pickMedia = async (kind: "image" | "video" | "mixed") => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Quyền truy cập", "Cần quyền thư viện ảnh để đính kèm media.");
+      Alert.alert(
+        "Quyền truy cập",
+        "Cần quyền thư viện ảnh để đính kèm media."
+      );
       return;
     }
 
@@ -268,7 +267,10 @@ export default function CreatePostScreen() {
         }
         await postService.updatePost(editPostId, payload);
         Alert.alert("Đã lưu", "Bài viết đã được cập nhật.", [
-          { text: "OK", onPress: () => router.replace(`/post/${editPostId}` as any) },
+          {
+            text: "OK",
+            onPress: () => router.replace(`/post/${editPostId}` as any),
+          },
         ]);
         return;
       }
@@ -307,44 +309,41 @@ export default function CreatePostScreen() {
 
   if (loadingPost) {
     return (
-      <SafeAreaView
-        className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center"
-        edges={["top"]}
+      <ScreenContainer
+        horizontalPadding="default"
+        className="items-center justify-center"
       >
         <ActivityIndicator color={sem.primary} size="large" />
         <Text variant="muted" className="mt-3">
           Đang tải bài viết…
         </Text>
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-background-light dark:bg-background-dark"
-      edges={["top"]}
-    >
+    <ScreenContainer horizontalPadding="default">
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
-        <View className="flex-row items-center px-4 py-3 border-b border-border-light dark:border-border-dark">
+        <View className="flex-row items-center">
           <TouchableOpacity
             onPress={() => router.back()}
-            className="p-1 mr-2"
+            className=" mr-2"
             disabled={submitting}
           >
-            <ArrowIcon size={22} color={sem.text} />
+            <ArrowIcon size={35} color={sem.title} />
           </TouchableOpacity>
-          <Text className="font-semibold text-lg text-text-light dark:text-text-dark flex-1">
+          <Text className="text-xl font-semibold leading-[28px] text-title-light dark:text-title-dark flex-1">
             {isEdit ? "Sửa bài viết" : "Tạo bài viết"}
           </Text>
         </View>
 
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* User row */}
@@ -388,10 +387,7 @@ export default function CreatePostScreen() {
                   </View>
                 )}
                 {pendingMedia.map((item, index) => (
-                  <View
-                    key={`${item.localUri}-${index}`}
-                    className="relative"
-                  >
+                  <View key={`${item.localUri}-${index}`} className="relative">
                     {item.mediaType === "video" ? (
                       <View className="w-32 h-40 rounded-xl bg-surface-muted-light dark:bg-surface-muted-dark items-center justify-center">
                         <VideoIcon size={36} color={sem.textMuted} />
@@ -582,6 +578,6 @@ export default function CreatePostScreen() {
         onClose={() => setLocationPickerOpen(false)}
         onSelect={(name) => setLocationName(name)}
       />
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }

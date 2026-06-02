@@ -14,9 +14,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ActionInput, Button, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { RegisterRequestDto } from "@/dtos";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { paletteIcon } from "@/styles/colors";
+import { validateAuthFields } from "@/utils/authValidation";
 
 const AUTH_BTN = "h-12 min-h-[48px] max-h-[48px] rounded-md py-0";
 
@@ -46,29 +47,27 @@ export default function SignUpScreen() {
   }>({});
 
   const validate = (): boolean => {
-    const newErrors: typeof errors = {};
-
-    if (!formData.name?.trim()) {
-      newErrors.name = "Vui lòng nhập họ tên";
-    }
-
-    if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = "Vui lòng nhập số điện thoại";
-    } else if (!/^[0-9]{10,11}$/.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = "Số điện thoại không hợp lệ";
-    }
-
-    if (!formData.password) {
-      newErrors.password = "Vui lòng nhập mật khẩu";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
-    }
-
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Vui lòng xác nhận mật khẩu";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Mật khẩu không khớp";
-    }
+    const newErrors = validateAuthFields(formData, {
+      name: {
+        label: "họ tên",
+        rules: ["required"],
+      },
+      phoneNumber: {
+        label: "số điện thoại",
+        rules: ["required", "phone"],
+      },
+      password: {
+        label: "mật khẩu",
+        rules: ["required", "password"],
+      },
+      confirmPassword: {
+        label: "xác nhận mật khẩu",
+        rules: [
+          "required",
+          { type: "confirmPassword", matchesField: "password" },
+        ],
+      },
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -127,7 +126,7 @@ export default function SignUpScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text
-            className="text-center text-text-light dark:text-text-dark mb-2 text-[32px] leading-[44px] font-bold py-0.5"
+            className="text-center text-title-light dark:text-title-dark mb-2 text-[34px] leading-[44px] font-bold py-0.5"
             style={{ fontFamily: "Montserrat-Bold" }}
           >
             Sign up
@@ -140,67 +139,55 @@ export default function SignUpScreen() {
           </Text>
 
           <View className="gap-5">
-            <View>
-              <Text className="mb-2 text-base text-text-light dark:text-text-dark">
-                Full Name
-              </Text>
-              <ActionInput
-                variant="auth"
-                placeholder="Enter your full name"
-                value={formData.name}
-                onChangeText={(text) => updateField("name", text)}
-                autoCapitalize="words"
-                error={errors.name}
-              />
-            </View>
+            <ActionInput
+              label="Full Name"
+              isRequired
+              variant="auth"
+              placeholder="Enter your full name"
+              value={formData.name}
+              onChangeText={(text) => updateField("name", text)}
+              autoCapitalize="words"
+              error={errors.name}
+            />
 
-            <View>
-              <Text className="mb-2 text-base text-text-light dark:text-text-dark">
-                Phone Number
-              </Text>
-              <ActionInput
-                variant="auth"
-                placeholder="Enter your phone number"
-                value={formData.phoneNumber}
-                onChangeText={(text) => updateField("phoneNumber", text)}
-                keyboardType="phone-pad"
-                error={errors.phoneNumber}
-              />
-            </View>
+            <ActionInput
+              label="Phone Number"
+              isRequired
+              variant="auth"
+              placeholder="Enter your phone number"
+              value={formData.phoneNumber}
+              onChangeText={(text) => updateField("phoneNumber", text)}
+              keyboardType="phone-pad"
+              error={errors.phoneNumber}
+            />
 
-            <View>
-              <Text className="mb-2 text-base text-text-light dark:text-text-dark">
-                Password
-              </Text>
-              <ActionInput
-                variant="auth"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChangeText={(text) => updateField("password", text)}
-                secureTextEntry={!showPassword}
-                error={errors.password}
-                rightIcon={passwordToggle(showPassword, () =>
-                  setShowPassword((v) => !v)
-                )}
-              />
-            </View>
+            <ActionInput
+              label="Password"
+              isRequired
+              variant="auth"
+              placeholder="Enter your password"
+              value={formData.password}
+              onChangeText={(text) => updateField("password", text)}
+              secureTextEntry={!showPassword}
+              error={errors.password}
+              rightIcon={passwordToggle(showPassword, () =>
+                setShowPassword((v) => !v)
+              )}
+            />
 
-            <View>
-              <Text className="mb-2 text-base text-text-light dark:text-text-dark">
-                Confirm Password
-              </Text>
-              <ActionInput
-                variant="auth"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChangeText={(text) => updateField("confirmPassword", text)}
-                secureTextEntry={!showConfirmPassword}
-                error={errors.confirmPassword}
-                rightIcon={passwordToggle(showConfirmPassword, () =>
-                  setShowConfirmPassword((v) => !v)
-                )}
-              />
-            </View>
+            <ActionInput
+              label="Confirm Password"
+              isRequired
+              variant="auth"
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChangeText={(text) => updateField("confirmPassword", text)}
+              secureTextEntry={!showConfirmPassword}
+              error={errors.confirmPassword}
+              rightIcon={passwordToggle(showConfirmPassword, () =>
+                setShowConfirmPassword((v) => !v)
+              )}
+            />
 
             <Button
               onPress={handleSignUp}

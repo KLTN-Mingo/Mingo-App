@@ -18,6 +18,7 @@ export enum ModerationStatus {
   APPROVED = "approved",
   REJECTED = "rejected",
   FLAGGED = "flagged",
+  VIOLATED = "violated",
 }
 
 // ─── Request DTOs ──────────────────────────────────────────────────────────────

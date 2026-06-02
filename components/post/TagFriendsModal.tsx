@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 
+import { SafeModalSheet } from "@/components/containers/SafeLayout";
 import { CancelIcon, SearchIcon } from "@/components/shared/icons/Icons";
 import { SearchBarInput } from "@/components/shared/ui/search-bar";
 import { Avatar, Button, Text } from "@/components/ui";
@@ -115,7 +116,7 @@ export function TagFriendsModal({
       onRequestClose={onClose}
     >
       <View className="flex-1 justify-end bg-black/40">
-        <View className="rounded-t-[20px] bg-background-light dark:bg-background-dark px-4 pt-4 pb-6 max-h-[85%]">
+        <SafeModalSheet>
           <View className="flex-row items-center mb-3">
             <Text className="flex-1 text-base font-semibold text-text-light dark:text-text-dark">
               Tag friends
@@ -199,7 +200,7 @@ export function TagFriendsModal({
               {selectedIds.size > 0 ? `Done (${selectedIds.size})` : "Done"}
             </Text>
           </Button>
-        </View>
+        </SafeModalSheet>
       </View>
     </Modal>
   );

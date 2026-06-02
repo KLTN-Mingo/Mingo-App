@@ -27,21 +27,21 @@ export enum RelationshipType {
 // ─── Follow Request DTOs ───────────────────────────────────────────────────────
 
 export interface SendFollowRequestDto {
-  userId: string;
+  targetUserId: string;
 }
 
 export interface RespondFollowRequestDto {
-  accept: boolean;
+  action: "accept" | "reject";
 }
 
 // ─── Close Friend Request DTOs ─────────────────────────────────────────────────
 
 export interface SendCloseFriendRequestDto {
-  userId: string;
+  targetUserId: string;
 }
 
 export interface RespondCloseFriendRequestDto {
-  accept: boolean;
+  action: "accept" | "reject";
 }
 
 // ─── Query DTOs ────────────────────────────────────────────────────────────────

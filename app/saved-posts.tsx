@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { Text } from "@/components/ui";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
-import { PostResponseDto, UserMinimalDto } from "@/dtos";
+import { PaginationDto, PostResponseDto, UserMinimalDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useSharePost } from "@/hooks/use-share-post";
 import { postService } from "@/services/post.service";
@@ -25,8 +25,10 @@ export default function SavedPostsScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const semantic = getSemantic(colorScheme);
   const [posts, setPosts] = useState<PostResponseDto[]>([]);
+  const [pagination, setPagination] = useState<PaginationDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const userMinimal: UserMinimalDto | null = profile
     ? {
@@ -37,15 +39,21 @@ export default function SavedPostsScreen() {
       }
     : null;
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (page = 1, append = false) => {
     try {
-      const data = await postService.getSavedPosts(1, 50);
-      setPosts(data.posts);
+      const data = await postService.getSavedPosts(page, 20);
+      setPagination(data.pagination);
+      if (append) {
+        setPosts((prev) => [...prev, ...data.posts]);
+      } else {
+        setPosts(data.posts);
+      }
     } catch (e) {
       console.warn("Cannot load saved posts:", e);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   }, []);
 
@@ -55,16 +63,26 @@ export default function SavedPostsScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await load();
+    await load(1, false);
   };
 
-  const handleSaveChange = (postId: string, isSaved: boolean) => {
+  const onLoadMore = () => {
+    if (loadingMore || !pagination?.hasMore) return;
+    setLoadingMore(true);
+    load((pagination.page ?? 1) + 1, true);
+  };
+
+  const handleSaveChange = (
+    postId: string,
+    isSaved: boolean,
+    savesCount: number
+  ) => {
     if (!isSaved) {
       setPosts((prev) => prev.filter((p) => p.id !== postId));
       return;
     }
     setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, isSaved } : p))
+      prev.map((p) => (p.id === postId ? { ...p, isSaved, savesCount } : p))
     );
   };
 
@@ -226,6 +244,15 @@ export default function SavedPostsScreen() {
             )}
             ListEmptyComponent={
               <EmptyState title="No saved posts" />
+            }
+            onEndReached={onLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              loadingMore ? (
+                <View className="py-4 items-center">
+                  <ActivityIndicator color={colors.primary[100]} />
+                </View>
+              ) : null
             }
           />
         )}

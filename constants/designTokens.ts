@@ -6,10 +6,12 @@
 export type ColorScheme = "light" | "dark";
 
 /** Viền mặc định dùng xuyên app */
-export const BORDER_DEFAULT = {
+export const BORDER_BY_SCHEME = {
   light: "#BAC6C2",
   dark: "#2D2F2F",
 } as const;
+
+export const BORDER_DEFAULT = BORDER_BY_SCHEME.light;
 
 /** Primary color — Muted sage green */
 export const palettePrimary = {
@@ -17,6 +19,16 @@ export const palettePrimary = {
   lightMuted: "#BAC6C2",
   dark: "#515E5A",
   darkAccent: "#CFBFAD",
+  50: "#E8EDEB",
+  100: "#768D85",
+  200: "#9AA9A2",
+  300: "#BAC6C2",
+  400: "#D4DED9",
+  500: "#768D85",
+  600: "#5E7069",
+  700: "#475852",
+  800: "#313F3B",
+  900: "#1A2723",
 } as const;
 
 /** Icon colors — Semantic colors for icons */
@@ -25,6 +37,11 @@ export const paletteIcon = {
   lightMuted: "#6B6B6B",
   dark: "#FAFAFA",
   darkMuted: "#6B6B6B",
+} as const;
+
+export const paletteTitle = {
+  light: "#D9542C",
+  dark: "#D9542C",
 } as const;
 
 /** Spacing scale */
@@ -37,6 +54,16 @@ export const spacing = {
   xxl: 24,
 } as const;
 
+export const layoutSpacing = {
+  contentTop: {
+    ios: spacing.xxl + spacing.xl,
+    android: spacing.xxl,
+  },
+  contentBottom: spacing.xxl,
+  horizontal: spacing.xl,
+  modalTopGap: spacing.lg,
+} as const;
+
 /** Border radius scale */
 export const radius = {
   sm: 8,
@@ -47,8 +74,14 @@ export const radius = {
 
 /** Thang màu light mode */
 export const paletteLight = {
+  50: "#FAFAFA",
+  100: "#1E2021",
+  200: "#6B6B6B",
+  300: "#CCCCCC",
+  400: "#BAC6C2",
+  500: "#FFFFFF",
   background: "#FFFFFF",
-  surface: "#F1F4F3",
+  surface: "#FFFFFF",
   surfaceLight: "#FAFAFA",
   surfaceMuted: "#F1F4F3",
   surfaceElevated: "#FFFFFF",
@@ -64,6 +97,12 @@ export const paletteLight = {
 
 /** Thang màu dark mode */
 export const paletteDark = {
+  50: "#FAFAFA",
+  100: "#FAFAFA",
+  200: "#CCCCCC",
+  300: "#6B6B6B",
+  400: "#2D2F2F",
+  500: "#1E2021",
   background: "#1E2021",
   surface: "#252525",
   surfaceLight: "#2D2F2F",
@@ -95,6 +134,7 @@ export type SemanticColors = {
   text: string;
   textMuted: string;
   textSecondary: string;
+  title: string;
   border: string;
   borderSubtle: string;
   primary: string;
@@ -117,9 +157,10 @@ export function getSemantic(scheme: ColorScheme): SemanticColors {
       surfaceMuted: paletteDark.surfaceMuted,
       surfaceElevated: paletteDark.surfaceElevated,
       text: paletteDark.textPrimary,
+      title: paletteTitle.dark,
       textMuted: paletteDark.textMuted,
       textSecondary: paletteDark.textSecondary,
-      border: BORDER_DEFAULT.dark,
+      border: BORDER_BY_SCHEME.dark,
       borderSubtle: paletteDark.border,
       primary: palettePrimary.dark,
       primaryMuted: palettePrimary.darkAccent,
@@ -139,9 +180,10 @@ export function getSemantic(scheme: ColorScheme): SemanticColors {
     surfaceMuted: paletteLight.surfaceMuted,
     surfaceElevated: paletteLight.surfaceElevated,
     text: paletteLight.textPrimary,
+    title: paletteTitle.light,
     textMuted: paletteLight.textMuted,
     textSecondary: paletteLight.textSecondary,
-    border: BORDER_DEFAULT.light,
+    border: BORDER_BY_SCHEME.light,
     borderSubtle: paletteLight.borderSubtle,
     primary: palettePrimary.light,
     primaryMuted: palettePrimary.lightMuted,
@@ -191,11 +233,12 @@ export const colorTable = {
     surfaceMuted: paletteDark.surfaceMuted,
     surfaceElevated: paletteDark.surfaceElevated,
     textPrimary: paletteDark.textPrimary,
+    title: paletteTitle.dark,
     textSecondary: paletteDark.textSecondary,
     textMuted: paletteDark.textMuted,
     inputField: paletteDark.surface,
     accent: palettePrimary.dark,
-    border: BORDER_DEFAULT.dark,
+    border: BORDER_BY_SCHEME.dark,
     danger: paletteDark.danger,
     online: paletteDark.online,
   },
@@ -206,11 +249,12 @@ export const colorTable = {
     surfaceMuted: paletteLight.surfaceMuted,
     surfaceElevated: paletteLight.surfaceElevated,
     textPrimary: paletteLight.textPrimary,
+    title: paletteTitle.light,
     textSecondary: paletteLight.textSecondary,
     textMuted: paletteLight.textMuted,
     inputField: paletteLight.surface,
     accent: palettePrimary.light,
-    border: BORDER_DEFAULT.light,
+    border: BORDER_BY_SCHEME.light,
     danger: paletteLight.danger,
     online: paletteLight.online,
   },

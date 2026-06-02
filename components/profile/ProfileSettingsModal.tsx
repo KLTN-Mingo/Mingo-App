@@ -11,9 +11,9 @@ import {
   SaveIcon,
   SunIcon,
 } from "@/components/shared/icons/Icons";
+import { SafeScreenView } from "@/components/containers/SafeLayout";
 import { ScreenHeader, Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
-import { paletteIcon } from "@/styles/colors";
 
 export type ProfileSettingsModalProps = {
   visible: boolean;
@@ -21,6 +21,7 @@ export type ProfileSettingsModalProps = {
   onEditProfile: () => void;
   onOpenSavedPosts: () => void;
   onOpenAccountSettings: () => void;
+  onOpenBlockedUsers?: () => void;
   themeToggleLabel: string;
   onToggleTheme: () => void;
   logoutIconColor: string;
@@ -32,10 +33,9 @@ interface MenuItemProps {
   label: string;
   onPress: () => void;
   isLogout?: boolean;
-  iconColor: string;
 }
 
-function MenuItem({ icon, label, onPress, isLogout, iconColor }: MenuItemProps) {
+function MenuItem({ icon, label, onPress, isLogout }: MenuItemProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const palette = isDark ? paletteDark : paletteLight;
@@ -46,10 +46,7 @@ function MenuItem({ icon, label, onPress, isLogout, iconColor }: MenuItemProps) 
       className="flex-row items-center px-5 py-3"
       style={{ backgroundColor: palette.background }}
     >
-      <View
-        className="w-10 h-10 items-center justify-center rounded-full"
-        style={{ backgroundColor: isDark ? "rgba(230, 58, 71, 0.15)" : "rgba(230, 58, 71, 0.1)" }}
-      >
+      <View className="w-10 h-10 items-center justify-center">
         {icon}
       </View>
       <Text
@@ -68,6 +65,7 @@ export function ProfileSettingsModal({
   onEditProfile,
   onOpenSavedPosts,
   onOpenAccountSettings,
+  onOpenBlockedUsers,
   themeToggleLabel,
   onToggleTheme,
   logoutIconColor,
@@ -83,7 +81,7 @@ export function ProfileSettingsModal({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onRequestClose}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
-      <View className="flex-1" style={{ backgroundColor: palette.background }}>
+      <SafeScreenView style={{ backgroundColor: palette.background }}>
         <ScreenHeader
           title="Settings"
           leftSlot={
@@ -98,28 +96,26 @@ export function ProfileSettingsModal({
             icon={<PenIcon size={22} color={iconColor} />}
             label="Edit Profile"
             onPress={onEditProfile}
-            iconColor={iconColor}
           />
 
           <MenuItem
             icon={<SaveIcon size={22} color={iconColor} />}
             label="Saved Posts"
             onPress={onOpenSavedPosts}
-            iconColor={iconColor}
           />
 
-          <MenuItem
-            icon={<ActivityIcon size={22} color={iconColor} />}
-            label="Activity"
-            onPress={() => {}}
-            iconColor={iconColor}
-          />
+          {onOpenBlockedUsers ? (
+            <MenuItem
+              icon={<ActivityIcon size={22} color={iconColor} />}
+              label="Blocked Users"
+              onPress={onOpenBlockedUsers}
+            />
+          ) : null}
 
           <MenuItem
             icon={<LockIcon size={22} color={iconColor} />}
             label="Change Password"
             onPress={onOpenAccountSettings}
-            iconColor={iconColor}
           />
 
           <MenuItem
@@ -132,7 +128,6 @@ export function ProfileSettingsModal({
             }
             label={themeToggleLabel}
             onPress={onToggleTheme}
-            iconColor={iconColor}
           />
 
           <View className="mt-6">
@@ -141,11 +136,10 @@ export function ProfileSettingsModal({
               label="Log Out"
               onPress={onLogout}
               isLogout
-              iconColor={logoutIconColor}
             />
           </View>
         </View>
-      </View>
+      </SafeScreenView>
     </Modal>
   );
 }

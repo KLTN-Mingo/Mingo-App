@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   TextInput as RNTextInput,
   ScrollView,
   TouchableOpacity,
@@ -15,6 +16,7 @@ import { Avatar } from '@/components/ui';
 import { Text } from '@/components/ui/Text';
 import { PublicUserDto } from '@/dtos';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { FollowApi } from '@/services/follow.service';
 import { userService } from '@/services/user.service';
 import { colors } from '@/styles/colors';
 
@@ -60,9 +62,24 @@ export default function AddFriendScreen() {
     }
   };
 
-  const handleAddFriend = () => {
-    if (foundUser) {
-      console.log('Send friend request to:', foundUser.id);
+  const [sendingRequest, setSendingRequest] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+
+  const handleAddFriend = async () => {
+    if (!foundUser || sendingRequest) return;
+    setSendingRequest(true);
+    try {
+      await FollowApi.sendFollowRequest(foundUser.id);
+      setRequestSent(true);
+      Alert.alert('Thành công', 'Đã gửi yêu cầu kết bạn');
+    } catch (err: unknown) {
+      console.error('[follow] add-friend send request failed', err);
+      Alert.alert(
+        'Lỗi',
+        err instanceof Error ? err.message : 'Không gửi được yêu cầu'
+      );
+    } finally {
+      setSendingRequest(false);
     }
   };
 
@@ -154,10 +171,20 @@ export default function AddFriendScreen() {
 
             <TouchableOpacity
               className="mt-4 py-3 rounded-full items-center"
-              style={{ backgroundColor: theme.primary }}
+              style={{
+                backgroundColor: requestSent ? theme.textMuted : theme.primary,
+                opacity: sendingRequest || requestSent ? 0.6 : 1,
+              }}
               onPress={handleAddFriend}
+              disabled={sendingRequest || requestSent}
             >
-              <Text className="text-white text-base font-semibold">Kết bạn</Text>
+              {sendingRequest ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text className="text-white text-base font-semibold">
+                  {requestSent ? 'Đã gửi yêu cầu' : 'Kết bạn'}
+                </Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         )}

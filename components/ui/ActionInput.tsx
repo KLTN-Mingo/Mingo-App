@@ -4,28 +4,24 @@ import { ReactNode } from "react";
 import { Platform, TextInput, TextInputProps, View } from "react-native";
 import { Text } from "./Text";
 
-/** Auth: cao 48px, bo góc 12px — khớp tailwind `rounded-md` */
 export const AUTH_CONTROL_HEIGHT = 48;
 export const AUTH_CONTROL_RADIUS = 12;
-const AUTH_FONT_SIZE = 16;
-const AUTH_LINE_HEIGHT = 20;
-const AUTH_IOS_V_PAD = (AUTH_CONTROL_HEIGHT - AUTH_LINE_HEIGHT) / 2;
+const AUTH_FONT_SIZE = 14;
 
 export interface ActionInputProps extends TextInputProps {
   label?: string;
+  isRequired?: boolean;
   error?: string;
   className?: string;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
-  /** `component` = nền #F1F4F3 / #2D2F2F (ô tìm kiếm, v.v.) */
   surface?: "input" | "component";
-  /** Auth forms: h-48px, bo 12px, viền, chữ căn giữa theo chiều dọc */
   variant?: "default" | "auth";
 }
 
-/** Ô nhập dạng “hành động” (pill, icon): đăng nhập, tìm kiếm danh sách, v.v. */
 export function ActionInput({
   label,
+  isRequired = false,
   error,
   className = "",
   leftIcon,
@@ -45,14 +41,17 @@ export function ActionInput({
       : "bg-input-light dark:bg-input-dark";
 
   const rowClass = isAuth
-    ? `flex-row items-center w-full px-4 rounded-md border border-border-light dark:border-border-dark bg-transparent ${className}`
-    : `flex-row items-center px-4 py-4 rounded-[20px] w-full ${rowBg} ${className}`;
+    ? `flex-row items-center w-full px-4 rounded-xl border border-border-light dark:border-border-dark bg-transparent ${className}`
+    : `flex-row items-center px-4 py-4 rounded-lg w-full ${rowBg} ${className}`;
 
   return (
     <View className="w-full">
       {label ? (
-        <Text className="mb-2 font-medium text-base text-text-light dark:text-text-dark">
+        <Text className="mb-2 font-medium text-sm text-text-light dark:text-text-dark">
           {label}
+          {isRequired ? (
+            <Text className="text-title-light dark:text-title-dark"> *</Text>
+          ) : null}
         </Text>
       ) : null}
       <View
@@ -76,20 +75,20 @@ export function ActionInput({
               ...(isAuth
                 ? Platform.select({
                     ios: {
-                      lineHeight: AUTH_LINE_HEIGHT,
-                      paddingTop: AUTH_IOS_V_PAD,
-                      paddingBottom: AUTH_IOS_V_PAD,
+                      height: AUTH_CONTROL_HEIGHT,
+                      paddingTop: 0,
+                      paddingBottom: 0,
                     },
                     android: {
                       height: AUTH_CONTROL_HEIGHT,
-                      lineHeight: AUTH_LINE_HEIGHT,
+                      lineHeight: AUTH_FONT_SIZE,
                       paddingVertical: 0,
                       textAlignVertical: "center",
                       includeFontPadding: false,
                     },
                     default: {
-                      lineHeight: AUTH_LINE_HEIGHT,
-                      paddingVertical: AUTH_IOS_V_PAD,
+                      height: AUTH_CONTROL_HEIGHT,
+                      paddingVertical: 0,
                     },
                   })
                 : { paddingVertical: 0 }),

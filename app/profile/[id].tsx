@@ -29,10 +29,12 @@ import {
   PostResponseDto,
   PublicUserDto,
   RelationshipStatusDto,
+  ReportEntityType,
   UserMinimalDto,
   UserProfileDto,
 } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useReport } from "@/hooks/use-report";
 import { useSharePost } from "@/hooks/use-share-post";
 import { FollowApi } from "@/services/follow.service";
 import { postService } from "@/services/post.service";
@@ -173,6 +175,17 @@ export default function UserProfileDetailScreen() {
     );
   };
 
+  const report = useReport();
+
+  const handleReportUser = () => {
+    if (!id || isMine) return;
+    report.openReport({
+      entityType: ReportEntityType.USER,
+      entityId: id,
+      entityLabel: user?.name ?? "người dùng này",
+    });
+  };
+
   const handleEditProfile = () => {
     router.push("/edit-profile" as never);
   };
@@ -266,10 +279,10 @@ export default function UserProfileDetailScreen() {
                 }}
                 onCommentPress={(postId) => setCommentPostId(postId)}
                 onSharePress={share.openSheet}
-                onSaveChange={(postId, isSaved) => {
+                onSaveChange={(postId, isSaved, savesCount) => {
                   setPosts((prev) =>
                     prev.map((p) =>
-                      p.id === postId ? { ...p, isSaved } : p
+                      p.id === postId ? { ...p, isSaved, savesCount } : p
                     )
                   );
                 }}
@@ -424,9 +437,24 @@ export default function UserProfileDetailScreen() {
                 {closeFriendLabel}
               </Button>
             </View>
-            <Button variant="outline" onPress={handleBlockUser} disabled={acting}>
-              Block user
-            </Button>
+            <View className="flex-row gap-2">
+              <Button
+                variant="outline"
+                onPress={handleBlockUser}
+                disabled={acting}
+                className="flex-1"
+              >
+                Block user
+              </Button>
+              <Button
+                variant="outline"
+                onPress={handleReportUser}
+                disabled={acting}
+                className="flex-1"
+              >
+                Report
+              </Button>
+            </View>
             {relationship ? (
               <View className="p-3 rounded-lg bg-surface-muted-light dark:bg-surface-muted-dark">
                 <Text variant="muted">
@@ -462,6 +490,7 @@ export default function UserProfileDetailScreen() {
       />
 
       {share.modals}
+      {report.modal}
     </ScreenContainer>
   );
 }

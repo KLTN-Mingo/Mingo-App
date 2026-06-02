@@ -7,11 +7,12 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  TextInput,
   TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
 
 import { CommentComposer } from "@/components/post/CommentComposer";
 import { PostCard } from "@/components/post/PostCard";
@@ -20,12 +21,19 @@ import { ArrowIcon } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
+import { ReportEntityType } from "@/dtos";
+import { useReport } from "@/hooks/use-report";
 import { useAuth } from "@/context/AuthContext";
-import { CommentResponseDto, PostResponseDto, UserMinimalDto } from "@/dtos";
+import { CommentResponseDto, CultureTermDto, PostDetailDto, PostResponseDto, UserMinimalDto } from "@/dtos";
 import { useSharePost } from "@/hooks/use-share-post";
 import { commentService } from "@/services/comment.service";
+import { cultureService } from "@/services/culture.service";
 import { postService } from "@/services/post.service";
-import { colors } from "@/styles/colors";
+import { colors, getSemantic } from "@/styles/colors";
+
+type CommentTreeNode = CommentResponseDto & {
+  children: CommentTreeNode[];
+};
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,15 +41,21 @@ export default function PostDetailScreen() {
   const colorScheme = useColorScheme();
   const themeColors =
     colorScheme === "dark" ? paletteDark : paletteLight;
+  const semantic = getSemantic(colorScheme === "dark" ? "dark" : "light");
+  const report = useReport();
 
   const [post, setPost] = useState<PostResponseDto | null>(null);
   const [comments, setComments] = useState<CommentResponseDto[]>([]);
+  const [cultureTerms, setCultureTerms] = useState<CultureTermDto[]>([]);
   const [loadingPost, setLoadingPost] = useState(true);
   const [loadingComments, setLoadingComments] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentDraft, setEditCommentDraft] = useState("");
+  const [replyTarget, setReplyTarget] = useState<CommentResponseDto | null>(null);
+  const [expandedReplyIds, setExpandedReplyIds] = useState<Record<string, boolean>>({});
+  const [loadingReplyIds, setLoadingReplyIds] = useState<Record<string, boolean>>({});
   const inputRef = useRef<TextInput>(null);
 
   const currentUser: UserMinimalDto | null = profile
@@ -76,6 +90,10 @@ export default function PostDetailScreen() {
     try {
       const data = await postService.getPostById(id);
       setPost(data);
+      cultureService
+        .getPostCultureTerms(id)
+        .then((terms) => setCultureTerms(terms))
+        .catch((e) => console.warn("[culture] load terms failed", e));
     } catch (err) {
       console.warn("Cannot load post:", err);
     } finally {
@@ -103,14 +121,33 @@ export default function PostDetailScreen() {
   const handleSubmitComment = async () => {
     const text = commentText.trim();
     if (!text || submitting) return;
+    if (!id) return;
 
     setSubmitting(true);
     try {
-      const newComment = await commentService.createComment(id!, {
-        contentText: text,
-      });
-      setComments((prev) => [newComment, ...prev]);
+      if (replyTarget) {
+        const newReply = await commentService.createReply(id, replyTarget.id, {
+          contentText: text,
+          parentCommentId: replyTarget.id,
+          originalCommentId: replyTarget.originalCommentId ?? replyTarget.id,
+        });
+        setComments((prev) => [newReply, ...prev]);
+        setExpandedReplyIds((prev) => ({ ...prev, [replyTarget.id]: true }));
+        setComments((prev) =>
+          prev.map((c) =>
+            c.id === replyTarget.id
+              ? { ...c, repliesCount: c.repliesCount + 1 }
+              : c
+          )
+        );
+      } else {
+        const newComment = await commentService.createComment(id, {
+          contentText: text,
+        });
+        setComments((prev) => [newComment, ...prev]);
+      }
       setCommentText("");
+      setReplyTarget(null);
       if (post) {
         setPost({ ...post, commentsCount: post.commentsCount + 1 });
       }
@@ -120,6 +157,34 @@ export default function PostDetailScreen() {
       setSubmitting(false);
     }
   };
+
+  const buildCommentTree = useCallback((items: CommentResponseDto[]): CommentTreeNode[] => {
+    const map = new Map<string, CommentTreeNode>();
+    const roots: CommentTreeNode[] = [];
+
+    items.forEach((item) => {
+      map.set(item.id, { ...item, children: [] });
+    });
+
+    map.forEach((node) => {
+      if (node.parentCommentId && map.has(node.parentCommentId)) {
+        map.get(node.parentCommentId)?.children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    const sortByDateAsc = (a: CommentTreeNode, b: CommentTreeNode) =>
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+
+    const sortRecursive = (nodes: CommentTreeNode[]) => {
+      nodes.sort(sortByDateAsc);
+      nodes.forEach((node) => sortRecursive(node.children));
+    };
+    sortRecursive(roots);
+
+    return roots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, []);
 
   const handleLikeComment = async (comment: CommentResponseDto) => {
     const newIsLiked = !comment.isLiked;
@@ -229,6 +294,16 @@ export default function PostDetailScreen() {
           }
         },
       },
+      {
+        text: "Báo cáo",
+        style: "destructive",
+        onPress: () =>
+          report.openReport({
+            entityType: ReportEntityType.POST,
+            entityId: p.id,
+            entityLabel: "bài viết này",
+          }),
+      },
       { text: "Cancel", style: "cancel" },
     ]);
   };
@@ -280,24 +355,104 @@ export default function PostDetailScreen() {
     }
   };
 
-  const renderComment = ({ item }: { item: CommentResponseDto }) => {
+  const commentTree = buildCommentTree(comments);
+
+  const handleToggleReplies = useCallback(
+    async (commentId: string, hasLoadedReplies: boolean) => {
+      const isExpanded = !!expandedReplyIds[commentId];
+      if (isExpanded) {
+        setExpandedReplyIds((prev) => ({ ...prev, [commentId]: false }));
+        return;
+      }
+
+      if (!hasLoadedReplies && !loadingReplyIds[commentId]) {
+        setLoadingReplyIds((prev) => ({ ...prev, [commentId]: true }));
+        try {
+          const data = await commentService.getCommentReplies(commentId, 1, 50);
+          setComments((prev) => {
+            const existingIds = new Set(prev.map((c) => c.id));
+            const newReplies = data.comments.filter((r) => !existingIds.has(r.id));
+            if (newReplies.length === 0) return prev;
+            return [...prev, ...newReplies];
+          });
+        } catch (err) {
+          console.warn("Cannot load replies:", err);
+        } finally {
+          setLoadingReplyIds((prev) => ({ ...prev, [commentId]: false }));
+        }
+      }
+
+      setExpandedReplyIds((prev) => ({ ...prev, [commentId]: true }));
+    },
+    [expandedReplyIds, loadingReplyIds]
+  );
+
+  const renderCommentNode = (
+    item: CommentTreeNode,
+    depth = 0
+  ): React.ReactElement => {
     const isEditing = editingCommentId === item.id;
     const isOwner = currentUser?.id && item.userId === currentUser.id;
+    const isReplyNode = depth > 0;
+    const parentName =
+      isReplyNode && item.parentCommentId
+        ? comments.find((c) => c.id === item.parentCommentId)?.user?.name
+        : undefined;
+
+    const uiDepth = Math.min(depth, 2);
+    const shownReplyCount = Math.max(item.repliesCount ?? 0, item.children.length);
+    const hasReplies = shownReplyCount > 0;
+    const isExpanded = !!expandedReplyIds[item.id];
+    const isLoadingReplies = !!loadingReplyIds[item.id];
 
     return (
-      <CommentThreadItem
-        comment={item}
-        colors={themeColors}
-        formatTime={formatTime}
-        isEditing={isEditing}
-        editDraft={editCommentDraft}
-        onEditDraftChange={setEditCommentDraft}
-        onLike={() => handleLikeComment(item)}
-        onReply={() => inputRef.current?.focus()}
-        onDelete={isOwner ? () => handleDeleteComment(item) : undefined}
-        onSaveEdit={() => handleSaveEditComment(item.id)}
-        onCancelEdit={handleCancelEditComment}
-      />
+      <View key={item.id}>
+        <View style={{ marginLeft: uiDepth * 24 }}>
+          <CommentThreadItem
+            comment={item}
+            colors={themeColors}
+            formatTime={formatTime}
+            isEditing={isEditing}
+            editDraft={editCommentDraft}
+            onEditDraftChange={setEditCommentDraft}
+            onLike={() => handleLikeComment(item)}
+            onReply={() => {
+              setReplyTarget(item);
+              inputRef.current?.focus();
+            }}
+            mentionName={parentName}
+            onDelete={isOwner ? () => handleDeleteComment(item) : undefined}
+            onSaveEdit={() => handleSaveEditComment(item.id)}
+            onCancelEdit={handleCancelEditComment}
+          />
+        </View>
+        {hasReplies ? (
+          <View
+            style={{
+              marginLeft: uiDepth * 24 + 56,
+              marginTop: -2,
+              marginBottom: 4,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => handleToggleReplies(item.id, item.children.length > 0)}
+              disabled={isLoadingReplies}
+              activeOpacity={0.7}
+            >
+              <Text className="text-xs" style={{ color: themeColors.textMuted }}>
+                {isLoadingReplies
+                  ? "Loading replies..."
+                  : isExpanded
+                    ? "Hide replies"
+                    : `View ${shownReplyCount} replies`}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+        {isExpanded
+          ? item.children.map((child) => renderCommentNode(child, depth + 1))
+          : null}
+      </View>
     );
   };
 
@@ -315,6 +470,8 @@ export default function PostDetailScreen() {
         <PostCard
           post={post}
           currentUser={currentUser}
+          hiddenReason={(post as PostDetailDto).hiddenReason}
+          cultureTerms={cultureTerms}
           onLikeChange={(postId, isLiked) =>
             setPost((prev) =>
               prev
@@ -334,16 +491,18 @@ export default function PostDetailScreen() {
             )
           }
           onSharePress={share.openSheet}
-          onSaveChange={(postId, isSaved) =>
+          onSaveChange={(postId, isSaved, savesCount) =>
             setPost((prev) =>
-              prev && prev.id === postId ? { ...prev, isSaved } : prev
+              prev && prev.id === postId
+                ? { ...prev, isSaved, savesCount }
+                : prev
             )
           }
           onCommentPress={() => inputRef.current?.focus()}
           onMorePress={handlePostMorePress}
         />
         <View
-          className="px-4 py-3 border-b border-border-dark"
+          className="px-4 py-3 border-b"
           style={{ borderBottomColor: themeColors.border }}
         >
           <Text
@@ -360,16 +519,24 @@ export default function PostDetailScreen() {
   };
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-background-dark"
-      edges={["top"]}
+    <ScreenContainer
+      horizontalPadding="none"
+      style={{ paddingBottom: 0, backgroundColor: semantic.background }}
     >
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 bg-surface-dark border-b border-border-dark">
+      <View
+        className="flex-row items-center px-4 py-3 border-b"
+        style={{
+          backgroundColor: semantic.surface,
+          borderBottomColor: semantic.border,
+        }}
+      >
         <TouchableOpacity onPress={() => router.replace("/(tabs)/home" as any)} className="mr-3 p-1">
-          <ArrowIcon size={22} color={colors.dark[100]} />
+          <ArrowIcon size={22} color={semantic.text} />
         </TouchableOpacity>
-        <Text className="font-semibold text-lg text-text-dark">Post</Text>
+        <Text className="font-semibold text-lg" style={{ color: semantic.text }}>
+          Post
+        </Text>
       </View>
 
       <KeyboardAvoidingView
@@ -379,10 +546,11 @@ export default function PostDetailScreen() {
       >
         {/* Comments list */}
         <FlatList
-          data={comments}
+          data={commentTree}
           keyExtractor={(item) => item.id}
-          renderItem={renderComment}
+          renderItem={({ item }) => renderCommentNode(item)}
           ListHeaderComponent={<ListHeader />}
+          style={{ backgroundColor: semantic.background }}
           ListEmptyComponent={
             loadingComments ? (
               <View className="py-8 items-center">
@@ -404,11 +572,16 @@ export default function PostDetailScreen() {
           onSubmit={handleSubmitComment}
           submitting={submitting}
           inputRef={inputRef}
-          placeholder="Write comment..."
+          placeholder={
+            replyTarget
+              ? `Reply to ${replyTarget.user?.name ?? "this comment"}...`
+              : "Write comment..."
+          }
         />
       </KeyboardAvoidingView>
 
       {share.modals}
-    </SafeAreaView>
+      {report.modal}
+    </ScreenContainer>
   );
 }

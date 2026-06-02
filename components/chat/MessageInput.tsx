@@ -52,6 +52,7 @@ interface MessageInputProps {
   onSend: (content: string) => Promise<void> | void;
   onSendFile?: (file: PickedFileLike) => Promise<void> | void;
   onOpenMic?: () => void;
+  onTypingActivity?: () => void;
   placeholder?: string;
   disabled?: boolean;
 }
@@ -60,6 +61,7 @@ export function MessageInput({
   onSend,
   onSendFile,
   onOpenMic,
+  onTypingActivity,
   placeholder = "Aa...",
   disabled = false,
 }: MessageInputProps) {
@@ -436,12 +438,15 @@ export function MessageInput({
               disabled={disabled || fileBusy || sending}
               style={{ opacity: disabled || fileBusy || sending ? 0.5 : 1 }}
             >
-              <MicroIcon size={28} color={iconColor} onClick={handleMicro} />
+              <MicroIcon size={28} color={iconColor} />
             </TouchableOpacity>
 
             <TextInput
               value={text}
-              onChangeText={setText}
+              onChangeText={(t) => {
+                setText(t);
+                if (t.length > 0) onTypingActivity?.();
+              }}
               placeholder={placeholder}
               placeholderTextColor={placeholderColor}
               multiline

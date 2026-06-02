@@ -144,6 +144,85 @@ export function useChatMessages(
     });
   }, []);
 
+  /** Cập nhật 1 message khi BE bắn `message:updated` (edit/recall). */
+  const replaceMessage = useCallback((updated: MessageResponseDto) => {
+    setAllMessages((prev) =>
+      prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
+    );
+    setMessages((prev) =>
+      prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
+    );
+  }, []);
+
+  /** Đánh dấu message bị thu hồi (xóa từ phía user). */
+  const markMessageRevoked = useCallback((messageId: string) => {
+    setAllMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId ? { ...m, isRevoked: true, content: "" } : m
+      )
+    );
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId ? { ...m, isRevoked: true, content: "" } : m
+      )
+    );
+  }, []);
+
+  /** PATCH /messages/:id/edit — sửa text message. */
+  const editMessage = useCallback(
+    async (messageId: string, newContent: string) => {
+      try {
+        const res = await messageService.editMessage(messageId, newContent);
+        if (res.message) {
+          replaceMessage({
+            id: res.message.id,
+            conversationId: res.message.boxId,
+            senderId: res.message.createBy,
+            content: res.message.text ?? newContent,
+            createdAt: res.message.createAt,
+            updatedAt: new Date().toISOString(),
+            isRevoked: false,
+            readBy: res.message.readedId ?? [],
+          });
+        } else {
+          // Fallback: cập nhật in-place.
+          setAllMessages((prev) =>
+            prev.map((m) =>
+              m.id === messageId
+                ? { ...m, content: newContent, updatedAt: new Date().toISOString() }
+                : m
+            )
+          );
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === messageId
+                ? { ...m, content: newContent, updatedAt: new Date().toISOString() }
+                : m
+            )
+          );
+        }
+      } catch (err) {
+        console.error("[chat] edit message failed", err);
+        throw err;
+      }
+    },
+    [replaceMessage]
+  );
+
+  /** DELETE /messages/:id — recall (revoke) tin nhắn. */
+  const recallMessage = useCallback(
+    async (messageId: string) => {
+      try {
+        await messageService.deleteOrRevokeMessage(messageId, "revoke");
+        markMessageRevoked(messageId);
+      } catch (err) {
+        console.error("[chat] recall message failed", err);
+        throw err;
+      }
+    },
+    [markMessageRevoked]
+  );
+
   return {
     messages,
     isLoading,
@@ -156,5 +235,9 @@ export function useChatMessages(
     sendFile,
     markAsRead,
     appendMessage,
+    replaceMessage,
+    markMessageRevoked,
+    editMessage,
+    recallMessage,
   };
 }
