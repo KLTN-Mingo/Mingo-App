@@ -917,7 +917,6 @@ export function MessageInput({
     let destUri: string | null = null;
 
     try {
-      // Lấy duration trước khi stop
       const status = await activeRecording.getStatusAsync();
       const durationMillis =
         typeof (status as any).durationMillis === "number"
@@ -929,6 +928,9 @@ export function MessageInput({
           : durationRef.current;
 
       await activeRecording.stopAndUnloadAsync();
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
       const recordingUri = activeRecording.getURI();
 
       await Audio.setAudioModeAsync({
@@ -946,11 +948,9 @@ export function MessageInput({
       const audioType = isIOS ? "audio/m4a" : "audio/mp4";
       const fileName = `voice_${Date.now()}.${audioExt}`;
 
-      // Copy file sang documentDirectory để XHR đọc được
       destUri = `${FileSystem.documentDirectory}${fileName}`;
       await FileSystem.copyAsync({ from: recordingUri, to: destUri });
 
-      // Kiểm tra file tồn tại sau khi copy
       const fileInfo = await FileSystem.getInfoAsync(destUri);
       console.log("Audio file info:", JSON.stringify(fileInfo));
       if (!fileInfo.exists) {
@@ -968,7 +968,6 @@ export function MessageInput({
       console.error("Error stopping recording:", error);
       Alert.alert("Recording error", "Unable to send voice message.");
     } finally {
-      // Cleanup file tạm
       if (destUri) {
         await FileSystem.deleteAsync(destUri, { idempotent: true }).catch(
           () => undefined

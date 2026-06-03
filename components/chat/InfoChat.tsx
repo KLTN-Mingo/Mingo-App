@@ -1,4 +1,3 @@
-import { chatTheme } from "@/constants/chatTheme";
 import {
   ArrowIcon,
   BlockIcon,
@@ -12,6 +11,7 @@ import {
   UserIcon,
 } from "@/components/shared/icons/Icons";
 import { Avatar } from "@/components/ui";
+import { chatTheme } from "@/constants/chatTheme";
 import { useAuth } from "@/context/AuthContext";
 import type { ChatConversationDto } from "@/dtos";
 import { ConversationType } from "@/dtos";
@@ -89,7 +89,9 @@ export function InfoChat({
   const textColor = isDark ? chatTheme.textDark : chatTheme.textLight;
   const bgColor = isDark ? chatTheme.bgDark : chatTheme.bgLight;
   const iconColor = isDark ? chatTheme.textDark : chatTheme.textMuted;
-  const surfaceColor = isDark ? chatTheme.componentDark : chatTheme.componentLight;
+  const surfaceColor = isDark
+    ? chatTheme.componentDark
+    : chatTheme.componentLight;
 
   const isGroup = conversation?.type === ConversationType.GROUP;
 
@@ -334,11 +336,15 @@ export function InfoChat({
               {member.name ?? "Unknown"}
             </Text>
             {isSelf && (
-              <Text style={{ color: chatTheme.textMuted, fontSize: 12 }}>(You)</Text>
+              <Text style={{ color: chatTheme.textMuted, fontSize: 12 }}>
+                (You)
+              </Text>
             )}
           </View>
           {member.role === "admin" && (
-            <Text style={{ color: chatTheme.accent, fontSize: 12, marginTop: 1 }}>
+            <Text
+              style={{ color: chatTheme.accent, fontSize: 12, marginTop: 1 }}
+            >
               Admin
             </Text>
           )}
@@ -363,7 +369,9 @@ export function InfoChat({
           paddingVertical: 10,
           paddingHorizontal: 4,
           borderBottomWidth: 1,
-          borderBottomColor: isDark ? chatTheme.dividerDark : chatTheme.dividerLight,
+          borderBottomColor: isDark
+            ? chatTheme.dividerDark
+            : chatTheme.dividerLight,
         }}
       >
         <Avatar
@@ -391,7 +399,13 @@ export function InfoChat({
           }}
         >
           {selected && (
-            <Text style={{ color: chatTheme.accentText, fontSize: 13, fontWeight: "700" }}>
+            <Text
+              style={{
+                color: chatTheme.accentText,
+                fontSize: 13,
+                fontWeight: "700",
+              }}
+            >
               ✓
             </Text>
           )}
@@ -583,7 +597,9 @@ export function InfoChat({
                         flexDirection: "row",
                         alignItems: "center",
                         gap: 4,
-                        backgroundColor: isDark ? chatTheme.inputBgDark : chatTheme.inputBgLight,
+                        backgroundColor: isDark
+                          ? chatTheme.inputBgDark
+                          : chatTheme.inputBgLight,
                         paddingHorizontal: 12,
                         paddingVertical: 6,
                         borderRadius: 999,
@@ -795,7 +811,11 @@ export function InfoChat({
                   <ArrowIcon size={24} color={chatTheme.dangerMuted} />
                 </View>
                 <Text
-                  style={{ color: chatTheme.dangerMuted, fontSize: 16, marginLeft: 12 }}
+                  style={{
+                    color: chatTheme.dangerMuted,
+                    fontSize: 16,
+                    marginLeft: 12,
+                  }}
                 >
                   Leave group
                 </Text>
@@ -813,7 +833,13 @@ export function InfoChat({
               }}
             >
               <TrashIcon size={24} color={iconColor} />
-              <Text style={{ color: chatTheme.danger, fontSize: 16, marginLeft: 12 }}>
+              <Text
+                style={{
+                  color: chatTheme.danger,
+                  fontSize: 16,
+                  marginLeft: 12,
+                }}
+              >
                 Remove chat
               </Text>
             </TouchableOpacity>
@@ -856,7 +882,11 @@ export function InfoChat({
               </Text>
               <TouchableOpacity onPress={() => setShowAddMemberModal(false)}>
                 <Text
-                  style={{ color: chatTheme.dangerMuted, fontSize: 28, fontWeight: "300" }}
+                  style={{
+                    color: chatTheme.dangerMuted,
+                    fontSize: 28,
+                    fontWeight: "300",
+                  }}
                 >
                   ×
                 </Text>
@@ -868,7 +898,9 @@ export function InfoChat({
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                backgroundColor: isDark ? chatTheme.inputBgDark : chatTheme.inputBgLight,
+                backgroundColor: isDark
+                  ? chatTheme.inputBgDark
+                  : chatTheme.inputBgLight,
                 borderRadius: 10,
                 paddingHorizontal: 12,
                 marginBottom: 12,
@@ -927,7 +959,9 @@ export function InfoChat({
                 onPress={handleAddMembers}
                 disabled={addingMembers}
                 style={{
-                  backgroundColor: addingMembers ? chatTheme.textMuted : chatTheme.accent,
+                  backgroundColor: addingMembers
+                    ? chatTheme.textMuted
+                    : chatTheme.accent,
                   borderRadius: 10,
                   paddingVertical: 14,
                   alignItems: "center",
@@ -935,7 +969,7 @@ export function InfoChat({
                 }}
               >
                 <Text
-                  style={{ color: chatTheme.accentText, fontSize: 16, fontWeight: "600" }}
+                  style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}
                 >
                   {addingMembers
                     ? "Adding..."
@@ -968,7 +1002,9 @@ export function InfoChat({
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: isDark ? chatTheme.sheetDark : chatTheme.sheetLight,
+            backgroundColor: isDark
+              ? chatTheme.sheetDark
+              : chatTheme.sheetLight,
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingBottom: 36,
@@ -981,7 +1017,9 @@ export function InfoChat({
               width: 40,
               height: 4,
               borderRadius: 2,
-              backgroundColor: isDark ? chatTheme.handleDark : chatTheme.handleLight,
+              backgroundColor: isDark
+                ? chatTheme.handleDark
+                : chatTheme.handleLight,
               alignSelf: "center",
               marginBottom: 20,
             }}
@@ -1033,7 +1071,9 @@ export function InfoChat({
                   fontSize: 12,
                   fontWeight: "600",
                   color:
-                    selectedMember?.role === "admin" ? chatTheme.accent : chatTheme.textMuted,
+                    selectedMember?.role === "admin"
+                      ? chatTheme.accent
+                      : chatTheme.textMuted,
                 }}
               >
                 {selectedMember?.role === "admin" ? "Admin" : "Member"}
@@ -1045,7 +1085,9 @@ export function InfoChat({
           <View
             style={{
               height: 1,
-              backgroundColor: isDark ? chatTheme.dividerDark : chatTheme.dividerLight,
+              backgroundColor: isDark
+                ? chatTheme.dividerDark
+                : chatTheme.dividerLight,
               marginBottom: 8,
             }}
           />
@@ -1083,7 +1125,13 @@ export function InfoChat({
                 >
                   Make Admin
                 </Text>
-                <Text style={{ color: chatTheme.textMuted, fontSize: 12, marginTop: 2 }}>
+                <Text
+                  style={{
+                    color: chatTheme.textMuted,
+                    fontSize: 12,
+                    marginTop: 2,
+                  }}
+                >
                   Grant admin permissions
                 </Text>
               </View>
@@ -1109,7 +1157,9 @@ export function InfoChat({
                   width: 40,
                   height: 40,
                   borderRadius: 20,
-                  backgroundColor: isDark ? chatTheme.dividerDark : chatTheme.dividerLight,
+                  backgroundColor: isDark
+                    ? chatTheme.dividerDark
+                    : chatTheme.dividerLight,
                   alignItems: "center",
                   justifyContent: "center",
                   marginRight: 16,
@@ -1123,7 +1173,13 @@ export function InfoChat({
                 >
                   Remove Admin
                 </Text>
-                <Text style={{ color: chatTheme.textMuted, fontSize: 12, marginTop: 2 }}>
+                <Text
+                  style={{
+                    color: chatTheme.textMuted,
+                    fontSize: 12,
+                    marginTop: 2,
+                  }}
+                >
                   Revoke admin permissions
                 </Text>
               </View>
@@ -1134,7 +1190,9 @@ export function InfoChat({
           <View
             style={{
               height: 1,
-              backgroundColor: isDark ? chatTheme.dividerDark : chatTheme.dividerLight,
+              backgroundColor: isDark
+                ? chatTheme.dividerDark
+                : chatTheme.dividerLight,
               marginVertical: 8,
             }}
           />
@@ -1167,11 +1225,21 @@ export function InfoChat({
             </View>
             <View>
               <Text
-                style={{ color: chatTheme.danger, fontSize: 15, fontWeight: "600" }}
+                style={{
+                  color: chatTheme.danger,
+                  fontSize: 15,
+                  fontWeight: "600",
+                }}
               >
                 Remove from group
               </Text>
-              <Text style={{ color: chatTheme.textMuted, fontSize: 12, marginTop: 2 }}>
+              <Text
+                style={{
+                  color: chatTheme.textMuted,
+                  fontSize: 12,
+                  marginTop: 2,
+                }}
+              >
                 Kick this member out
               </Text>
             </View>
@@ -1183,7 +1251,9 @@ export function InfoChat({
             style={{
               marginHorizontal: 16,
               marginTop: 12,
-              backgroundColor: isDark ? chatTheme.cancelBgDark : chatTheme.cancelBgLight,
+              backgroundColor: isDark
+                ? chatTheme.cancelBgDark
+                : chatTheme.cancelBgLight,
               borderRadius: 14,
               paddingVertical: 15,
               alignItems: "center",

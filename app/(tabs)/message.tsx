@@ -20,7 +20,6 @@ import { useChatList } from "@/hooks/use-chat-list";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { FriendOnlineItem, messageService } from "@/services/message.service";
 
-// Old Mingo_App colors for matching list UI
 const chatColors = {
   dark: {
     100: "#CFBFAD",
@@ -77,8 +76,6 @@ export default function MessageScreen() {
       );
 
       if (isNew) {
-        // boxId = friend.id (userId) khi isNew=true — box thật chưa tồn tại trên server
-        // Tạo placeholder để ChatScreen hiển thị đúng tên/avatar
         const placeholder: ChatConversationDto = {
           id: boxId,
           type: ConversationType.DM,
@@ -158,7 +155,6 @@ export default function MessageScreen() {
             flex: 1,
           }}
         >
-          {/* Header row: "Messages" */}
           <View
             style={{
               flexDirection: "row",
@@ -180,7 +176,6 @@ export default function MessageScreen() {
             </Text>
           </View>
 
-          {/* Search row */}
           <View
             style={{
               flexDirection: "row",
@@ -202,7 +197,6 @@ export default function MessageScreen() {
             </View>
           </View>
 
-          {/* Friends row */}
           {(friendsLoading || friends.length > 0) && (
             <View style={{ backgroundColor: colors[500] }}>
               {friendsLoading ? (
@@ -281,7 +275,6 @@ export default function MessageScreen() {
             </View>
           )}
 
-          {/* Tab bar */}
           <View
             style={{
               flexDirection: "row",

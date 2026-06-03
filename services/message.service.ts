@@ -147,16 +147,19 @@ function getFormatFromFileName(name?: string | null): string {
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 class MessageServiceClass {
-  private async getAuthHeaders(
-    omitContentType?: boolean
-  ): Promise<Record<string, string>> {
-    const token = await AsyncStorage.getItem("accessToken");
+  private async getAuthHeaders(isFormData: boolean): Promise<Record<string, string>> {
+    const token = await authService.getAccessToken();
+    
     const headers: Record<string, string> = {
       Authorization: `Bearer ${token}`,
     };
-    if (!omitContentType) {
+  
+    // CHỈ set application/json khi không phải là FormData
+    if (!isFormData) {
       headers["Content-Type"] = "application/json";
     }
+    // Nếu là FormData, TUYỆT ĐỐI không định nghĩa Content-Type, để fetch tự xử lý
+  
     return headers;
   }
 
@@ -295,7 +298,8 @@ class MessageServiceClass {
       },
     });
     const json = await response.json();
-    if (!response.ok) throw new Error(json.message ?? "Failed to fetch friends");
+    if (!response.ok)
+      throw new Error(json.message ?? "Failed to fetch friends");
     return (json.data?.friends ?? []) as FriendOnlineItem[];
   }
 
@@ -468,23 +472,23 @@ class MessageServiceClass {
 
   /** GET /boxes/:boxId/detail — group members and info */
   async getGroupDetail(boxId: string): Promise<{
-    members: Array<{
+    members: {
       id: string;
       name?: string;
       avatarUrl?: string;
       role: "admin" | "member";
-    }>;
+    }[];
   }> {
     const data = await this.request<{
       group: {
-        members: Array<{
+        members: {
           _id: string;
           name?: string;
           avatar?: string;
           phoneNumber?: string;
           onlineStatus?: boolean;
-        }>;
-        adminIds: Array<{ _id: string }>;
+        }[];
+        adminIds: { _id: string }[];
       };
     }>("GET", `/boxes/${encodeURIComponent(boxId)}/detail`);
 

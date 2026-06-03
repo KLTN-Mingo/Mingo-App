@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
 export type PickedMedia = {
@@ -73,11 +74,24 @@ export async function pickFromCamera(): Promise<PickedMedia | null> {
     if (!result || result.canceled || !result.assets[0]) return null;
 
     const asset = result.assets[0];
+    
+    // 1. Chuẩn hóa URI: Đảm bảo luôn có tiền tố file:// đúng chuẩn hệ điều hành
+    let cleanUri = asset.uri;
+    if (Platform.OS === "android" && !cleanUri.startsWith("file://")) {
+      cleanUri = `file://${cleanUri}`;
+    }
+
+    // 2. Xác định phần mở rộng (extension) để làm tên file và định dạng MIME chuẩn
+    const filename = asset.fileName ?? cleanUri.split("/").pop() ?? "photo.jpg";
+    const ext = filename.split(".").pop()?.toLowerCase() ?? "jpg";
+    
+    // Định nghĩa MIME type an toàn tuyệt đối cho ảnh chụp từ camera
+    const mimeType = asset.mimeType ?? `image/${ext === "png" ? "png" : "jpeg"}`;
+
     return {
-      uri: asset.uri,
-      // ✅ Fix tương tự
-      type: asset.mimeType ?? getMimeType(asset.uri, asset.type),
-      name: asset.fileName ?? asset.uri.split("/").pop() ?? "photo.jpg",
+      uri: cleanUri,
+      type: mimeType,
+      name: filename,
     };
   } catch (error) {
     console.error("Error opening camera:", error);

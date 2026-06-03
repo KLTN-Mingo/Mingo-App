@@ -337,7 +337,6 @@ export function MessageBubble({
   const handleRevoke = async () => {
     setActionVisible(false);
 
-    // Snapshot để rollback nếu API fail
     const snapshot = { ...message };
     onMessageRevoked?.(message.id);
 
@@ -352,7 +351,6 @@ export function MessageBubble({
   const handleDelete = async () => {
     setActionVisible(false);
 
-    // Snapshot để rollback nếu API fail
     const snapshot = { ...message };
     onMessageDeleted?.(message.id);
 
@@ -378,14 +376,12 @@ export function MessageBubble({
     const newContent = editText.trim();
     const oldContent = message.content ?? "";
 
-    // Optimistic update: cập nhật UI ngay lập tức
     onMessageEdited?.(message.id, newContent);
     setEditVisible(false);
 
     try {
       await messageService.editMessage(message.id, newContent);
     } catch (err: any) {
-      // Rollback nếu API fail
       onMessageEdited?.(message.id, oldContent);
       Alert.alert("Error", err?.message ?? "Failed to edit message");
     }
@@ -434,42 +430,43 @@ export function MessageBubble({
           )}
 
           <TouchableOpacity
-          onLongPress={() => {
-            if (!isRevoked) setActionVisible(true);
-          }}
-          activeOpacity={0.85}
-          delayLongPress={350}
-        >
-          <View
-            style={[
-              styles.bubble,
-              isOwn ? styles.bubbleOwn : { backgroundColor: otherBubbleBg },
-              { alignSelf: "flex-start" },
-            ]}
+            onLongPress={() => {
+              if (isOwn && !isRevoked) {
+                setActionVisible(true);
+              }
+            }}
+            activeOpacity={isOwn && !isRevoked ? 0.85 : 1}
+            delayLongPress={350}
           >
-            {isRevoked ? (
-              <Text
-                style={[
-                  styles.bubbleText,
-                  isOwn ? styles.textOwn : { color: otherBubbleText },
-                  styles.unsentText,
-                ]}
-              >
-                Message unsent
-              </Text>
-            ) : (
-              <MessageContent
-                message={message}
-                isOwn={isOwn}
-                otherTextColor={otherBubbleText}
-              />
-            )}
-          </View>
-        </TouchableOpacity>
+            <View
+              style={[
+                styles.bubble,
+                isOwn ? styles.bubbleOwn : { backgroundColor: otherBubbleBg },
+                { alignSelf: "flex-start" },
+              ]}
+            >
+              {isRevoked ? (
+                <Text
+                  style={[
+                    styles.bubbleText,
+                    isOwn ? styles.textOwn : { color: otherBubbleText },
+                    styles.unsentText,
+                  ]}
+                >
+                  Message unsent
+                </Text>
+              ) : (
+                <MessageContent
+                  message={message}
+                  isOwn={isOwn}
+                  otherTextColor={otherBubbleText}
+                />
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Action Bottom Sheet */}
       <Modal
         transparent
         animationType="slide"
@@ -506,20 +503,20 @@ export function MessageBubble({
                   <Text style={actionStyles.rowSub}>Remove for everyone</Text>
                 </View>
               </TouchableOpacity>
+
+              <View style={actionStyles.divider} />
+              <TouchableOpacity style={actionStyles.row} onPress={handleDelete}>
+                <View style={actionStyles.contentCenter}>
+                  <Text
+                    style={[actionStyles.rowTitle, { color: chatTheme.danger }]}
+                  >
+                    Delete
+                  </Text>
+                  <Text style={actionStyles.rowSub}>Remove for you only</Text>
+                </View>
+              </TouchableOpacity>
             </>
           )}
-
-          <View style={actionStyles.divider} />
-          <TouchableOpacity style={actionStyles.row} onPress={handleDelete}>
-            <View style={actionStyles.contentCenter}>
-              <Text
-                style={[actionStyles.rowTitle, { color: chatTheme.danger }]}
-              >
-                Delete
-              </Text>
-              <Text style={actionStyles.rowSub}>Remove for you only</Text>
-            </View>
-          </TouchableOpacity>
 
           <TouchableOpacity
             style={actionStyles.cancelBtn}
@@ -530,7 +527,6 @@ export function MessageBubble({
         </View>
       </Modal>
 
-      {/* Edit Modal */}
       <Modal
         transparent
         animationType="fade"
@@ -703,7 +699,7 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   textOther: {
-    color: chatTheme.otherBubbleTextDark, // fallback; dynamic color passed via otherTextColor prop
+    color: chatTheme.otherBubbleTextDark,
   },
   unsentText: {
     fontStyle: "italic",
