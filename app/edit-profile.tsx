@@ -1,20 +1,24 @@
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  TouchableOpacity,
   View,
 } from "react-native";
 
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import HobbySelector from "@/components/shared/ui/hobby-selector";
-import { Button, InfoInput, Text } from "@/components/ui";
-import { PageHeader } from "@/components/ui/PageHeader";
 import {
-  ADDRESS_SUGGESTIONS,
-  RELATIONSHIP_OPTIONS,
-} from "@/constants/editProfileOptions";
+  ActionDatePicker,
+  ActionInput,
+  ActionSelectPicker,
+  Button,
+  Text,
+} from "@/components/ui";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { RELATIONSHIP_OPTIONS } from "@/constants/editProfileOptions";
 import {
   PRESET_HOBBIES,
   PRESET_HOBBY_SET,
@@ -22,13 +26,14 @@ import {
 } from "@/constants/hobbyCatalog";
 import { useAuth } from "@/context/AuthContext";
 import { Gender } from "@/dtos";
+import { useVNLocationSuggestions } from "@/hooks/use-vn-locations";
 import { userService } from "@/services/user.service";
-import { colors } from "@/styles/colors";
+import { paletteIcon } from "@/styles/colors";
 import { authUserFromProfile } from "@/utils/authUserFromProfile";
 
-const GENDER_OPTIONS: { label: string; value: Gender }[] = [
-  { label: "Nam", value: Gender.MALE },
-  { label: "Nữ", value: Gender.FEMALE },
+const GENDER_OPTIONS: { label: string; value: string }[] = [
+  { label: "Male", value: Gender.MALE },
+  { label: "Female", value: Gender.FEMALE },
 ];
 
 function toDateInputValue(iso?: string): string {
@@ -36,6 +41,62 @@ function toDateInputValue(iso?: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return d.toISOString().slice(0, 10);
+}
+
+interface LocationFieldProps {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  placeholder?: string;
+}
+
+function LocationField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: LocationFieldProps) {
+  const [focused, setFocused] = useState(false);
+  const suggestions = useVNLocationSuggestions(focused ? value : "", 6);
+
+  return (
+    <View>
+      <ActionInput
+        label={label}
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        maxLength={255}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          setTimeout(() => setFocused(false), 150);
+        }}
+      />
+      {focused && suggestions.length > 0 ? (
+        <View className="mt-2 rounded-2xl bg-input-light dark:bg-input-dark overflow-hidden">
+          {suggestions.map((item, idx) => (
+            <TouchableOpacity
+              key={item.id}
+              activeOpacity={0.65}
+              onPress={() => {
+                onChange(item.shortLabel);
+                setFocused(false);
+              }}
+              className={`px-4 py-3 ${
+                idx > 0
+                  ? "border-t border-border-light dark:border-border-dark"
+                  : ""
+              }`}
+            >
+              <Text className="text-sm text-text-light dark:text-text-dark">
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 export default function EditProfileScreen() {
@@ -72,8 +133,8 @@ export default function EditProfileScreen() {
           : undefined
       );
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Không tải được hồ sơ";
-      Alert.alert("Lỗi", msg);
+      const msg = e instanceof Error ? e.message : "Failed to load profile";
+      Alert.alert("Error", msg);
     } finally {
       setLoading(false);
     }
@@ -89,20 +150,29 @@ export default function EditProfileScreen() {
     );
   };
 
+  const relationshipOptions = useMemo(
+    () =>
+      RELATIONSHIP_OPTIONS.map((o) => ({
+        label: o.label,
+        value: o.value,
+      })),
+    []
+  );
+
   const handleSave = async () => {
     const trimmed = name.trim();
     if (trimmed.length < 2) {
-      Alert.alert("Lỗi", "Tên cần ít nhất 2 ký tự.");
+      Alert.alert("Error", "Name must be at least 2 characters.");
       return;
     }
     if (!gender) {
-      Alert.alert("Lỗi", "Vui lòng chọn giới tính.");
+      Alert.alert("Error", "Please select your gender.");
       return;
     }
     const hobbies = presetHobbies.filter((h) => PRESET_HOBBY_SET.has(h));
     for (const h of hobbies) {
       if (h.length > 100) {
-        Alert.alert("Lỗi", "Mỗi sở thích tối đa 100 ký tự.");
+        Alert.alert("Error", "Each hobby can be up to 100 characters.");
         return;
       }
     }
@@ -110,7 +180,7 @@ export default function EditProfileScreen() {
     if (dateOfBirth.trim()) {
       const d = new Date(dateOfBirth.trim());
       if (Number.isNaN(d.getTime()) || d > new Date()) {
-        Alert.alert("Lỗi", "Ngày sinh không hợp lệ.");
+        Alert.alert("Error", "Invalid date of birth.");
         return;
       }
       dobIso = d.toISOString();
@@ -128,12 +198,12 @@ export default function EditProfileScreen() {
         gender,
       });
       setProfile(authUserFromProfile(updated));
-      Alert.alert("Thành công", "Đã lưu hồ sơ.", [
+      Alert.alert("Success", "Profile saved.", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Không lưu được";
-      Alert.alert("Lỗi", msg);
+      const msg = e instanceof Error ? e.message : "Failed to save";
+      Alert.alert("Error", msg);
     } finally {
       setSaving(false);
     }
@@ -144,88 +214,75 @@ export default function EditProfileScreen() {
   }
 
   return (
-      <ScreenContainer className="gap-4">
-        <PageHeader title="Chỉnh sửa hồ sơ" />
-        {loading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={colors.primary[100]} />
-          </View>
-        ) : (
-          <ScrollView
-            className="flex-1"
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 32 }}
-          >
-            <View className="gap-2">
-            <InfoInput
-              label="Họ và tên"
-              required
+    <ScreenContainer className="gap-4">
+      <PageHeader title="Edit Profile" />
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={paletteIcon.lightMuted} />
+        </View>
+      ) : (
+        <ScrollView
+          className="flex-1"
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 32 }}
+        >
+          <View className="gap-4">
+            <ActionInput
+              label="Full Name"
               value={name}
               onChangeText={setName}
-              placeholder="Tên hiển thị"
+              placeholder="Display name"
               autoCapitalize="words"
             />
 
-            <InfoInput
-              mode="select"
-              label="Giới tính"
-              required
+            <ActionSelectPicker
+              label="Gender"
               value={gender ?? ""}
               onValueChange={(v) => setGender(v as Gender)}
-              options={GENDER_OPTIONS.map((o) => ({
-                label: o.label,
-                value: String(o.value),
-              }))}
-              placeholder="Chọn giới tính"
+              options={GENDER_OPTIONS}
+              placeholder="Select gender"
             />
 
-            <InfoInput
-              mode="select"
-              label="Tình trạng mối quan hệ"
+            <ActionSelectPicker
+              label="Relationship Status"
               value={relationship}
               onValueChange={setRelationship}
-              options={RELATIONSHIP_OPTIONS}
-              placeholder="Chọn..."
+              options={relationshipOptions}
+              placeholder="Select..."
             />
 
-            <InfoInput
-              label="Công việc"
+            <ActionInput
+              label="Work"
               value={work}
               onChangeText={setWork}
-              placeholder="Nghề nghiệp / công ty"
+              placeholder="Job / Company"
               maxLength={150}
             />
 
-            <InfoInput
-              label="Nơi ở hiện tại"
+            <LocationField
+              label="Current Location"
               value={currentAddress}
-              onChangeText={setCurrentAddress}
-              placeholder="Nhập địa chỉ hoặc chọn gợi ý"
-              maxLength={255}
-              suggestions={ADDRESS_SUGGESTIONS}
-              mapPickEnabled
+              onChange={setCurrentAddress}
+              placeholder="Type to search Vietnam locations"
             />
 
-            <InfoInput
-              label="Quê quán"
+            <LocationField
+              label="Hometown"
               value={hometown}
-              onChangeText={setHometown}
-              placeholder="Nhập hoặc chọn gợi ý"
-              maxLength={255}
-              suggestions={ADDRESS_SUGGESTIONS}
-              mapPickEnabled
+              onChange={setHometown}
+              placeholder="Type to search Vietnam locations"
             />
 
-            <InfoInput
-              mode="date"
-              label="Ngày sinh"
+            <ActionDatePicker
+              label="Date of Birth"
               value={dateOfBirth}
               onValueChange={setDateOfBirth}
+              placeholder="Select date of birth"
             />
 
-            <View className="mt-4">
-              <Text variant="muted" className="mb-2 font-medium">
-                Sở thích
+            <View className="mt-2">
+              <Text className="mb-2 font-medium text-base text-text-light dark:text-text-dark">
+                Hobbies
               </Text>
               <HobbySelector
                 hobbies={PRESET_HOBBIES}
@@ -236,10 +293,10 @@ export default function EditProfileScreen() {
           </View>
 
           <Button className="mt-8" onPress={handleSave} loading={saving}>
-            Lưu thay đổi
+            Save Changes
           </Button>
-          </ScrollView>
-        )}
-      </ScreenContainer>
+        </ScrollView>
+      )}
+    </ScreenContainer>
   );
 }

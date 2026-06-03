@@ -26,9 +26,10 @@ import {
   UserMinimalDto,
 } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSharePost } from "@/hooks/use-share-post";
 import { notificationService } from "@/services/notification.service";
 import { postService } from "@/services/post.service";
-import { colors, getSemantic, getStatusColor } from "@/styles/colors";
+import { getSemantic, getStatusColor } from "@/styles/colors";
 
 const FEED_TABS: { key: FeedTab; label: string }[] = [
   { key: "explore", label: "Khám phá" },
@@ -173,6 +174,24 @@ export default function HomeScreen() {
     );
   };
 
+  const share = useSharePost({
+    currentUserId: profile?.id,
+    onShared: ({ postId, sentCount }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + sentCount } : p
+        )
+      );
+    },
+    onReposted: ({ postId }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
+        )
+      );
+    },
+  });
+
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}` as any);
   };
@@ -299,11 +318,9 @@ export default function HomeScreen() {
         <Text className="mt-4 text-center">{error}</Text>
         <TouchableOpacity
           onPress={handleTryAgain}
-          className="mt-4 bg-primary-100 px-6 py-3 rounded-xl"
+          className="mt-4 bg-primary px-6 py-3 rounded-full"
         >
-          <Text className="text-primary-foreground-light font-semibold">
-            Đăng nhập lại
-          </Text>
+          <Text className="text-white font-semibold">Đăng nhập lại</Text>
         </TouchableOpacity>
       </ScreenContainer>
     );
@@ -319,12 +336,18 @@ export default function HomeScreen() {
           <View className="gap-5 mb-5">
             {/* Header: logo + thông báo */}
             <View className="flex-row items-center justify-between">
-              <Text className="text-[33px] leading-[38px] font-jost">
-                <Text className="font-montserrat-bold text-text-light dark:text-text-dark">
+              <Text style={{ fontFamily: "Montserrat-SemiBold", fontSize: 24 }}>
+                <Text
+                  className="text-text-light dark:text-text-dark"
+                  style={{ fontFamily: "Montserrat-SemiBold", fontSize: 20 }}
+                >
                   Min
                 </Text>
-                <Text className="text-[22px] leading-[23px] text-primary-100 dark:text-primary-100">
-                  go
+                <Text
+                  className="text-primary"
+                  style={{ fontFamily: "Montserrat-SemiBold", fontSize: 20 }}
+                >
+                  gle
                 </Text>
               </Text>
               <TouchableOpacity
@@ -335,7 +358,7 @@ export default function HomeScreen() {
                 <NotificationIcon size={24} color={semantic.text} />
                 {Boolean(notificationCount?.unread) &&
                   notificationCount!.unread > 0 && (
-                    <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full px-1 bg-error-light dark:bg-error-dark border border-white dark:border-background-dark items-center justify-center">
+                    <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full px-1 bg-primary dark:bg-primary-light border border-white dark:border-background-dark items-center justify-center">
                       <Text className="text-[10px] leading-[10px] text-white font-semibold">
                         {notificationCount!.unread > 99
                           ? "99+"
@@ -368,6 +391,7 @@ export default function HomeScreen() {
             onLikeChange={handleLikeChange}
             onCommentPress={handleCommentPress}
             onShareChange={handleShareChange}
+            onSharePress={share.openSheet}
             onSaveChange={handleSaveChange}
             onUserPress={handleUserPress}
             onMorePress={handlePostMorePress}
@@ -378,8 +402,8 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[colors.primary[100]]}
-            tintColor={colors.primary[100]}
+            colors={["#768D85"]}
+            tintColor="#768D85"
           />
         }
         onEndReached={onLoadMore}
@@ -409,6 +433,8 @@ export default function HomeScreen() {
         onClose={() => setCommentPostId(null)}
         onCommentCountChange={handleCommentCountChange}
       />
+
+      {share.modals}
     </ScreenContainer>
   );
 }

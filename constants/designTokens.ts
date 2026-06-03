@@ -1,96 +1,157 @@
 /**
- * Design tokens — Mingle / Mingo
- * Bảng màu theo mockup: dark (charcoal + sage + cream) và light (trắng + xám input + chữ đậm).
+ * Design tokens — Mingo
+ * Theo Mingo UI Design Guide (phiên bản mới)
  */
 
 export type ColorScheme = "light" | "dark";
 
-/** Viền mặc định dùng xuyên app (Tailwind `border-*`, semantic, v.v.) */
-export const BORDER_DEFAULT = "#CCCCCC";
-
-/** Thang màu “dark” (tên gốc từ thiết kế — dùng cho dark mode) */
-export const paletteDark = {
-  100: "#EFE7DF",
-  200: "#252525",
-  300: "#515E5A",
-  400: "#2D2F2F",
-  500: "#1E2021",
+/** Viền mặc định dùng xuyên app */
+export const BORDER_DEFAULT = {
+  light: "#BAC6C2",
+  dark: "#2D2F2F",
 } as const;
 
-/** Thang màu “light” (semantic cho chế độ sáng) */
-export const paletteLight = {
-  100: "#1E2021",
-  200: "#F2F2F2",
-  300: "#515E5A",
-  400: "#F1F4F3",
-  500: "#FFFFFF",
-  700: "#F0F2F5",
-} as const;
-
-
+/** Primary color — Muted sage green */
 export const palettePrimary = {
-  100: "#768D85",
+  light: "#768D85",
+  lightMuted: "#BAC6C2",
+  dark: "#515E5A",
+  darkAccent: "#CFBFAD",
 } as const;
 
-/** Export cho import kiểu colors.dark[100] / colors.light[500] */
+/** Icon colors — Semantic colors for icons */
+export const paletteIcon = {
+  light: "#1E2021",
+  lightMuted: "#6B6B6B",
+  dark: "#FAFAFA",
+  darkMuted: "#6B6B6B",
+} as const;
+
+/** Spacing scale */
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+} as const;
+
+/** Border radius scale */
+export const radius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  full: 9999,
+} as const;
+
+/** Thang màu light mode */
+export const paletteLight = {
+  background: "#FFFFFF",
+  surface: "#F1F4F3",
+  surfaceLight: "#FAFAFA",
+  surfaceMuted: "#F1F4F3",
+  surfaceElevated: "#FFFFFF",
+  textPrimary: "#1E2021",
+  textSecondary: "#6B6B6B",
+  textMuted: "#CCCCCC",
+  border: "#BAC6C2",
+  borderSubtle: "#F1F4F3",
+  white: "#FFFFFF",
+  danger: "#EF4444",
+  online: "#22C55E",
+} as const;
+
+/** Thang màu dark mode */
+export const paletteDark = {
+  background: "#1E2021",
+  surface: "#252525",
+  surfaceLight: "#2D2F2F",
+  surfaceMuted: "#252525",
+  surfaceElevated: "#2D2F2F",
+  textPrimary: "#FAFAFA",
+  textSecondary: "#6B6B6B",
+  textMuted: "#CCCCCC",
+  border: "#2D2F2F",
+  borderAccent: "#515E5A",
+  white: "#FFFFFF",
+  danger: "#FF453A",
+  online: "#22C55E",
+} as const;
+
+/** Export cho import kiểu colors.light.textPrimary */
 export const colors = {
   primary: { ...palettePrimary },
-  dark: { ...paletteDark },
   light: { ...paletteLight },
-} as const;
-
-/** Nền khối UI (search, outline button, …) — light #F1F4F3 / dark #2D2F2F */
-export const componentBackground = {
-  light: "#F1F4F3",
-  dark: "#2D2F2F",
+  dark: { ...paletteDark },
 } as const;
 
 export type SemanticColors = {
   background: string;
   surface: string;
+  surfaceLight: string;
   surfaceMuted: string;
-  /** Nền component (khớp `bg-component-light` / `dark:bg-component-dark`) */
-  componentBackground: string;
-  input: string;
+  surfaceElevated: string;
   text: string;
   textMuted: string;
+  textSecondary: string;
   border: string;
-  pillBorder: string;
+  borderSubtle: string;
   primary: string;
+  primaryMuted: string;
   onPrimary: string;
   placeholder: string;
+  danger: string;
+  online: string;
+  white: string;
+  icon: string;
+  iconMuted: string;
 };
 
 export function getSemantic(scheme: ColorScheme): SemanticColors {
   if (scheme === "dark") {
     return {
-      background: paletteDark[500],
-      surface: paletteDark[400],
-      surfaceMuted: paletteDark[200],
-      componentBackground: componentBackground.dark,
-      input: paletteDark[400],
-      text: paletteDark[100],
-      textMuted: paletteDark[300],
-      border: BORDER_DEFAULT,
-      pillBorder: BORDER_DEFAULT,
-      primary: palettePrimary[100],
-      onPrimary: paletteDark[100],
-      placeholder: paletteDark[300],
+      background: paletteDark.background,
+      surface: paletteDark.surface,
+      surfaceLight: paletteDark.surfaceLight,
+      surfaceMuted: paletteDark.surfaceMuted,
+      surfaceElevated: paletteDark.surfaceElevated,
+      text: paletteDark.textPrimary,
+      textMuted: paletteDark.textMuted,
+      textSecondary: paletteDark.textSecondary,
+      border: BORDER_DEFAULT.dark,
+      borderSubtle: paletteDark.border,
+      primary: palettePrimary.dark,
+      primaryMuted: palettePrimary.darkAccent,
+      onPrimary: paletteDark.white,
+      placeholder: paletteDark.textMuted,
+      danger: paletteDark.danger,
+      online: paletteDark.online,
+      white: paletteDark.white,
+      icon: paletteIcon.dark,
+      iconMuted: paletteIcon.darkMuted,
     };
   }
   return {
-    background: paletteLight[500],
-    surface: paletteLight[500],
-    surfaceMuted: paletteLight[200],
-    componentBackground: componentBackground.light,
-    input: paletteLight[400],
-    text: paletteLight[100],
-    textMuted: paletteLight[300],
-    border: BORDER_DEFAULT,
-    pillBorder: BORDER_DEFAULT,
-    primary: palettePrimary[100],
-    onPrimary: "#FFFFFF",
-    placeholder: "#9CA3AF",
+    background: paletteLight.background,
+    surface: paletteLight.surface,
+    surfaceLight: paletteLight.surfaceLight,
+    surfaceMuted: paletteLight.surfaceMuted,
+    surfaceElevated: paletteLight.surfaceElevated,
+    text: paletteLight.textPrimary,
+    textMuted: paletteLight.textMuted,
+    textSecondary: paletteLight.textSecondary,
+    border: BORDER_DEFAULT.light,
+    borderSubtle: paletteLight.borderSubtle,
+    primary: palettePrimary.light,
+    primaryMuted: palettePrimary.lightMuted,
+    onPrimary: paletteLight.white,
+    placeholder: paletteLight.textMuted,
+    danger: paletteLight.danger,
+    online: paletteLight.online,
+    white: paletteLight.white,
+    icon: paletteIcon.light,
+    iconMuted: paletteIcon.lightMuted,
   };
 }
 
@@ -99,7 +160,7 @@ export type StatusColorKind = "success" | "warning" | "error" | "info";
 export const statusColors = {
   success: {
     light: "#22C55E",
-    dark: "#4ADE80",
+    dark: "#22C55E",
   },
   warning: {
     light: "#F59E0B",
@@ -107,7 +168,7 @@ export const statusColors = {
   },
   error: {
     light: "#EF4444",
-    dark: "#F87171",
+    dark: "#FF453A",
   },
   info: {
     light: "#3B82F6",
@@ -124,23 +185,33 @@ export function getStatusColor(
 
 export const colorTable = {
   dark: {
-    appBackground: paletteDark[500],
-    cardSurface: paletteDark[400],
-    componentSurface: componentBackground.dark,
-    surfaceMuted: paletteDark[200],
-    textPrimary: paletteDark[100],
-    textMuted: paletteDark[300],
-    inputField: paletteDark[400],
-    accent: palettePrimary[100],
+    appBackground: paletteDark.background,
+    cardSurface: paletteDark.surface,
+    componentSurface: paletteDark.surface,
+    surfaceMuted: paletteDark.surfaceMuted,
+    surfaceElevated: paletteDark.surfaceElevated,
+    textPrimary: paletteDark.textPrimary,
+    textSecondary: paletteDark.textSecondary,
+    textMuted: paletteDark.textMuted,
+    inputField: paletteDark.surface,
+    accent: palettePrimary.dark,
+    border: BORDER_DEFAULT.dark,
+    danger: paletteDark.danger,
+    online: paletteDark.online,
   },
   light: {
-    appBackground: paletteLight[500],
-    card: paletteLight[500],
-    componentSurface: componentBackground.light,
-    chipInactive: paletteLight[200],
-    textPrimary: paletteLight[100],
-    textMuted: paletteLight[300],
-    inputField: paletteLight[400],
-    accent: palettePrimary[100],
+    appBackground: paletteLight.background,
+    card: paletteLight.background,
+    componentSurface: paletteLight.surface,
+    surfaceMuted: paletteLight.surfaceMuted,
+    surfaceElevated: paletteLight.surfaceElevated,
+    textPrimary: paletteLight.textPrimary,
+    textSecondary: paletteLight.textSecondary,
+    textMuted: paletteLight.textMuted,
+    inputField: paletteLight.surface,
+    accent: palettePrimary.light,
+    border: BORDER_DEFAULT.light,
+    danger: paletteLight.danger,
+    online: paletteLight.online,
   },
 } as const;

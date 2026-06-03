@@ -19,6 +19,7 @@ import { useChatContext } from "@/context/ChatContext";
 import { ChatConversationDto, ConversationType } from "@/dtos";
 import { useChatList } from "@/hooks/use-chat-list";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+<<<<<<< HEAD
 import { FriendOnlineItem, messageService } from "@/services/message.service";
 
 // Old Mingo_App colors for matching list UI
@@ -39,6 +40,15 @@ export default function ChatListScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const colors = colorScheme === "dark" ? chatColors.dark : chatColors.light;
   const iconColor = colorScheme === "dark" ? "#ffffff" : "#92898A";
+=======
+import { colors, getSemantic, paletteIcon } from "@/styles/colors";
+
+export default function ChatListScreen() {
+  const colorScheme = useColorScheme() ?? "light";
+  const semantic = getSemantic(colorScheme);
+  const iconColor = paletteIcon.lightMuted;
+  const headerBg = colorScheme === "dark" ? colors.dark[200] : semantic.background;
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 
   const { profile } = useAuth();
   const { filteredConversations, refetch, setSearchQuery } = useChatList();

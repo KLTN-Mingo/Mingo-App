@@ -1,12 +1,16 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Skeleton, SkeletonCircle, SkeletonText } from '@/components/ui/Skeleton';
+import { paletteDark, paletteLight } from '@/constants/designTokens';
 
 export function NotificationItemSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === 'dark' ? paletteDark : paletteLight;
+
   return (
-    <View className="flex-row items-start p-4 bg-surface-light dark:bg-surface-dark">
+    <View className="flex-row items-start p-4" style={{ backgroundColor: colors.background }}>
       {/* Avatar */}
       <View className="relative">
         <SkeletonCircle size={48} />
@@ -29,13 +33,16 @@ export function NotificationItemSkeleton() {
 }
 
 export function NotificationListSkeleton({ count = 8 }: { count?: number }) {
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === 'dark' ? paletteDark : paletteLight;
+
   return (
     <View>
       {Array.from({ length: count }).map((_, i) => (
         <View key={i}>
           <NotificationItemSkeleton />
           {i < count - 1 && (
-            <View className="h-px bg-border-light dark:bg-border-dark" />
+            <View style={{ height: 1, backgroundColor: colors.border }} />
           )}
         </View>
       ))}
@@ -44,13 +51,17 @@ export function NotificationListSkeleton({ count = 8 }: { count?: number }) {
 }
 
 export function NotificationScreenSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === 'dark' ? paletteDark : paletteLight;
+
   return (
     <SafeAreaView
-      className="flex-1 bg-background-light dark:bg-background-dark"
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
       edges={['top']}
     >
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-border-light dark:border-border-dark">
+      <View className="flex-row items-center justify-between px-4 py-3" style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <SkeletonText width={140} height={28} />
         <View className="flex-row gap-3">
           <SkeletonCircle size={28} />

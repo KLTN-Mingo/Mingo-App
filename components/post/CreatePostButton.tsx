@@ -4,7 +4,8 @@ import { TouchableOpacity, View } from "react-native";
 import { Avatar, Text } from "@/components/ui";
 import { UserMinimalDto } from "@/dtos";
 import { ImageIcon, MusicIcon, VideoIcon } from "@/components/shared/icons/Icons";
-import { colors } from "@/styles/colors";
+import { paletteIcon } from "@/styles/colors";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface CreatePostButtonProps {
   user?: UserMinimalDto | null;
@@ -12,6 +13,9 @@ interface CreatePostButtonProps {
 }
 
 export function CreatePostButton({ user, onPress }: CreatePostButtonProps) {
+  const colorScheme = useColorScheme() ?? 'light';
+  const iconColor = paletteIcon[colorScheme];
+
   return (
     <View className="rounded-2xl bg-surface-dark px-3 py-3">
       {/* Share input */}
@@ -37,13 +41,13 @@ export function CreatePostButton({ user, onPress }: CreatePostButtonProps) {
         <Text className="text-[15px] text-text-muted-dark">Add to your post</Text>
         <View className="flex-row items-center gap-3">
           <TouchableOpacity className="p-0.5">
-            <MusicIcon size={20} color={colors.dark[100]} />
+            <MusicIcon size={20} color={iconColor} />
           </TouchableOpacity>
           <TouchableOpacity className="p-0.5">
-            <VideoIcon size={20} color={colors.dark[100]} />
+            <VideoIcon size={20} color={iconColor} />
           </TouchableOpacity>
           <TouchableOpacity className="p-0.5">
-            <ImageIcon size={20} color={colors.dark[100]} />
+            <ImageIcon size={20} color={iconColor} />
           </TouchableOpacity>
         </View>
       </View>

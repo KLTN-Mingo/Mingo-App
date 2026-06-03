@@ -1,4 +1,5 @@
-import { colors } from "@/styles/colors";
+import { colors, paletteIcon } from "@/styles/colors";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   ActivityIndicator,
   TouchableOpacity,
@@ -18,37 +19,36 @@ interface ButtonProps extends TouchableOpacityProps {
   className?: string;
 }
 
-/** Match `Tab` colors; use `rounded-full` so `flex-1` wide actions stay pill-shaped (fixed px radius looks flat on long bars). */
+/** Primary: #768D85 | Secondary outlined pill | Ghost: transparent */
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-primary-100 active:opacity-90",
+  primary: "bg-primary active:opacity-90",
   secondary:
-    "bg-surface-muted-light dark:bg-surface-muted-dark active:opacity-80",
+    "bg-transparent border border-pill-light dark:border-pill-dark active:opacity-80",
   outline:
-    "bg-component-light dark:bg-component-dark border border-border-light dark:border-border-dark active:opacity-80",
+    "bg-transparent border border-pill-light dark:border-pill-dark active:opacity-80",
   ghost:
-    "bg-transparent active:bg-surface-muted-light dark:active:bg-surface-muted-dark",
-  danger: "bg-red-100 dark:bg-red-900 active:opacity-80",
+    "bg-transparent active:bg-surface-light dark:active:bg-surface-dark",
+  danger: "bg-danger-light dark:bg-danger-dark active:opacity-80",
 };
 
 const textVariantClasses: Record<ButtonVariant, string> = {
-  primary:
-    "text-primary-foreground-light dark:text-primary-foreground-dark",
-  secondary: "text-text-light dark:text-text-dark",
-  outline: "text-text-light dark:text-text-dark",
-  ghost: "text-primary-600 dark:text-primary-300",
-  danger: "text-red-600 dark:text-red-300",
+  primary: "text-white font-semibold",
+  secondary: "text-text-light dark:text-text-dark font-medium",
+  outline: "text-text-light dark:text-text-dark font-medium",
+  ghost: "text-primary font-medium",
+  danger: "text-white font-semibold",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "px-3 py-2 min-h-[40px]",
-  md: "px-4 py-2 min-h-[44px]",
-  lg: "px-5 py-3 min-h-[48px]",
+  sm: "px-6 py-2.5 min-h-[36px]",
+  md: "px-6 py-2.5 min-h-[40px]",
+  lg: "px-6 py-3 min-h-[48px]",
 };
 
 const textSizeClasses: Record<ButtonSize, string> = {
-  sm: "text-sm font-medium",
-  md: "text-base font-medium",
-  lg: "text-lg font-medium",
+  sm: "text-sm",
+  md: "text-sm",
+  lg: "text-base",
 };
 
 export function Button({
@@ -60,15 +60,12 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const spinnerOnPrimary =
-    variant === "outline" || variant === "ghost"
-      ? colors.primary[100]
-      : colors.light[500];
+  const colorScheme = useColorScheme() ?? 'light';
 
   return (
     <TouchableOpacity
       className={twMerge(
-        `items-center justify-center rounded-[12px] gap-2 self-stretch ${variantClasses[variant]} ${sizeClasses[size]} ${disabled || loading ? "opacity-50" : ""} ${className}`,
+        `items-center justify-center rounded-full gap-2 self-stretch ${variantClasses[variant]} ${sizeClasses[size]} ${disabled || loading ? "opacity-50" : ""} ${className}`,
       )}
       disabled={disabled || loading}
       activeOpacity={0.8}
@@ -76,11 +73,7 @@ export function Button({
     >
       {loading ? (
         <ActivityIndicator
-          color={
-            variant === "primary" || variant === "danger"
-              ? spinnerOnPrimary
-              : colors.primary[100]
-          }
+          color={variant === "primary" || variant === "danger" ? "#FFFFFF" : paletteIcon[colorScheme]}
         />
       ) : (
         <Text className={`${textVariantClasses[variant]} ${textSizeClasses[size]}`}>

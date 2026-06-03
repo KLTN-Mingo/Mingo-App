@@ -15,7 +15,19 @@ import { Text } from "@/components/ui";
 import { chatTheme } from "@/constants/chatTheme";
 import { MessageResponseDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+<<<<<<< HEAD
 import { messageService } from "@/services/message.service";
+=======
+
+// Mingo MessageBubble colors
+const bubbleColors = {
+  own: "#768D85", // primary light
+  ownDark: "#515E5A", // primary dark
+  otherLight: "#F1F4F3", // surface light
+  otherDark: "#252525", // surface dark
+  dateMuted: "#6B6B6B", // text secondary
+};
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 
 interface MessageBubbleProps {
   message: MessageResponseDto;
@@ -230,11 +242,19 @@ function FileMessage({ uri, fileName }: { uri: string; fileName: string }) {
 function MessageContent({
   message,
   isOwn,
+<<<<<<< HEAD
   otherTextColor,
 }: {
   message: MessageResponseDto;
   isOwn: boolean;
   otherTextColor: string;
+=======
+  textColor,
+}: {
+  message: MessageResponseDto;
+  isOwn: boolean;
+  textColor: string;
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 }) {
   const messageType = useMemo(() => resolveMessageType(message), [message]);
   const uri = useMemo(() => resolveMediaUri(message), [message]);
@@ -243,6 +263,7 @@ function MessageContent({
 
   if (messageType === "text") {
     return (
+<<<<<<< HEAD
       <View>
         <Text
           style={[
@@ -265,17 +286,29 @@ function MessageContent({
           </Text>
         )}
       </View>
+=======
+      <Text
+        style={[styles.bubbleText, { color: textColor }]}
+        selectable
+      >
+        {message.content || ""}
+      </Text>
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
     );
   }
 
   if (!uri) {
     return (
+<<<<<<< HEAD
       <Text
         style={[
           styles.bubbleText,
           isOwn ? styles.textOwn : { color: otherTextColor },
         ]}
       >
+=======
+      <Text style={[styles.bubbleText, { color: textColor }]}>
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
         Unsupported message
       </Text>
     );
@@ -293,10 +326,14 @@ function MessageContent({
     default:
       return (
         <Text
+<<<<<<< HEAD
           style={[
             styles.bubbleText,
             isOwn ? styles.textOwn : { color: otherTextColor },
           ]}
+=======
+          style={[styles.bubbleText, { color: textColor }]}
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
           selectable
         >
           {message.content || ""}
@@ -320,6 +357,7 @@ export function MessageBubble({
   const isRevoked = message.isRevoked;
   const colorScheme = useColorScheme() ?? "light";
   const isDark = colorScheme === "dark";
+<<<<<<< HEAD
   const otherBubbleBg = isDark
     ? chatTheme.otherBubbleDark
     : chatTheme.otherBubbleLight;
@@ -386,6 +424,13 @@ export function MessageBubble({
       Alert.alert("Error", err?.message ?? "Failed to edit message");
     }
   };
+=======
+
+  const otherBubbleBg = isDark ? bubbleColors.otherDark : bubbleColors.otherLight;
+  const ownBubbleBg = isDark ? bubbleColors.ownDark : bubbleColors.own;
+  const textColorOwn = "#FFFFFF";
+  const textColorOther = isDark ? "#FAFAFA" : "#1E2021";
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 
   return (
     <View
@@ -415,8 +460,19 @@ export function MessageBubble({
           </View>
         )}
 
+<<<<<<< HEAD
         <View style={{ flexDirection: "column", flexShrink: 1 }}>
           {!isOwn && senderName && (
+=======
+        <View
+          style={[
+            styles.bubble,
+            isOwn ? [styles.bubbleOwn, { backgroundColor: ownBubbleBg }] : { backgroundColor: otherBubbleBg },
+            isOwn ? styles.bubbleOwnRadius : styles.bubbleOtherRadius,
+          ]}
+        >
+          {isRevoked ? (
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
             <Text
               style={{
                 fontSize: 11,
@@ -440,6 +496,7 @@ export function MessageBubble({
           >
             <View
               style={[
+<<<<<<< HEAD
                 styles.bubble,
                 isOwn ? styles.bubbleOwn : { backgroundColor: otherBubbleBg },
                 { alignSelf: "flex-start" },
@@ -464,6 +521,22 @@ export function MessageBubble({
               )}
             </View>
           </TouchableOpacity>
+=======
+                styles.bubbleText,
+                { color: textColorOther },
+                styles.unsentText,
+              ]}
+            >
+              Message unsent
+            </Text>
+          ) : (
+            <MessageContent
+              message={message}
+              isOwn={isOwn}
+              textColor={isOwn ? textColorOwn : textColorOther}
+            />
+          )}
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
         </View>
       </View>
 
@@ -662,9 +735,9 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 50,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   avatarFallback: {
     backgroundColor: chatTheme.ownBubble,
@@ -677,6 +750,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   bubble: {
+<<<<<<< HEAD
     maxWidth: "100%",
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -690,16 +764,31 @@ const styles = StyleSheet.create({
   },
   bubbleOwn: {
     backgroundColor: chatTheme.ownBubble,
+=======
+    maxWidth: "75%",
+    padding: 12,
+    borderRadius: 18,
   },
-  bubbleOther: {},
+  bubbleOwn: {
+    borderBottomRightRadius: 4,
+  },
+  bubbleOwnRadius: {},
+  bubbleOtherRadius: {
+    borderBottomLeftRadius: 4,
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
+  },
   bubbleText: {
     fontSize: 14,
+<<<<<<< HEAD
   },
   textOwn: {
     color: "#ffffff",
   },
   textOther: {
     color: chatTheme.otherBubbleTextDark,
+=======
+    fontFamily: "Montserrat-Regular",
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
   },
   unsentText: {
     fontStyle: "italic",
@@ -724,9 +813,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   mediaMetaText: {
+<<<<<<< HEAD
     color: "#ffffff",
+=======
+    color: bubbleColors.dateMuted,
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
     fontSize: 12,
-    opacity: 0.9,
+    fontFamily: "Montserrat-Regular",
   },
   audioWrap: {
     flexDirection: "row",
@@ -740,9 +833,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.2)",
   },
   audioButtonText: {
+<<<<<<< HEAD
     color: "#ffffff",
+=======
+    color: "#FFFFFF",
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
     fontSize: 13,
     fontWeight: "600",
+    fontFamily: "Montserrat-SemiBold",
   },
   fileWrap: {
     flexDirection: "row",
@@ -752,10 +850,15 @@ const styles = StyleSheet.create({
   },
   fileIcon: {
     fontSize: 18,
+    fontFamily: "Montserrat-Regular",
   },
   fileNameText: {
+<<<<<<< HEAD
     color: "#ffffff",
+=======
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
     fontSize: 13,
+    fontFamily: "Montserrat-Regular",
     flexShrink: 1,
   },
 });

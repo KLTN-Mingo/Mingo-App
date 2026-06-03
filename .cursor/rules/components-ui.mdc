@@ -1,0 +1,106 @@
+---
+description: Component authoring conventions (components/**)
+globs: ["components/**/*.tsx"]
+alwaysApply: false
+---
+
+# Component Conventions
+
+## Folder Mapping
+
+| Folder | Purpose |
+|---|---|
+| `components/ui/` | Atoms / primitives — `Button`, `Avatar`, `Text`, `Icon`, `Tab`, `Skeleton`… |
+| `components/shared/` | Cross-feature composites |
+| `components/skeleton/` | Loading skeletons |
+| `components/<feature>/` | Feature-scoped widgets — `chat/`, `post/`, `profile/`, `notification/`, `friend/` |
+| `components/containers/` | Layout / screen-level wrappers |
+
+When you add a primitive to `components/ui/`, also export it from `components/ui/index.ts`.
+
+## Component Shape
+
+```tsx
+import { View, type ViewProps } from 'react-native';
+import { twMerge } from 'tailwind-merge';
+import { Text } from '@/components/ui';
+
+interface CardProps extends ViewProps {
+  title: string;
+  className?: string;
+}
+
+export function Card({ title, className, children, ...rest }: CardProps) {
+  return (
+    <View
+      className={twMerge(
+        'rounded-lg p-4 bg-surface-light dark:bg-surface-dark',
+        className
+      )}
+      {...rest}
+    >
+      <Text variant="semibold">{title}</Text>
+      {children}
+    </View>
+  );
+}
+```
+
+Rules:
+- **Named exports** only (re-exported in `components/ui/index.ts`)
+- Props extend the underlying RN component props (`ViewProps`, `TouchableOpacityProps`, …)
+- Always accept `className` and merge with `twMerge`
+- Variant maps as `Record<Variant, string>` (see `Button.tsx`)
+- Use `<Text>` from `@/components/ui` — never raw RN `<Text>`
+- Use `<Icon>` from `@/components/ui` for icons (it abstracts the icon set)
+
+## Loading & Empty States
+
+DO NOT invent new skeletons / empty placeholders — reuse what exists:
+
+- **Loading**: pick the matching skeleton from `@/components/skeleton/` (`HomeSkeleton`, `PostCardSkeleton`, `ProfileSkeleton`, `NotificationSkeleton`, `FriendCardSkeleton`). For ad-hoc placeholders use the primitives `Skeleton`, `SkeletonCircle`, `SkeletonText` from `@/components/ui`.
+- **Empty / error list**: use `EmptyState` from `@/components/shared/ui/EmptyState` — API: `{ title: string; action?: { label, onPress } }`. Pass an `action` for retry-style affordances.
+- **No `ErrorState` component exists** — for blocking errors prefer `Alert.alert`, for inline errors render `<EmptyState title="Không tải được dữ liệu" action={{ label: 'Thử lại', onPress: refetch }} />`.
+
+```tsx
+if (loading) return <PostCardSkeleton />;
+if (!posts.length) {
+  return (
+    <EmptyState
+      title="Chưa có bài viết nào"
+      action={{ label: 'Làm mới', onPress: refetch }}
+    />
+  );
+}
+```
+
+## Lists
+
+Prefer `FlatList` / `FlashList` over `ScrollView` + `.map()` for any dynamic list.
+
+```tsx
+<FlatList
+  data={posts}
+  keyExtractor={(p) => p.id}
+  renderItem={({ item }) => <PostCard post={item} />}
+  ItemSeparatorComponent={() => <View className="h-md" />}
+/>
+```
+
+## Performance
+
+- Memoize expensive children with `React.memo` when parent re-renders frequently
+- Stable callbacks via `useCallback` only when needed (avoid premature optimization)
+- Heavy work off the JS thread: prefer `react-native-reanimated` worklets for animations
+
+## Accessibility
+
+- Touchables must have `accessibilityRole` and a meaningful `accessibilityLabel` when content is icon-only
+- Hit slop ≥ 44×44 for icon buttons (`hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}`)
+
+## Don'ts
+
+- ❌ Default-exported components
+- ❌ Inline `StyleSheet` for new components
+- ❌ Hardcoded colors — use Tailwind tokens
+- ❌ `console.log` in committed code (use only for debugging, remove before commit)

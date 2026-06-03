@@ -24,10 +24,30 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { pickDocument } from "@/lib/utils/document-picker";
 import { pickFromCamera, pickMedia } from "@/lib/utils/gallery-picker";
 
+<<<<<<< HEAD
 const chatColors = {
   dark: { 100: "#CFBFAD", 500: "#FAFAFA" },
   light: { 100: "#1E2021", 500: "#FAFAFA" },
 };
+=======
+import { BORDER_DEFAULT, getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
+
+function hexToRgba(hex: string, alpha: number): string {
+  const clean = hex.replace("#", "");
+  const value =
+    clean.length === 3
+      ? clean
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : clean;
+  const intVal = Number.parseInt(value, 16);
+  const r = (intVal >> 16) & 255;
+  const g = (intVal >> 8) & 255;
+  const b = intVal & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 
 export type PickedFileLike = {
   uri: string;
@@ -755,9 +775,17 @@ export function MessageInput({
   const durationRef = useRef(0);
   const inputRef = useRef<TextInput>(null);
   const colorScheme = useColorScheme() ?? "light";
+<<<<<<< HEAD
   const colors = colorScheme === "dark" ? chatColors.dark : chatColors.light;
   const iconColor = colorScheme === "dark" ? "#ffffff" : "#92898A";
   const placeholderColor = colorScheme === "dark" ? colors[100] : "#92898A";
+=======
+  const semantic = getSemantic(colorScheme);
+  const errorColor = getStatusColor(colorScheme, "error");
+  const iconColor = paletteIcon[colorScheme];
+  const placeholderColor = semantic.placeholder;
+  const recordingBadgeBg = hexToRgba(errorColor, 0.1);
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 
   useEffect(() => {
     recordingRef.current = recording;
@@ -1183,6 +1211,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
+    fontFamily: "Montserrat-Regular",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 9999,
@@ -1201,11 +1230,13 @@ const styles = StyleSheet.create({
   recordingDot: {
     color: "#EF4444",
     fontSize: 10,
+    fontFamily: "Montserrat-Regular",
   },
   recordingText: {
     color: "#EF4444",
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: "Montserrat-SemiBold",
   },
   recordingActionBtn: {
     paddingHorizontal: 14,
@@ -1216,5 +1247,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 13,
     fontWeight: "600",
+    fontFamily: "Montserrat-SemiBold",
   },
 });

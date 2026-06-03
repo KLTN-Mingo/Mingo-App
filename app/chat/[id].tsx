@@ -29,11 +29,15 @@ import { useChatList } from "@/hooks/use-chat-list";
 import { useChatMessages } from "@/hooks/use-chat-messages";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { messageService } from "@/services/message.service";
+<<<<<<< HEAD
 
 const chatColors = {
   dark: { 100: "#CFBFAD", 300: "#515E5A", 500: "#1E2021" },
   light: { 500: "#FAFAFA" },
 };
+=======
+import { BORDER_DEFAULT, colors, getSemantic, paletteIcon } from "@/styles/colors";
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 
 function formatDateLabel(dateStr: string): string {
   const date = new Date(dateStr);
@@ -61,10 +65,17 @@ export default function ChatScreen() {
   const currentUserId = profile?.id;
   const colorScheme = useColorScheme() ?? "light";
   const isDark = colorScheme === "dark";
+<<<<<<< HEAD
   const insets = useSafeAreaInsets();
   const messagesBg = isDark ? chatColors.dark[300] : chatColors.light[500];
   const headerTextColor = isDark ? chatColors.dark[100] : "#1E2021";
   const iconColor = isDark ? "#ffffff" : "#92898A";
+=======
+  const semantic = getSemantic(colorScheme);
+  const messagesBg = isDark ? colors.dark[300] : semantic.surface;
+  const headerTextColor = semantic.text;
+  const iconColor = paletteIcon.lightMuted;
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
   const [infoModalVisible, setInfoModalVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

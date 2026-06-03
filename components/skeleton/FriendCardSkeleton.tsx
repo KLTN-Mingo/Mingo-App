@@ -1,11 +1,15 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, useColorScheme } from 'react-native';
 
 import { Skeleton, SkeletonCircle, SkeletonText } from '@/components/ui/Skeleton';
+import { paletteDark, paletteLight } from '@/constants/designTokens';
 
 export function FriendRequestSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === 'dark' ? paletteDark : paletteLight;
+
   return (
-    <View className="bg-surface-light dark:bg-surface-dark p-4 rounded-xl">
+    <View className="p-4 rounded-xl" style={{ backgroundColor: colors.background }}>
       <View className="flex-row items-center">
         <SkeletonCircle size={60} />
         <View className="ml-3 flex-1 gap-1">
@@ -28,8 +32,11 @@ export function FriendRequestSkeleton() {
 }
 
 export function FriendCardSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === 'dark' ? paletteDark : paletteLight;
+
   return (
-    <View className="flex-row items-center p-3 border-b border-border-light dark:border-border-dark">
+    <View className="flex-row items-center p-3" style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}>
       <SkeletonCircle size={50} />
       <View className="ml-3 flex-1 gap-1">
         <SkeletonText width={140} height={16} />

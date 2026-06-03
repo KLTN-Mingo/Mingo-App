@@ -35,6 +35,11 @@ import {
   View,
 } from "react-native";
 
+<<<<<<< HEAD
+=======
+import { colors, getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
+
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 interface InfoChatProps {
   visible: boolean;
   onClose: () => void;
@@ -64,13 +69,19 @@ export function InfoChat({
   const currentUserId = profile?.id;
   const otherUserId =
     conversation?.participantIds?.find((pid) => pid !== currentUserId) ??
+<<<<<<< HEAD
     conversation?.participants?.find((p) => p.id === currentUserId)?.id;
   const isDark = colorScheme === "dark";
+=======
+    conversation?.participants?.find((p) => p.id !== currentUserId)?.id;
+  const semantic = getSemantic(colorScheme);
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [images, setImages] = useState<FileResponse[]>([]);
   const [files, setFiles] = useState<FileResponse[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(false);
 
+<<<<<<< HEAD
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -103,6 +114,12 @@ export function InfoChat({
   const surfaceColor = isDark
     ? chatTheme.componentDark
     : chatTheme.componentLight;
+=======
+  const textColor = semantic.text;
+  const bgColor = semantic.background;
+  const iconColor = paletteIcon.lightMuted;
+  const surfaceColor = semantic.surfaceMuted;
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 
   const isGroup = conversation?.type === ConversationType.GROUP;
 

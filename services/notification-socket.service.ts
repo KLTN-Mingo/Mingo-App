@@ -3,6 +3,7 @@ import { io, Socket } from "socket.io-client";
 import {
   NotificationCountDto,
   NotificationResponseDto,
+  ShareNotificationPayload,
 } from "@/dtos";
 
 const SOCKET_URL =
@@ -24,6 +25,40 @@ export type NotificationSocketHandlers = {
 let socket: Socket | null = null;
 let currentUserId: string | null = null;
 let isConnected = false;
+
+// ─── Share events (DM share + Repost) ────────────────────────────────────────
+// Lý do tách listener riêng: tránh đụng vào notification flow hiện tại;
+// các màn (ShareModal, post detail, profile) tự subscribe khi cần.
+
+type ShareEventListener = (payload: ShareNotificationPayload) => void;
+const shareListeners = new Set<ShareEventListener>();
+/** Dedupe theo shareId (guide §5). Cap 200 để khỏi rò bộ nhớ trên session dài. */
+const seenShareIds = new Set<string>();
+const SEEN_SHARE_CAP = 200;
+
+function dispatchShareEvent(payload: unknown) {
+  const p = payload as ShareNotificationPayload | undefined;
+  if (!p || !p.shareId) return;
+  if (seenShareIds.has(p.shareId)) return;
+  seenShareIds.add(p.shareId);
+  if (seenShareIds.size > SEEN_SHARE_CAP) {
+    const first = seenShareIds.values().next().value;
+    if (first) seenShareIds.delete(first);
+  }
+  shareListeners.forEach((cb) => {
+    try {
+      cb(p);
+    } catch (err) {
+      console.error("[share-socket] listener failed", err);
+    }
+  });
+}
+
+/** Đăng ký nhận `new_dm_share` / `new_repost`. Trả về hàm unsubscribe. */
+export function subscribeShareEvents(listener: ShareEventListener): () => void {
+  shareListeners.add(listener);
+  return () => shareListeners.delete(listener);
+}
 
 export function getNotificationSocket() {
   return socket;
@@ -71,6 +106,10 @@ export function connectNotificationSocket(
   socket.on("notification", handlers.onNewNotification);
   socket.on("notification:new", handlers.onNewNotification);
   socket.on("notification:count", handlers.onNotificationCount);
+
+  // Share events — payload chuẩn theo FE-SHARE-INTEGRATION-GUIDE §2.
+  socket.on("new_dm_share", dispatchShareEvent);
+  socket.on("new_repost", dispatchShareEvent);
 
   socket.on(
     "notification:updated",

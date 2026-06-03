@@ -4,9 +4,10 @@ import { Image, Text as RNText, TouchableOpacity, View } from "react-native";
 import { CameraIcon } from "@/components/shared/icons/Icons";
 import { Text } from "@/components/ui";
 import { UserProfileDto } from "@/dtos";
-import { colors } from "@/styles/colors";
+import { paletteIcon } from "@/styles/colors";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
-const COVER_HEIGHT = 192;
+const COVER_HEIGHT = 180;
 
 function avatarInitials(name?: string): string {
   if (!name?.trim()) return "?";
@@ -32,6 +33,9 @@ export function ProfileHeader({
   isOwnProfile = true,
   onEditBio,
 }: ProfileHeaderProps) {
+  const colorScheme = useColorScheme() ?? 'light';
+  const cameraIconColor = paletteIcon[colorScheme];
+  
   const subtitleLine = useMemo(() => {
     const phone = user.phoneNumber?.trim();
     if (phone) return phone;
@@ -46,7 +50,7 @@ export function ProfileHeader({
       <TouchableOpacity
         onPress={isOwnProfile ? onEditBackground : undefined}
         activeOpacity={isOwnProfile ? 0.88 : 1}
-        className="rounded-3xl overflow-hidden flex-1 bg-background-light dark:bg-background-dark"
+        className="flex-1 bg-background-light dark:bg-background-dark"
       >
         {user.backgroundUrl ? (
           <Image
@@ -63,20 +67,20 @@ export function ProfileHeader({
         )}
         {isOwnProfile && (
           <View className="absolute bottom-3 right-3 bg-black/40 rounded-full p-2">
-            <CameraIcon size={18} color={colors.light[400]} />
+            <CameraIcon size={18} color={cameraIconColor} />
           </View>
         )}
       </TouchableOpacity>
 
-      <View className="flex-row items-start -mt-[52px]">
+      <View className="flex-row items-start -mt-[36px]">
         <TouchableOpacity
           onPress={isOwnProfile ? onEditAvatar : undefined}
           activeOpacity={isOwnProfile ? 0.88 : 1}
           className="relative"
         >
           <View
-            className="rounded-full border-[5px] border-neutral-100 dark:border-background-dark overflow-hidden bg-neutral-100 dark:bg-background-dark"
-            style={{ width: 104, height: 104 }}
+            className="rounded-full border-[3px] border-background-light dark:border-background-dark overflow-hidden bg-surface-light dark:bg-surface-dark"
+            style={{ width: 72, height: 72 }}
           >
             {user.avatar ? (
               <Image
@@ -85,16 +89,16 @@ export function ProfileHeader({
                 resizeMode="cover"
               />
             ) : (
-              <View className="w-full h-full bg-primary-100 items-center justify-center">
-                <RNText className="text-primary-600 text-[28px] font-montserrat-bold">
+              <View className="w-full h-full bg-primary items-center justify-center">
+                <RNText className="text-white text-[20px] font-bold">
                   {avatarInitials(user.name)}
                 </RNText>
               </View>
             )}
           </View>
           {isOwnProfile && (
-            <View className="absolute bottom-1 right-1 bg-primary-500 rounded-full p-1.5 border-[3px] border-neutral-100 dark:border-background-dark">
-              <CameraIcon size={14} color={colors.light[400]} />
+            <View className="absolute bottom-0 right-0 bg-primary rounded-full p-1.5 border-[3px] border-background-light dark:border-background-dark">
+              <CameraIcon size={14} color={cameraIconColor} />
             </View>
           )}
         </TouchableOpacity>
@@ -103,7 +107,7 @@ export function ProfileHeader({
           <TouchableOpacity
             onPress={isOwnProfile ? onEditBio : undefined}
             activeOpacity={isOwnProfile ? 0.75 : 1}
-            className="rounded-2xl bg-sheet-light dark:bg-sheet-dark py-5 px-6"
+            className="rounded-lg bg-sheet-light dark:bg-sheet-dark py-5 px-5 gap-3"
           >
             {user.bio ? (
               <Text className="text-[14px] leading-[22px] text-text-light dark:text-text-dark">
@@ -117,8 +121,6 @@ export function ProfileHeader({
           </TouchableOpacity>
         </View>
       </View>
-
-
     </View>
   );
 }

@@ -1,3 +1,5 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,16 +26,17 @@ export default function AddFriendScreen() {
   const [foundUser, setFoundUser] = useState<PublicUserDto | null>(null);
 
   const theme = {
-    background: isDark ? colors.dark[500] : colors.light[500],
-    surface: isDark ? colors.dark[400] : colors.light[500],
-    text: isDark ? colors.dark[100] : colors.light[100],
-    textMuted: isDark ? colors.dark[300] : colors.light[300],
-    primary: colors.primary[100],
+    background: isDark ? colors.dark.background : colors.light.background,
+    surface: isDark ? colors.dark.surface : colors.light.surface,
+    text: isDark ? colors.dark.textPrimary : colors.light.textPrimary,
+    textMuted: isDark ? colors.dark.textMuted : colors.light.textMuted,
+    primary: colors.primary.light,
+    border: isDark ? colors.dark.border : colors.light.border,
   };
 
   const handleSearchByPhone = async () => {
     if (!phoneNumber.trim()) {
-      setError('Please enter phone number');
+      setError('Vui lòng nhập số điện thoại');
       return;
     }
 
@@ -45,9 +48,15 @@ export default function AddFriendScreen() {
       const user = await userService.getUserByPhone(phoneNumber.trim());
       setFoundUser(user);
     } catch (err) {
-      setError('No user found with this phone number');
+      setError('Không tìm thấy người dùng với số điện thoại này');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewProfile = () => {
+    if (foundUser) {
+      router.push(`/profile/${foundUser.id}` as any);
     }
   };
 
@@ -61,7 +70,7 @@ export default function AddFriendScreen() {
       <ScreenContainer className="gap-4">
         {/* Search Bar */}
         <View
-          className={`flex-row items-center rounded-xl px-4 py-3 ${
+          className={`flex-row items-center rounded-full px-4 py-3 ${
             isDark ? 'bg-surface-dark' : 'bg-surface-light'
           }`}
         >
@@ -98,23 +107,41 @@ export default function AddFriendScreen() {
 
         {/* Error Message */}
         {error && !loading && (
-          <View className="px-4 py-3">
-            <Text className="text-red-500 text-center text-sm">{error}</Text>
+          <View className="px-4 py-8">
+            <View className="items-center">
+              <View
+                className="w-16 h-16 rounded-full items-center justify-center mb-4"
+                style={{ backgroundColor: isDark ? colors.dark.surface : colors.light.surface }}
+              >
+                <Ionicons name="person-outline" size={32} color={theme.textMuted} />
+              </View>
+              <Text className="text-base font-medium mb-1" style={{ color: theme.text }}>
+                Không tìm thấy
+              </Text>
+              <Text variant="muted" className="text-sm text-center">
+                {error}
+              </Text>
+            </View>
           </View>
         )}
 
         {/* Found User */}
         {foundUser && !loading && (
           <ScrollView showsVerticalScrollIndicator={false}>
-            <View className="flex-row items-center py-4">
+            <TouchableOpacity
+              className="flex-row items-center py-4 px-4 rounded-2xl"
+              style={{ backgroundColor: theme.surface }}
+              onPress={handleViewProfile}
+              activeOpacity={0.7}
+            >
               <Avatar
                 source={foundUser.avatar ? { uri: foundUser.avatar } : undefined}
                 fallback={foundUser.name?.charAt(0) || '?'}
                 size="xl"
               />
               <View className="flex-1 ml-3 mr-2">
-                <Text className="text-base font-semibold">
-                  {foundUser.name || 'User'}
+                <Text className="text-base font-semibold" style={{ color: theme.text }}>
+                  {foundUser.name || 'Người dùng'}
                 </Text>
                 {foundUser.bio && (
                   <Text variant="muted" className="text-sm mt-1" numberOfLines={2}>
@@ -122,23 +149,33 @@ export default function AddFriendScreen() {
                   </Text>
                 )}
               </View>
-              <TouchableOpacity
-                className="px-4 py-2 rounded-full"
-                style={{ backgroundColor: theme.primary }}
-                onPress={handleAddFriend}
-              >
-                <Text className="text-white text-sm font-medium">Add friend</Text>
-              </TouchableOpacity>
-            </View>
+              <Ionicons name="chevron-forward" size={24} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="mt-4 py-3 rounded-full items-center"
+              style={{ backgroundColor: theme.primary }}
+              onPress={handleAddFriend}
+            >
+              <Text className="text-white text-base font-semibold">Kết bạn</Text>
+            </TouchableOpacity>
           </ScrollView>
         )}
 
         {/* Empty State */}
         {!foundUser && !loading && !error && (
           <View className="flex-1 justify-center items-center px-8">
-            <Text variant="muted" className="text-center">
-              Enter phone number to search for friends
-            </Text>
+            <View className="items-center">
+              <View
+                className="w-20 h-20 rounded-full items-center justify-center mb-4"
+                style={{ backgroundColor: isDark ? colors.dark.surface : colors.light.surface }}
+              >
+                <SearchIcon size={40} color={theme.textMuted} />
+              </View>
+              <Text variant="muted" className="text-center">
+                Nhập số điện thoại để tìm kiếm bạn bè
+              </Text>
+            </View>
           </View>
         )}
       </ScreenContainer>

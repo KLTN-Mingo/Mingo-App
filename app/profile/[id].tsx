@@ -3,29 +3,43 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Image,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
+import { CommentModal } from "@/components/post/CommentModal";
+import { PostCard } from "@/components/post/PostCard";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfo } from "@/components/profile/ProfileInfo";
-import { ProfileSkeleton } from "@/components/skeleton";
+import { ProfileRepostsList } from "@/components/profile/ProfileRepostsList";
+import { ProfileTabs } from "@/components/profile/ProfileTabs";
+import { VideoIcon } from "@/components/shared/icons/Icons";
 import { EmptyStateScreen } from "@/components/shared/ui/empty-state-screen";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
+import { ProfileSkeleton } from "@/components/skeleton";
 import { Button, Text } from "@/components/ui";
+import { paletteIcon } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
 import {
   CloseFriendStatus,
+  PostResponseDto,
   PublicUserDto,
   RelationshipStatusDto,
+  UserMinimalDto,
   UserProfileDto,
 } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSharePost } from "@/hooks/use-share-post";
 import { FollowApi } from "@/services/follow.service";
+import { postService } from "@/services/post.service";
 import { userService } from "@/services/user.service";
-import { getSemantic } from "@/styles/colors";
+import { colors, getSemantic } from "@/styles/colors";
+
+type TabKey = "posts" | "photos" | "videos" | "reposts";
 
 export default function UserProfileDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,6 +51,9 @@ export default function UserProfileDetailScreen() {
   const [acting, setActing] = useState(false);
   const [user, setUser] = useState<UserProfileDto | null>(null);
   const [relationship, setRelationship] = useState<RelationshipStatusDto | null>(null);
+  const [posts, setPosts] = useState<PostResponseDto[]>([]);
+  const [activeTab, setActiveTab] = useState<TabKey>("posts");
+  const [commentPostId, setCommentPostId] = useState<string | null>(null);
 
   const isMine = useMemo(() => !!id && !!me?.id && id === me.id, [id, me?.id]);
 
@@ -53,6 +70,13 @@ export default function UserProfileDetailScreen() {
           : userService.mapPublicUserToProfileView(rawUser as PublicUserDto)
       );
       setRelationship(rel as RelationshipStatusDto | null);
+
+      try {
+        const userPosts = await postService.fetchAllUserPosts(id);
+        setPosts(userPosts);
+      } catch (postError) {
+        console.warn("[profile] cannot load posts:", postError);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -67,6 +91,33 @@ export default function UserProfileDetailScreen() {
     setRefreshing(true);
     fetchData();
   };
+
+  const userMinimal: UserMinimalDto | null = me
+    ? {
+        id: me.id,
+        name: me.name,
+        avatar: me.avatar,
+        verified: me.verified,
+      }
+    : null;
+
+  const share = useSharePost({
+    currentUserId: me?.id,
+    onShared: ({ postId, sentCount }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + sentCount } : p
+        )
+      );
+    },
+    onReposted: ({ postId }) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
+        )
+      );
+    },
+  });
 
   const handleFollowAction = async () => {
     if (!id || isMine || acting) return;
@@ -122,6 +173,49 @@ export default function UserProfileDetailScreen() {
     );
   };
 
+  const handleEditProfile = () => {
+    router.push("/edit-profile" as never);
+  };
+
+  const handleUserPress = (userId: string) => {
+    if (userId === id) return;
+    router.push(`/profile/${userId}` as never);
+  };
+
+  const handlePostMorePress = (post: PostResponseDto) => {
+    if (!me || post.userId !== me.id) return;
+    Alert.alert("Your post", undefined, [
+      {
+        text: "Edit",
+        onPress: () =>
+          router.push({ pathname: "/create-post", params: { id: post.id } } as never),
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          Alert.alert("Delete post?", "This action cannot be undone.", [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  await postService.deletePost(post.id);
+                  setPosts((prev) => prev.filter((p) => p.id !== post.id));
+                } catch (e: unknown) {
+                  const msg = e instanceof Error ? e.message : "Cannot delete";
+                  Alert.alert("Error", msg);
+                }
+              },
+            },
+          ]);
+        },
+      },
+      { text: "Close", style: "cancel" },
+    ]);
+  };
+
   const followLabel = relationship?.isFollowing ? "Unfollow" : "Follow";
   const closeFriendLabel =
     relationship?.closeFriendStatus === CloseFriendStatus.ACCEPTED
@@ -145,33 +239,173 @@ export default function UserProfileDetailScreen() {
     );
   }
 
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "posts":
+        return posts.length > 0 ? (
+          <View className="flex-1 gap-4">
+            {posts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                currentUser={userMinimal}
+                onLikeChange={(postId, isLiked) => {
+                  setPosts((prev) =>
+                    prev.map((p) =>
+                      p.id === postId
+                        ? {
+                            ...p,
+                            isLiked,
+                            likesCount: isLiked
+                              ? p.likesCount + 1
+                              : p.likesCount - 1,
+                          }
+                        : p
+                    )
+                  );
+                }}
+                onCommentPress={(postId) => setCommentPostId(postId)}
+                onSharePress={share.openSheet}
+                onSaveChange={(postId, isSaved) => {
+                  setPosts((prev) =>
+                    prev.map((p) =>
+                      p.id === postId ? { ...p, isSaved } : p
+                    )
+                  );
+                }}
+                onUserPress={handleUserPress}
+                onMorePress={isMine ? handlePostMorePress : undefined}
+              />
+            ))}
+          </View>
+        ) : (
+          <EmptyState title="No posts yet" />
+        );
+
+      case "photos": {
+        const photos = posts
+          .flatMap((p) => p.media || [])
+          .filter((m) => m.mediaType === "image");
+
+        return photos.length > 0 ? (
+          <View className="flex-row flex-wrap">
+            {photos.map((photo, index) => (
+              <TouchableOpacity
+                key={photo.id || index}
+                style={{ width: "33.33%", aspectRatio: 1 }}
+                className="p-0.5"
+              >
+                <Image
+                  source={{ uri: photo.mediaUrl }}
+                  className="w-full h-full"
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <EmptyState title="No photos yet" />
+        );
+      }
+
+      case "videos": {
+        const videos = posts
+          .flatMap((p) => p.media || [])
+          .filter((m) => m.mediaType === "video");
+
+        return videos.length > 0 ? (
+          <View className="flex-row flex-wrap">
+            {videos.map((video, index) => (
+              <TouchableOpacity
+                key={video.id || index}
+                style={{ width: "33.33%", aspectRatio: 1 }}
+                className="p-0.5 relative"
+              >
+                <Image
+                  source={{ uri: video.thumbnailUrl || video.mediaUrl }}
+                  className="w-full h-full"
+                  resizeMode="cover"
+                />
+                <View className="absolute inset-0 items-center justify-center">
+                  <View className="bg-black/50 rounded-full p-2">
+                    <VideoIcon size={20} color={paletteIcon.light} />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <EmptyState title="No videos yet" />
+        );
+      }
+
+      case "reposts":
+        return (
+          <ProfileRepostsList userId={user.id} currentUser={userMinimal} />
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark" edges={["top"]}>
+    <ScreenContainer className="gap-6">
       <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary.light]}
+            tintColor={colors.primary.light}
+          />
+        }
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
       >
-        <View className="flex-row items-center px-4 pt-2 pb-1">
+        {/* Header */}
+        <View className="flex-row items-center justify-between">
           <TouchableOpacity
             onPress={() => router.back()}
-            className="p-2 -ml-2"
+            className="p-1 -ml-1"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Ionicons name="arrow-back" size={24} color={semantic.text} />
           </TouchableOpacity>
           <Text
-            className="text-[22px] text-neutral-900 dark:text-neutral-100 font-montserrat-bold flex-1 ml-1"
+            style={{ fontFamily: "Montserrat-Bold", fontSize: 18 }}
+            className="text-text-light dark:text-text-dark flex-1 ml-2"
             numberOfLines={1}
           >
             {user.name || "Profile"}
           </Text>
         </View>
 
-        <ProfileHeader user={user} isOwnProfile={false} />
-        <ProfileInfo user={user} isOwnProfile={false} />
+        {/* Avatar + cover */}
+        <ProfileHeader user={user} isOwnProfile={isMine} />
 
-        {!isMine && (
-          <View className="px-4 mt-4 gap-2">
+        {/* Bio + info */}
+        <ProfileInfo user={user} isOwnProfile={isMine} />
+
+        {/* Action buttons */}
+        {isMine ? (
+          <Button
+            variant="outline"
+            size="lg"
+            onPress={handleEditProfile}
+            className="rounded-full py-3.5"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.04,
+              shadowRadius: 4,
+              elevation: 1,
+            }}
+          >
+            Edit profile
+          </Button>
+        ) : (
+          <View className="gap-2">
             <View className="flex-row gap-2">
               <Button
                 variant={relationship?.isFollowing ? "outline" : "primary"}
@@ -191,19 +425,43 @@ export default function UserProfileDetailScreen() {
               </Button>
             </View>
             <Button variant="outline" onPress={handleBlockUser} disabled={acting}>
-              Chặn người dùng
+              Block user
             </Button>
+            {relationship ? (
+              <View className="p-3 rounded-lg bg-surface-muted-light dark:bg-surface-muted-dark">
+                <Text variant="muted">
+                  Relationship: {relationship.relationshipType}
+                </Text>
+              </View>
+            ) : null}
           </View>
         )}
 
-        {relationship && (
-          <TouchableOpacity className="mx-4 mt-3 p-3 rounded-lg bg-surface-muted-light dark:bg-surface-muted-dark">
-            <Text variant="muted">
-              Relationship: {relationship.relationshipType}
-            </Text>
-          </TouchableOpacity>
-        )}
+        {/* Tabs */}
+        <ProfileTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onFriendPress={() => router.push("/(tabs)/friend" as never)}
+        />
+
+        <View className="min-h-[200px] px-2">{renderTabContent()}</View>
       </ScrollView>
-    </SafeAreaView>
+
+      <CommentModal
+        postId={commentPostId}
+        onClose={() => setCommentPostId(null)}
+        onCommentCountChange={(postId, delta) => {
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id === postId
+                ? { ...p, commentsCount: Math.max(0, p.commentsCount + delta) }
+                : p
+            )
+          );
+        }}
+      />
+
+      {share.modals}
+    </ScreenContainer>
   );
 }

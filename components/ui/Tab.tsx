@@ -10,7 +10,8 @@ interface TabProps {
 }
 
 /**
- * Chip / tab ngang (Requests, Friends, …) theo mockup dark & light.
+ * Chip / tab ngang (Requests, Friends, …) theo Mingo design guide.
+ * Active: #768D85 background | Inactive: transparent border
  */
 export function Tab({
   content,
@@ -23,18 +24,10 @@ export function Tab({
     <TouchableOpacity
       onPress={onClick}
       activeOpacity={0.8}
-      className={`px-4 py-2 rounded-full ${
-        isActive
-          ? "bg-primary-100"
-          : "bg-surface-muted-light dark:bg-transparent border border-border-light dark:border-border-dark"
-      } ${className}`}
+      className={`px-4 py-2 rounded-full ${isActive ? "bg-primary" : "bg-transparent border border-border-light dark:border-border-dark"} ${className}`}
     >
       <Text
-        className={`font-medium text-base ${
-          isActive
-            ? "text-[#EFE7DF]"
-            : "text-text-light dark:text-text-dark"
-        }`}
+        className={`font-medium text-sm ${isActive ? "text-white" : "text-text-secondary-light dark:text-text-secondary-dark"}`}
       >
         {content}
         {badge !== undefined && badge > 0 ? ` (${badge})` : ""}

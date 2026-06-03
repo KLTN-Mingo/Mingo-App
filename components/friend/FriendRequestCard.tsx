@@ -28,23 +28,23 @@ export function FriendRequestCard({
     .map((f) => f.avatar!);
 
   return (
-    <View className="flex-row items-start px-4 py-5 bg-surface-muted-light dark:bg-surface-muted-dark rounded-[10px]">
+    <View className="flex-row items-start px-4 py-5 bg-surface-light dark:bg-surface-dark rounded-lg mb-4">
       {/* Avatar */}
       <Avatar
         source={user.avatar ? { uri: user.avatar } : undefined}
         fallback={user.name}
         size="lg"
-        className="mr-3"
+        className="mr-4"
       />
 
       {/* Content */}
-      <View className="flex-1 gap-4">
+      <View className="flex-1 gap-3">
         {/* Name & Message */}
         <View className="flex-row flex-wrap">
-          <Text className="text-base font-semibold text-text-light dark:text-text-dark">
-            {user.name || 'Unknown'} {" "}
+          <Text className="text-base font-bold text-text-light dark:text-text-dark">
+            {user.name || 'Unknown'}{" "}
           </Text>
-          <Text className="text-text-light dark:text-text-dark">
+          <Text className="text-base text-text-secondary-light dark:text-text-secondary-dark">
             sent you friend request
           </Text>
         </View>
@@ -54,15 +54,15 @@ export function FriendRequestCard({
           <View className="">
             <AvatarStack
               avatars={mutualAvatars}
-              maxDisplay={3}
-              size={18}
+              maxDisplay={2}
+              size={20}
               label={`${mutualCount} mutual friends`}
             />
           </View>
         )}
 
         {/* Action Buttons */}
-        <View className="flex-row gap-2">
+        <View className="flex-row gap-3">
           <Button
             variant="primary"
             size="md"
@@ -73,7 +73,7 @@ export function FriendRequestCard({
             Accept
           </Button>
           <Button
-            variant="outline"
+            variant="secondary"
             size="md"
             onPress={() => onDecline(id)}
             disabled={loading}

@@ -1,0 +1,73 @@
+---
+description: Expo Router patterns for screens in app/
+globs: ["app/**/*.tsx"]
+alwaysApply: false
+---
+
+# Expo Router Conventions
+
+This project uses **expo-router v6** with file-based routing.
+
+## File Naming & Structure
+
+- Route files: `kebab-case.tsx` (e.g. `add-friend.tsx`, `edit-profile.tsx`)
+- Route groups: `(group-name)/` — `(auth)`, `(tabs)`, `(modals)` — do NOT appear in URL
+- Dynamic routes: `[id].tsx` (e.g. `app/post/[id].tsx`)
+- Layouts: `_layout.tsx` per folder
+
+## Navigation
+
+```tsx
+import { router, useLocalSearchParams } from 'expo-router';
+
+router.push('/profile/123');
+router.push({ pathname: '/post/[id]', params: { id: postId } });
+router.back();
+
+const { id } = useLocalSearchParams<{ id: string }>();
+```
+
+- Use typed `useLocalSearchParams<{ id: string }>()` — never `any`
+- Use `<Link href="..." />` for static navigation, `router.push` inside handlers
+- Register new routes in the appropriate `_layout.tsx` `<Stack.Screen name="..." />` if they need custom presentation
+
+## Screen Template
+
+```tsx
+import { View } from 'react-native';
+import { ScreenHeader, Text } from '@/components/ui';
+
+export default function MyScreen() {
+  return (
+    <View className="flex-1 bg-background-light dark:bg-background-dark">
+      <ScreenHeader title="My Screen" />
+      {/* content */}
+    </View>
+  );
+}
+```
+
+## Modals
+
+Modal screens live under `app/(modals)/` and are configured in `app/(modals)/_layout.tsx` (current default: `presentation: 'transparentModal'`, `animation: 'fade'`).
+
+```tsx
+// Open a modal
+router.push('/(modals)/incoming-call');
+
+// Dismiss
+router.back();
+```
+
+Rules:
+- Any new modal route → put the file in `app/(modals)/` and add `<Stack.Screen name="..." />` to `app/(modals)/_layout.tsx`
+- For one-off modals at the root stack (e.g. `create-post`, see `app/_layout.tsx`), register them with `options={{ presentation: 'modal' }}`
+- DO NOT use `router.replace` to dismiss a modal — it breaks the back stack; use `router.back()`
+- DO NOT navigate to a modal with `<Link>` if you need imperative control after dismiss — use `router.push` so you can read the result via context/state
+
+## Don'ts
+
+- DO NOT import `NavigationContainer` — expo-router owns it
+- DO NOT use `react-navigation/native-stack` directly — use `Stack` from `expo-router`
+- DO NOT create deeply nested folders for screens that don't need them
+- DO NOT skip `SafeAreaView` / safe-area handling on screens with header
