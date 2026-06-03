@@ -216,7 +216,7 @@ export default function ChatListScreen() {
             <View style={{ backgroundColor: colors[500] }}>
               {friendsLoading ? (
                 <View style={{ paddingVertical: 14, alignItems: "center" }}>
-                  <ActivityIndicator size="small" color="#FFAABB" />
+                  <ActivityIndicator size="small" color="#768D85" />
                 </View>
               ) : (
                 <ScrollView

@@ -1061,7 +1061,7 @@ export function MessageInput({
               disabled={sendingFile}
               style={[
                 styles.recordingActionBtn,
-                { backgroundColor: "#FFAABB", opacity: sendingFile ? 0.5 : 1 },
+                { backgroundColor: "#768D85", opacity: sendingFile ? 0.5 : 1 },
               ]}
             >
               <RNText style={styles.recordingActionText}>
@@ -1158,7 +1158,7 @@ export function MessageInput({
                 opacity: text.trim() && !disabled && !sending ? 1 : 0.5,
               }}
             >
-              <SendIcon size={28} color="#FFAABB" />
+              <SendIcon size={28} color="#768D85" />
             </TouchableOpacity>
           </>
         )}

@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -9,13 +10,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 
 import { ChatListItem } from "@/components/chat";
 import { ActionInput, Avatar, Text } from "@/components/ui";
-import { ChatConversationDto, ConversationType } from "@/dtos";
 import { useAuth } from "@/context/AuthContext";
 import { useChatContext } from "@/context/ChatContext";
+import { ChatConversationDto, ConversationType } from "@/dtos";
 import { useChatList } from "@/hooks/use-chat-list";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { FriendOnlineItem, messageService } from "@/services/message.service";
@@ -72,7 +72,9 @@ export default function MessageScreen() {
 
   const handleFriendPress = async (friend: FriendOnlineItem) => {
     try {
-      const { boxId, isNew } = await messageService.getOrCreateDirectBox(friend.id);
+      const { boxId, isNew } = await messageService.getOrCreateDirectBox(
+        friend.id
+      );
 
       if (isNew) {
         // boxId = friend.id (userId) khi isNew=true — box thật chưa tồn tại trên server
@@ -84,12 +86,14 @@ export default function MessageScreen() {
           avatarUrl: friend.avatar,
           updatedAt: new Date().toISOString(),
           participantIds: [friend.id],
-          participants: [{
-            id: friend.id,
-            name: friend.name,
-            avatar: friend.avatar,
-            verified: friend.verified,
-          }],
+          participants: [
+            {
+              id: friend.id,
+              name: friend.name,
+              avatar: friend.avatar,
+              verified: friend.verified,
+            },
+          ],
           unreadCount: 0,
         };
         setConversations((prev) =>
@@ -225,8 +229,12 @@ export default function MessageScreen() {
                     >
                       <View style={{ position: "relative" }}>
                         <Avatar
-                          source={friend.avatar ? { uri: friend.avatar } : undefined}
-                          fallback={friend.name?.charAt(0)?.toUpperCase() ?? "?"}
+                          source={
+                            friend.avatar ? { uri: friend.avatar } : undefined
+                          }
+                          fallback={
+                            friend.name?.charAt(0)?.toUpperCase() ?? "?"
+                          }
                           className="w-[52px] h-[52px]"
                         />
                         <View
@@ -237,7 +245,9 @@ export default function MessageScreen() {
                             width: 13,
                             height: 13,
                             borderRadius: 99,
-                            backgroundColor: friend.onlineStatus ? "#22C55E" : "#6B7280",
+                            backgroundColor: friend.onlineStatus
+                              ? "#22C55E"
+                              : "#6B7280",
                             borderWidth: 2,
                             borderColor: colors[500],
                           }}
@@ -262,7 +272,8 @@ export default function MessageScreen() {
               <View
                 style={{
                   height: 1,
-                  backgroundColor: colorScheme === "dark" ? "#2a2a2a" : "#EBEBEB",
+                  backgroundColor:
+                    colorScheme === "dark" ? "#2a2a2a" : "#EBEBEB",
                   marginHorizontal: 16,
                   marginBottom: 4,
                 }}

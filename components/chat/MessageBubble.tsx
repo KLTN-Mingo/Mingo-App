@@ -12,17 +12,10 @@ import {
 } from "react-native";
 
 import { Text } from "@/components/ui";
+import { chatTheme } from "@/constants/chatTheme";
 import { MessageResponseDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { messageService } from "@/services/message.service";
-
-// Old Mingo_App MessageCard colors
-const bubbleColors = {
-  own: "#768D85", // primary[100]
-  otherDark: "#2D2F2F", // dark[400]
-  otherLight: "#c01414", // light surface for other bubble
-  dateMuted: "#6B7280",
-};
 
 interface MessageBubbleProps {
   message: MessageResponseDto;
@@ -30,13 +23,11 @@ interface MessageBubbleProps {
   showDateSeparator?: boolean;
   dateLabel?: string;
   otherAvatarUrl?: string | null;
+  senderName?: string | null;
   onMessageRevoked?: (messageId: string) => void;
   onMessageDeleted?: (messageId: string) => void;
   onMessageEdited?: (messageId: string, newContent: string) => void;
-  onMessageReverted?: (
-    messageId: string,
-    snapshot: MessageResponseDto
-  ) => void;
+  onMessageReverted?: (messageId: string, snapshot: MessageResponseDto) => void;
 }
 
 type BubbleMessageType = "text" | "image" | "video" | "audio" | "file";
@@ -239,9 +230,11 @@ function FileMessage({ uri, fileName }: { uri: string; fileName: string }) {
 function MessageContent({
   message,
   isOwn,
+  otherTextColor,
 }: {
   message: MessageResponseDto;
   isOwn: boolean;
+  otherTextColor: string;
 }) {
   const messageType = useMemo(() => resolveMessageType(message), [message]);
   const uri = useMemo(() => resolveMediaUri(message), [message]);
@@ -252,13 +245,22 @@ function MessageContent({
     return (
       <View>
         <Text
-          style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther]}
+          style={[
+            styles.bubbleText,
+            isOwn ? styles.textOwn : { color: otherTextColor },
+          ]}
           selectable
         >
           {message.content || ""}
         </Text>
         {message.isEdited && (
-          <Text style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther, styles.editedText]}>
+          <Text
+            style={[
+              styles.bubbleText,
+              isOwn ? styles.textOwn : { color: otherTextColor },
+              styles.editedText,
+            ]}
+          >
             (Edited)
           </Text>
         )}
@@ -269,7 +271,10 @@ function MessageContent({
   if (!uri) {
     return (
       <Text
-        style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther]}
+        style={[
+          styles.bubbleText,
+          isOwn ? styles.textOwn : { color: otherTextColor },
+        ]}
       >
         Unsupported message
       </Text>
@@ -288,7 +293,10 @@ function MessageContent({
     default:
       return (
         <Text
-          style={[styles.bubbleText, isOwn ? styles.textOwn : styles.textOther]}
+          style={[
+            styles.bubbleText,
+            isOwn ? styles.textOwn : { color: otherTextColor },
+          ]}
           selectable
         >
           {message.content || ""}
@@ -303,6 +311,7 @@ export function MessageBubble({
   showDateSeparator,
   dateLabel,
   otherAvatarUrl,
+  senderName,
   onMessageRevoked,
   onMessageDeleted,
   onMessageEdited,
@@ -310,8 +319,13 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   const isRevoked = message.isRevoked;
   const colorScheme = useColorScheme() ?? "light";
-  const otherBubbleBg =
-    colorScheme === "dark" ? bubbleColors.otherDark : bubbleColors.otherDark;
+  const isDark = colorScheme === "dark";
+  const otherBubbleBg = isDark
+    ? chatTheme.otherBubbleDark
+    : chatTheme.otherBubbleLight;
+  const otherBubbleText = isDark
+    ? chatTheme.otherBubbleTextDark
+    : chatTheme.otherBubbleTextLight;
 
   const [actionVisible, setActionVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
@@ -396,14 +410,30 @@ export function MessageBubble({
             {otherAvatarUrl ? (
               <Image source={{ uri: otherAvatarUrl }} style={styles.avatar} />
             ) : (
-              <View
-                style={[styles.avatar, { backgroundColor: otherBubbleBg }]}
-              />
+              <View style={[styles.avatar, styles.avatarFallback]}>
+                <Text style={styles.avatarFallbackText}>
+                  {(senderName ?? "?").charAt(0).toUpperCase()}
+                </Text>
+              </View>
             )}
           </View>
         )}
 
-        <TouchableOpacity
+        <View style={{ flexDirection: "column", flexShrink: 1 }}>
+          {!isOwn && senderName && (
+            <Text
+              style={{
+                fontSize: 11,
+                color: chatTheme.textMuted,
+                marginLeft: 4,
+                marginBottom: 2,
+              }}
+            >
+              {senderName}
+            </Text>
+          )}
+
+          <TouchableOpacity
           onLongPress={() => {
             if (!isRevoked) setActionVisible(true);
           }}
@@ -421,17 +451,22 @@ export function MessageBubble({
               <Text
                 style={[
                   styles.bubbleText,
-                  isOwn ? styles.textOwn : styles.textOther,
+                  isOwn ? styles.textOwn : { color: otherBubbleText },
                   styles.unsentText,
                 ]}
               >
                 Message unsent
               </Text>
             ) : (
-              <MessageContent message={message} isOwn={isOwn} />
+              <MessageContent
+                message={message}
+                isOwn={isOwn}
+                otherTextColor={otherBubbleText}
+              />
             )}
           </View>
         </TouchableOpacity>
+        </View>
       </View>
 
       {/* Action Bottom Sheet */}
@@ -451,15 +486,7 @@ export function MessageBubble({
 
           {isOwn && isTextMessage && (
             <TouchableOpacity style={actionStyles.row} onPress={handleEdit}>
-              <View
-                style={[
-                  actionStyles.iconWrap,
-                  { backgroundColor: "rgba(100,181,246,0.15)" },
-                ]}
-              >
-                <Text style={{ fontSize: 20 }}>✏️</Text>
-              </View>
-              <View>
+              <View style={actionStyles.contentCenter}>
                 <Text style={actionStyles.rowTitle}>Edit</Text>
                 <Text style={actionStyles.rowSub}>Change message content</Text>
               </View>
@@ -470,16 +497,10 @@ export function MessageBubble({
             <>
               <View style={actionStyles.divider} />
               <TouchableOpacity style={actionStyles.row} onPress={handleRevoke}>
-                <View
-                  style={[
-                    actionStyles.iconWrap,
-                    { backgroundColor: "rgba(229,57,53,0.1)" },
-                  ]}
-                >
-                  <Text style={{ fontSize: 20 }}>↩️</Text>
-                </View>
-                <View>
-                  <Text style={[actionStyles.rowTitle, { color: "#E53935" }]}>
+                <View style={actionStyles.contentCenter}>
+                  <Text
+                    style={[actionStyles.rowTitle, { color: chatTheme.danger }]}
+                  >
                     Unsend
                   </Text>
                   <Text style={actionStyles.rowSub}>Remove for everyone</Text>
@@ -490,16 +511,10 @@ export function MessageBubble({
 
           <View style={actionStyles.divider} />
           <TouchableOpacity style={actionStyles.row} onPress={handleDelete}>
-            <View
-              style={[
-                actionStyles.iconWrap,
-                { backgroundColor: "rgba(229,57,53,0.1)" },
-              ]}
-            >
-              <Text style={{ fontSize: 20 }}>🗑️</Text>
-            </View>
-            <View>
-              <Text style={[actionStyles.rowTitle, { color: "#E53935" }]}>
+            <View style={actionStyles.contentCenter}>
+              <Text
+                style={[actionStyles.rowTitle, { color: chatTheme.danger }]}
+              >
                 Delete
               </Text>
               <Text style={actionStyles.rowSub}>Remove for you only</Text>
@@ -535,14 +550,16 @@ export function MessageBubble({
           <TouchableOpacity activeOpacity={1}>
             <View
               style={{
-                backgroundColor: colorScheme === "dark" ? "#252525" : "#FFFFFF",
+                backgroundColor: isDark
+                  ? chatTheme.sheetDark
+                  : chatTheme.sheetLight,
                 borderRadius: 20,
                 padding: 20,
               }}
             >
               <Text
                 style={{
-                  color: colorScheme === "dark" ? "#CFBFAD" : "#1E2021",
+                  color: isDark ? chatTheme.textDark : chatTheme.textLight,
                   fontSize: 17,
                   fontWeight: "700",
                   marginBottom: 16,
@@ -557,10 +574,12 @@ export function MessageBubble({
                 multiline
                 autoFocus
                 style={{
-                  backgroundColor: colorScheme === "dark" ? "#333" : "#F5F5F5",
+                  backgroundColor: isDark
+                    ? chatTheme.cancelBgDark
+                    : chatTheme.cancelBgLight,
                   borderRadius: 12,
                   padding: 12,
-                  color: colorScheme === "dark" ? "#CFBFAD" : "#1E2021",
+                  color: isDark ? chatTheme.textDark : chatTheme.textLight,
                   fontSize: 15,
                   minHeight: 80,
                   maxHeight: 160,
@@ -577,13 +596,15 @@ export function MessageBubble({
                     paddingVertical: 13,
                     borderRadius: 12,
                     backgroundColor:
-                      colorScheme === "dark" ? "#333" : "#F0F0F0",
+                      colorScheme === "dark"
+                        ? chatTheme.cancelBgDark
+                        : chatTheme.cancelBgLight,
                     alignItems: "center",
                   }}
                 >
                   <Text
                     style={{
-                      color: colorScheme === "dark" ? "#CFBFAD" : "#1E2021",
+                      color: isDark ? chatTheme.textDark : chatTheme.textLight,
                       fontWeight: "600",
                     }}
                   >
@@ -596,11 +617,15 @@ export function MessageBubble({
                     flex: 1,
                     paddingVertical: 13,
                     borderRadius: 12,
-                    backgroundColor: "#FFAABB",
+                    backgroundColor: chatTheme.accent,
                     alignItems: "center",
                   }}
                 >
-                  <Text style={{ color: "#fff", fontWeight: "600" }}>Save</Text>
+                  <Text
+                    style={{ color: chatTheme.accentText, fontWeight: "600" }}
+                  >
+                    Save
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -629,7 +654,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
-    color: bubbleColors.dateMuted,
+    color: chatTheme.dateMuted,
   },
   row: {
     flexDirection: "row",
@@ -645,6 +670,16 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 50,
   },
+  avatarFallback: {
+    backgroundColor: chatTheme.ownBubble,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarFallbackText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
   bubble: {
     maxWidth: "100%",
     paddingHorizontal: 14,
@@ -658,7 +693,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   bubbleOwn: {
-    backgroundColor: bubbleColors.own,
+    backgroundColor: chatTheme.ownBubble,
   },
   bubbleOther: {},
   bubbleText: {
@@ -668,7 +703,7 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   textOther: {
-    color: "#ffffff",
+    color: chatTheme.otherBubbleTextDark, // fallback; dynamic color passed via otherTextColor prop
   },
   unsentText: {
     fontStyle: "italic",
@@ -735,7 +770,7 @@ const actionStyles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#252525",
+    backgroundColor: chatTheme.sheetDark,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 36,
@@ -745,13 +780,13 @@ const actionStyles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#555",
+    backgroundColor: chatTheme.handleDark,
     alignSelf: "center",
     marginBottom: 20,
   },
   divider: {
     height: 1,
-    backgroundColor: "#333",
+    backgroundColor: chatTheme.dividerDark,
     marginHorizontal: 20,
     marginVertical: 4,
   },
@@ -769,26 +804,32 @@ const actionStyles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 16,
   },
+  contentCenter: {
+    flex: 1,
+    alignItems: "center",
+  },
   rowTitle: {
-    color: "#CFBFAD",
+    color: chatTheme.textDark,
     fontSize: 15,
     fontWeight: "600",
+    textAlign: "center",
   },
   rowSub: {
-    color: "#92898A",
+    color: chatTheme.textMuted,
     fontSize: 12,
     marginTop: 2,
+    textAlign: "center",
   },
   cancelBtn: {
     marginHorizontal: 16,
     marginTop: 12,
-    backgroundColor: "#333",
+    backgroundColor: chatTheme.cancelBgDark,
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: "center",
   },
   cancelText: {
-    color: "#CFBFAD",
+    color: chatTheme.textDark,
     fontSize: 16,
     fontWeight: "600",
   },

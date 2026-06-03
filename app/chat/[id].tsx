@@ -15,12 +15,7 @@ import {
 } from "react-native-safe-area-context";
 
 import { InfoChat, MessageBubble, MessageInput } from "@/components/chat";
-import {
-  ArrowIcon,
-  CallIcon,
-  InfoIcon,
-  VideoCallIcon,
-} from "@/components/shared/icons/Icons";
+import { ArrowIcon, InfoIcon } from "@/components/shared/icons/Icons";
 import { Avatar, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useCall } from "@/context/CallContext";
@@ -105,6 +100,26 @@ export default function ChatScreen() {
 
   const conversation = found ?? localConversation;
 
+  // Map senderId -> avatar từ participants
+  const participantAvatarMap = React.useMemo(() => {
+    const map: Record<string, string | null | undefined> = {};
+    const parts = conversation?.participants ?? [];
+    for (const p of parts) {
+      map[p.id] = p.avatar;
+    }
+    return map;
+  }, [conversation?.participants]);
+
+  // Lấy senderName cho group
+  const getSenderName = React.useCallback(
+    (senderId: string) => {
+      if (!isGroup || senderId === currentUserId) return null;
+      const p = conversation?.participants?.find((p) => p.id === senderId);
+      return p?.name ?? null;
+    },
+    [isGroup, currentUserId, conversation?.participants]
+  );
+
   const { startVideoCall, startAudioCall } = useCall();
   const handleMessageSent = useCallback(
     (newMsg: MessageResponseDto) => {
@@ -137,9 +152,7 @@ export default function ChatScreen() {
   const updateMessageLocallyRef = useRef<
     (messageId: string, newContent: string) => void
   >(() => {});
-  const revokeMessageLocallyRef = useRef<(messageId: string) => void>(
-    () => {}
-  );
+  const revokeMessageLocallyRef = useRef<(messageId: string) => void>(() => {});
   const deleteMessageLocallyRef = useRef<(messageId: string) => void>(() => {});
   const revertMessageLocallyRef = useRef<
     (messageId: string, snapshot: import("@/dtos").MessageResponseDto) => void
@@ -219,6 +232,9 @@ export default function ChatScreen() {
     if (found) return;
     if (!localConversation) return;
 
+    // chỉ group mới có khái niệm bị kick
+    if (localConversation.type !== ConversationType.GROUP) return;
+
     Alert.alert(
       "Removed from group",
       `You have been removed from "${localConversation.name}".`,
@@ -230,35 +246,6 @@ export default function ChatScreen() {
       ]
     );
   }, [conversations, found, localConversation, router]);
-
-  const roomId = id ?? "";
-  const receiverId =
-    conversation?.participantIds?.find((pid) => pid !== currentUserId) ??
-    conversation?.participants?.find((p) => p.id !== currentUserId)?.id ??
-    "";
-  const receiverName = conversation?.name ?? "";
-  const receiverAvatar = conversation?.avatarUrl ?? "";
-
-  const handleVideoCall = () => {
-    if (!receiverId) return;
-    startVideoCall({
-      roomId,
-      receiverId,
-      receiverName,
-      receiverAvatar,
-    });
-  };
-
-  const handleAudioCall = () => {
-    if (!receiverId) return;
-
-    startAudioCall({
-      roomId,
-      receiverId,
-      receiverName,
-      receiverAvatar,
-    });
-  };
 
   // Scroll lần đầu sau khi load xong
   useEffect(() => {
@@ -356,7 +343,7 @@ export default function ChatScreen() {
               style={{ paddingTop: 8, paddingRight: 8 }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <ArrowIcon size={30} color="#FFAABB" />
+              <ArrowIcon size={30} color="#768D85" />
             </TouchableOpacity>
             <View
               style={{
@@ -396,12 +383,6 @@ export default function ChatScreen() {
               gap: 8,
             }}
           >
-            <TouchableOpacity onPress={handleAudioCall}>
-              <CallIcon size={28} color={iconColor} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleVideoCall}>
-              <VideoCallIcon size={30} color={iconColor} />
-            </TouchableOpacity>
             <TouchableOpacity onPress={() => setInfoModalVisible(true)}>
               <InfoIcon size={30} color={iconColor} />
             </TouchableOpacity>
@@ -535,7 +516,12 @@ export default function ChatScreen() {
                     isOwn={item.senderId === currentUserId}
                     showDateSeparator={showDateSeparator}
                     dateLabel={formatDateLabel(item.createdAt)}
-                    otherAvatarUrl={conversation?.avatarUrl}
+                    otherAvatarUrl={
+                      isGroup
+                        ? (participantAvatarMap[item.senderId] ?? null)
+                        : (conversation?.avatarUrl ?? null)
+                    }
+                    senderName={getSenderName(item.senderId)}
                     onMessageRevoked={handleMessageRevoked}
                     onMessageDeleted={handleMessageDeleted}
                     onMessageEdited={handleMessageEdited}
