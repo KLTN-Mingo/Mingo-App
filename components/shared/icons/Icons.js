@@ -1,6 +1,5 @@
-import Svg, { Path, Rect, Circle } from "react-native-svg";
-import { useTheme } from "@react-navigation/native";
 import { statusColors } from "@/styles/colors";
+import Svg, { Circle, Path, Rect } from "react-native-svg";
 const SearchIcon = ({ size = 24, color }) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 256 256" fill="none">
@@ -245,7 +244,11 @@ const PlusIcon = ({ size = 50, color = "currentColor" }) => (
   </Svg>
 );
 
-const MicroIcon = ({ size = 24, color = "currentColor", onClick = undefined }) => (
+const MicroIcon = ({
+  size = 24,
+  color = "currentColor",
+  onClick = undefined,
+}) => (
   <Svg
     width={size}
     height={size}
@@ -958,7 +961,10 @@ export const DocTypeIcon = ({ size = 70, color = statusColors.info.light }) => {
   );
 };
 
-export const PptTypeIcon = ({ size = 70, color = statusColors.error.light }) => {
+export const PptTypeIcon = ({
+  size = 70,
+  color = statusColors.error.light,
+}) => {
   // Red for PowerPoint
   return (
     <Svg
@@ -978,7 +984,10 @@ export const PptTypeIcon = ({ size = 70, color = statusColors.error.light }) => 
   );
 };
 
-export const PdfTypeIcon = ({ size = 70, color = statusColors.error.light }) => {
+export const PdfTypeIcon = ({
+  size = 70,
+  color = statusColors.error.light,
+}) => {
   // Red for PDF
   return (
     <Svg
@@ -1334,82 +1343,94 @@ const AddMediaIcon = ({ size = 24, color = "currentColor" }) => (
     />
   </Svg>
 );
+
+const TagIcon = ({ size = 50, color = "currentColor" }) => (
+  <Svg width={size} height={size} viewBox="0 0 50 50" fill="none">
+    <Path
+      fill={color}
+      d="M38.5 27.1L22.9 42.7c-.8.8-1.8 1.2-2.9 1.2s-2.1-.4-2.9-1.2L7.3 32.9C6.5 32.1 6 31.1 6 30s.4-2.1 1.2-2.9L22.9 11.5C23.7 10.5 24.8 10 26 10h10c2.2 0 4 1.8 4 4v10c0 1.2-.5 2.3-1.5 3.1M38 14H26L10.4 29.6c-.4.4-.4 1 0 1.4l9.8 9.8c.4.4 1 .4 1.4 0L37.2 25.1c.5-.5.8-1.1.8-1.8V14"
+    />
+    <Path fill={color} d="M32 16a2 2 0 1 1 0 4a2 2 0 0 1 0-4" />
+  </Svg>
+);
+
 export {
-  AddMediaIcon,
-  HobbyIcon,
-  LocationPinIcon,
-  JobIcon,
-  DobIcon,
-  GenderFemaleIcon,
-  GenderMaleIcon,
-  EmailIcon,
-  CalendarIcon,
+  ActivityIcon,
   AddIcon,
-  SearchIcon,
-  MessageIcon,
-  PictureIcon,
-  VideoIcon,
-  EmotionIcon,
-  LikeIcon,
-  CommentIcon,
-  ShareIcon,
-  MenuIcon,
+  AddMediaIcon,
   ArrowIcon,
-  CallIcon,
-  VideoCallIcon,
-  InfoIcon,
-  CameraIcon,
-  ImageIcon,
-  PlusIcon,
-  MicroIcon,
-  SendIcon,
-  UserIcon,
-  NotificationIcon,
-  NotificationOffIcon,
-  FileIcon,
-  ReportIcon,
-  BlockIcon,
-  TrashIcon,
-  SettingsIcon,
-  SaveIcon,
-  HistoryIcon,
-  PostIcon,
-  FriendIcon,
-  MediaIcon,
-  ProfileIcon,
-  KeyIcon,
-  ThreeDot,
+  ArrowLeftIcon,
   ArrowRightIcon,
-  PenIcon,
-  SoccerIcon,
-  SwimIcon,
-  RunIcon,
-  BookIcon,
-  GameIcon,
-  ChefIcon,
-  PlaneIcon,
-  CodeIcon,
-  PaletteIcon,
-  DanceIcon,
-  YogaIcon,
   BikeIcon,
+  BlockIcon,
+  BookIcon,
+  CalendarIcon,
+  CallIcon,
+  CameraIcon,
+  CancelIcon,
+  ChefIcon,
+  ChessIcon,
+  CircleFillIcon,
+  CircleTickIcon,
+  CodeIcon,
+  CommentIcon,
+  CraftingIcon,
+  DanceIcon,
+  DobIcon,
+  EmailIcon,
+  EmotionIcon,
+  FileIcon,
   FishingIcon,
   FlowerIcon,
-  CraftingIcon,
+  FriendIcon,
+  GameIcon,
+  GenderFemaleIcon,
+  GenderMaleIcon,
+  HistoryIcon,
+  HobbyIcon,
+  ImageIcon,
+  InfoIcon,
+  JobIcon,
+  KeyIcon,
+  LikeIcon,
+  LinkIcon,
+  LocationIcon,
+  LocationPinIcon,
+  LockIcon,
+  LogoutIcon,
+  MediaIcon,
+  MenuIcon,
+  MessageIcon,
+  MicroIcon,
+  MicrophoneIcon,
+  MoonIcon,
   MovieIcon,
   MusicIcon,
-  ChessIcon,
-  MicrophoneIcon,
-  CancelIcon,
-  LinkIcon,
-  ThreeDotsIcon,
-  CircleTickIcon,
-  CircleFillIcon,
-  LogoutIcon,
-  LocationIcon,
-  ArrowLeftIcon,
-  ActivityIcon,
-  LockIcon,
+  NotificationIcon,
+  NotificationOffIcon,
+  PaletteIcon,
+  PenIcon,
+  PictureIcon,
+  PlaneIcon,
+  PlusIcon,
+  PostIcon,
+  ProfileIcon,
+  ReportIcon,
+  RunIcon,
+  SaveIcon,
+  SearchIcon,
+  SendIcon,
+  SettingsIcon,
+  ShareIcon,
+  SoccerIcon,
   SunIcon,
-  MoonIcon,
+  SwimIcon,
+  TagIcon,
+  ThreeDot,
+  ThreeDotsIcon,
+  TrashIcon,
+  UserIcon,
+  VideoCallIcon,
+  VideoIcon,
+  YogaIcon,
 };

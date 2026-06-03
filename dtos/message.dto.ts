@@ -65,9 +65,18 @@ export interface ChatConversationDto {
   updatedAt: string;
   participantIds?: string[];
   participants?: UserMinimalDto[];
+  category?: string;
 }
 
 export interface PaginatedMessagesDto {
   messages: MessageResponseDto[];
   pagination: PaginationDto;
+}
+
+export interface CreateGroupDto {
+  membersIds: string[];
+  groupName: string;
+  groupAva?: string;
+  description?: string;
+  category?: "friends" | "family" | "work" | "other";
 }

@@ -9,6 +9,7 @@ import {
   ApiResponse,
   ChatConversationDto,
   ConversationType,
+  CreateGroupDto,
   MessageResponseDto,
 } from "@/dtos";
 import { authService } from "@/services/auth.service";
@@ -147,19 +148,21 @@ function getFormatFromFileName(name?: string | null): string {
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 class MessageServiceClass {
-  private async getAuthHeaders(isFormData: boolean): Promise<Record<string, string>> {
+  private async getAuthHeaders(
+    isFormData: boolean
+  ): Promise<Record<string, string>> {
     const token = await authService.getAccessToken();
-    
+
     const headers: Record<string, string> = {
       Authorization: `Bearer ${token}`,
     };
-  
+
     // CHỈ set application/json khi không phải là FormData
     if (!isFormData) {
       headers["Content-Type"] = "application/json";
     }
     // Nếu là FormData, TUYỆT ĐỐI không định nghĩa Content-Type, để fetch tự xử lý
-  
+
     return headers;
   }
 
@@ -195,6 +198,7 @@ class MessageServiceClass {
     const json = (await response.json()) as ApiResponse<T>;
 
     if (!response.ok) {
+      console.log("Backend Error Payload:", JSON.stringify(json));
       const msg =
         typeof (json as { message?: string }).message === "string"
           ? (json as { message: string }).message
@@ -478,6 +482,7 @@ class MessageServiceClass {
       avatarUrl?: string;
       role: "admin" | "member";
     }[];
+    category?: "friends" | "family" | "work" | "other";
   }> {
     const data = await this.request<{
       group: {
@@ -489,6 +494,7 @@ class MessageServiceClass {
           onlineStatus?: boolean;
         }[];
         adminIds: { _id: string }[];
+        category?: "friends" | "family" | "work" | "other";
       };
     }>("GET", `/boxes/${encodeURIComponent(boxId)}/detail`);
 
@@ -500,6 +506,7 @@ class MessageServiceClass {
         avatarUrl: m.avatar,
         role: adminMap.has(m._id) ? ("admin" as const) : ("member" as const),
       })),
+      category: data.group?.category,
     };
   }
 
@@ -574,6 +581,7 @@ class MessageServiceClass {
         type: ConversationType.GROUP,
         name: box.groupName ?? "Group",
         avatarUrl: box.groupAva,
+        category: (box as any).category ?? "other",
         updatedAt,
         participantIds,
         participants,
@@ -699,6 +707,31 @@ class MessageServiceClass {
       ? await this.getGroupMessages(boxId)
       : await this.getMessages(boxId);
     return (data.messages ?? []).map((m) => this.mapMessageToDto(m));
+  }
+
+  async createGroup(
+    leaderId: string, // Giữ nguyên tham số này để không lỗi các file khác
+    dto: CreateGroupDto
+  ): Promise<{ success: boolean; message: string; box: any }> {
+    // Sửa thành "/boxes" vì MESSAGES_BASE đã bao gồm đoạn "/api/messages"
+    return this.request("POST", "/boxes", {
+      body: dto,
+    });
+  }
+
+  async updateGroupCategory(
+    boxId: string,
+    category: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request("PATCH", `/boxes/${boxId}/category`, {
+      body: { category },
+    });
+  }
+
+  async getGroupCategory(
+    boxId: string
+  ): Promise<{ success: boolean; category: string }> {
+    return this.request("GET", `/boxes/${boxId}/category`);
   }
 }
 

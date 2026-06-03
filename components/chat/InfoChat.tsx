@@ -7,6 +7,7 @@ import {
   PlusIcon,
   ReportIcon,
   SearchIcon,
+  TagIcon,
   TrashIcon,
   UserIcon,
 } from "@/components/shared/icons/Icons";
@@ -73,7 +74,17 @@ export function InfoChat({
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [category, setCategory] = useState("");
+  const [updatingCategory, setUpdatingCategory] = useState(false);
 
+  const validCategories = [
+    { id: "friends", label: "Friends" },
+    { id: "family", label: "Family" },
+    { id: "work", label: "Work" },
+    { id: "other", label: "Other" },
+  ];
+
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [friends, setFriends] = useState<UserMinimalDto[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -104,12 +115,14 @@ export function InfoChat({
     if (!visible || !conversation?.id) return;
     setLoadingMedia(true);
     setLoadingMembers(true);
+    setCategory(conversation.category ?? "");
+
     Promise.all([
       messageService.getImageList(conversation.id),
       messageService.getFileList(conversation.id),
       isGroup
         ? messageService.getGroupDetail(conversation.id)
-        : Promise.resolve({ members: [] }),
+        : Promise.resolve({ members: [], category: undefined }),
     ])
       .then(([imgs, fils, detail]) => {
         setImages(imgs);
@@ -120,6 +133,9 @@ export function InfoChat({
             (m) => m.id === currentUserId && m.role === "admin"
           );
           setIsAdmin(amAdmin);
+          if (detail.category !== undefined) {
+            setCategory(detail.category || "");
+          }
         }
       })
       .catch((err) => console.error("Error loading data:", err))
@@ -127,7 +143,7 @@ export function InfoChat({
         setLoadingMedia(false);
         setLoadingMembers(false);
       });
-  }, [visible, conversation?.id, isGroup, currentUserId]);
+  }, [visible, conversation?.id, isGroup, currentUserId, conversation]);
 
   const handleDeleteChat = () => {
     if (!conversation?.id) return;
@@ -478,16 +494,6 @@ export function InfoChat({
             >
               {conversation?.name ?? "Chat"}
             </Text>
-            <Text
-              style={{
-                color: textColor,
-                fontSize: 14,
-                opacity: 0.8,
-                marginTop: 4,
-              }}
-            >
-              {isGroup ? "Group" : "Direct chat"}
-            </Text>
           </View>
 
           <View
@@ -566,6 +572,41 @@ export function InfoChat({
                 Search
               </Text>
             </TouchableOpacity>
+
+            {isGroup && isAdmin && (
+              <TouchableOpacity
+                onPress={() => setShowCategoryModal(true)}
+                style={{ alignItems: "center", width: 72 }}
+              >
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: category
+                      ? isDark
+                        ? "rgba(255,170,187,0.15)"
+                        : "rgba(255,100,130,0.1)"
+                      : surfaceColor,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <TagIcon size={22} color={iconColor} />
+                </View>
+                <Text
+                  style={{
+                    color: textColor,
+                    fontSize: 12,
+                    marginTop: 6,
+                  }}
+                  numberOfLines={1}
+                >
+                  {validCategories.find((c) => c.id === category)?.label ??
+                    "Category"}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={{ paddingHorizontal: 16 }}>
@@ -846,6 +887,148 @@ export function InfoChat({
           </View>
         </ScrollView>
       </View>
+
+      {/* Category Modal */}
+      <Modal
+        transparent
+        animationType="slide"
+        visible={showCategoryModal}
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)" }}
+          activeOpacity={1}
+          onPress={() => setShowCategoryModal(false)}
+        />
+        <View
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: isDark
+              ? chatTheme.sheetDark
+              : chatTheme.sheetLight,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingBottom: Platform.OS === "ios" ? 40 : 28,
+            paddingTop: 12,
+            paddingHorizontal: 20,
+          }}
+        >
+          <View
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: isDark
+                ? chatTheme.handleDark
+                : chatTheme.handleLight,
+              alignSelf: "center",
+              marginBottom: 20,
+            }}
+          />
+
+          <Text
+            style={{
+              color: textColor,
+              fontSize: 16,
+              fontWeight: "600",
+              marginBottom: 4,
+            }}
+          >
+            Group category
+          </Text>
+          <Text
+            style={{
+              color: chatTheme.textMuted,
+              fontSize: 13,
+              marginBottom: 20,
+            }}
+          >
+            Tap to select or deselect
+          </Text>
+
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 10,
+              marginBottom: 24,
+            }}
+          >
+            {validCategories.map((cat) => {
+              const isSelected = category === cat.id;
+              return (
+                <TouchableOpacity
+                  key={cat.id}
+                  disabled={updatingCategory}
+                  onPress={async () => {
+                    if (updatingCategory) return;
+                    setUpdatingCategory(true);
+                    try {
+                      const newCat = isSelected ? "" : cat.id;
+                      await messageService.updateGroupCategory(
+                        conversation!.id,
+                        newCat
+                      );
+                      setCategory(newCat);
+                    } catch (err: any) {
+                      Alert.alert(
+                        "Error",
+                        err?.message ?? "Failed to update category"
+                      );
+                    } finally {
+                      setUpdatingCategory(false);
+                    }
+                  }}
+                  style={{
+                    paddingVertical: 9,
+                    paddingHorizontal: 20,
+                    borderRadius: 999,
+                    borderWidth: 0.5,
+                    borderColor: isSelected
+                      ? chatTheme.accent
+                      : isDark
+                        ? chatTheme.dividerDark
+                        : chatTheme.dividerLight,
+                    backgroundColor: isSelected
+                      ? chatTheme.accent
+                      : surfaceColor,
+                    opacity: updatingCategory ? 0.6 : 1,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: isSelected ? "#fff" : textColor,
+                      fontSize: 14,
+                      fontWeight: isSelected ? "500" : "400",
+                    }}
+                  >
+                    {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity
+            onPress={() => setShowCategoryModal(false)}
+            style={{
+              backgroundColor: isDark
+                ? chatTheme.cancelBgDark
+                : chatTheme.cancelBgLight,
+              borderRadius: 14,
+              paddingVertical: 14,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: textColor, fontSize: 16, fontWeight: "500" }}>
+              Done
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
       {/* Add Member Modal */}
       <Modal
