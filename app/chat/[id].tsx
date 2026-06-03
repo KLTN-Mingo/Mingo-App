@@ -1,30 +1,43 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   FlatList,
+  KeyboardAvoidingView,
   Platform,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { InfoChat, MessageBubble, MessageInput } from "@/components/chat";
-import {
-  ArrowIcon,
-  CallIcon,
-  InfoIcon,
-  VideoCallIcon,
-} from "@/components/shared/icons/Icons";
+import { ArrowIcon, InfoIcon } from "@/components/shared/icons/Icons";
 import { Avatar, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useCall } from "@/context/CallContext";
 import { useChatContext } from "@/context/ChatContext";
-import { ChatConversationDto, ConversationType, MessageResponseDto } from "@/dtos";
+import {
+  ChatConversationDto,
+  ConversationType,
+  MessageResponseDto,
+} from "@/dtos";
+import { useChatList } from "@/hooks/use-chat-list";
 import { useChatMessages } from "@/hooks/use-chat-messages";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { messageService } from "@/services/message.service";
+<<<<<<< HEAD
+
+const chatColors = {
+  dark: { 100: "#CFBFAD", 300: "#515E5A", 500: "#1E2021" },
+  light: { 500: "#FAFAFA" },
+};
+=======
 import { BORDER_DEFAULT, colors, getSemantic, paletteIcon } from "@/styles/colors";
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 
 function formatDateLabel(dateStr: string): string {
   const date = new Date(dateStr);
@@ -46,20 +59,77 @@ export default function ChatScreen() {
   const { profile } = useAuth();
   const { conversations, setConversations, setFilteredConversations } =
     useChatContext();
-  const conversation = conversations.find((c) => c.id === id);
-  const isGroup = conversation?.type === ConversationType.GROUP;
+  const { refetch } = useChatList();
+  const isGroup =
+    conversations.find((c) => c.id === id)?.type === ConversationType.GROUP;
   const currentUserId = profile?.id;
   const colorScheme = useColorScheme() ?? "light";
   const isDark = colorScheme === "dark";
+<<<<<<< HEAD
+  const insets = useSafeAreaInsets();
+  const messagesBg = isDark ? chatColors.dark[300] : chatColors.light[500];
+  const headerTextColor = isDark ? chatColors.dark[100] : "#1E2021";
+  const iconColor = isDark ? "#ffffff" : "#92898A";
+=======
   const semantic = getSemantic(colorScheme);
   const messagesBg = isDark ? colors.dark[300] : semantic.surface;
   const headerTextColor = semantic.text;
   const iconColor = paletteIcon.lightMuted;
+>>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
   const [infoModalVisible, setInfoModalVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<MessageResponseDto[]>([]);
   const [searching, setSearching] = useState(false);
+  const [localConversation, setLocalConversation] = useState<
+    ChatConversationDto | undefined
+  >(undefined);
+
+  const found = conversations.find((c) => c.id === id);
+
+  // Reset khi id thay đổi để tránh hiện data của conversation cũ
+  useEffect(() => {
+    setLocalConversation(undefined);
+  }, [id]);
+
+  // Cập nhật localConversation khi found có giá trị
+  useEffect(() => {
+    if (found) setLocalConversation(found);
+  }, [found]);
+
+  // Fetch từ server nếu không tìm thấy trong list (box mới hoặc direct link)
+  useEffect(() => {
+    if (!found && id && !localConversation) {
+      messageService
+        .getBoxInfo(id)
+        .then((info) => {
+          if (info) setLocalConversation(info);
+        })
+        .catch(() => {});
+    }
+  }, [found, id, localConversation]);
+
+  const conversation = found ?? localConversation;
+
+  // Map senderId -> avatar từ participants
+  const participantAvatarMap = React.useMemo(() => {
+    const map: Record<string, string | null | undefined> = {};
+    const parts = conversation?.participants ?? [];
+    for (const p of parts) {
+      map[p.id] = p.avatar;
+    }
+    return map;
+  }, [conversation?.participants]);
+
+  // Lấy senderName cho group
+  const getSenderName = React.useCallback(
+    (senderId: string) => {
+      if (!isGroup || senderId === currentUserId) return null;
+      const p = conversation?.participants?.find((p) => p.id === senderId);
+      return p?.name ?? null;
+    },
+    [isGroup, currentUserId, conversation?.participants]
+  );
 
   const { startVideoCall, startAudioCall } = useCall();
   const handleMessageSent = useCallback(
@@ -89,6 +159,45 @@ export default function ChatScreen() {
     },
     [id, setConversations, setFilteredConversations]
   );
+  const chatRefetchRef = useRef<() => void>(() => {});
+  const updateMessageLocallyRef = useRef<
+    (messageId: string, newContent: string) => void
+  >(() => {});
+  const revokeMessageLocallyRef = useRef<(messageId: string) => void>(() => {});
+  const deleteMessageLocallyRef = useRef<(messageId: string) => void>(() => {});
+  const revertMessageLocallyRef = useRef<
+    (messageId: string, snapshot: import("@/dtos").MessageResponseDto) => void
+  >(() => {});
+
+  const handleNewBoxCreated = useCallback(
+    (newBoxId: string) => {
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      setFilteredConversations((prev) => prev.filter((c) => c.id !== id));
+
+      router.replace(`/chat/${newBoxId}`);
+
+      setTimeout(() => {
+        chatRefetchRef.current();
+      }, 500);
+    },
+    [id, router, setConversations, setFilteredConversations]
+  );
+
+  const handleMessageRevoked = useCallback((messageId: string) => {
+    revokeMessageLocallyRef.current(messageId);
+  }, []);
+
+  const handleMessageDeleted = useCallback((messageId: string) => {
+    deleteMessageLocallyRef.current(messageId);
+  }, []);
+
+  const handleMessageReverted = useCallback(
+    (messageId: string, snapshot: import("@/dtos").MessageResponseDto) => {
+      revertMessageLocallyRef.current(messageId, snapshot);
+    },
+    []
+  );
+
   const {
     messages,
     isLoading,
@@ -99,39 +208,55 @@ export default function ChatScreen() {
     sendFile,
     markAsRead,
     loadMore,
-  } = useChatMessages(id, isGroup, handleMessageSent);
+    refetch: chatRefetch,
+    updateMessageLocally,
+    revokeMessageLocally,
+    deleteMessageLocally,
+    revertMessageLocally,
+  } = useChatMessages(id, isGroup, handleMessageSent, handleNewBoxCreated);
+  chatRefetchRef.current = chatRefetch;
+  updateMessageLocallyRef.current = updateMessageLocally;
+  revokeMessageLocallyRef.current = revokeMessageLocally;
+  deleteMessageLocallyRef.current = deleteMessageLocally;
+  revertMessageLocallyRef.current = revertMessageLocally;
+
+  const handleMessageEdited = useCallback(
+    (messageId: string, newContent: string) => {
+      updateMessageLocallyRef.current(messageId, newContent);
+    },
+    []
+  );
+
   const flatListRef = useRef<FlatList>(null);
   const lastMessageIdRef = useRef<string>("");
   const initialScrollDoneRef = useRef(false);
 
-  const roomId = id ?? "";
-  const receiverId =
-    conversation?.participantIds?.find((pid) => pid !== currentUserId) ??
-    conversation?.participants?.find((p) => p.id !== currentUserId)?.id ??
-    "";
-  const receiverName = conversation?.name ?? "";
-  const receiverAvatar = conversation?.avatarUrl ?? "";
+  // Reset scroll state khi id thay đổi để scroll hoạt động đúng sau khi navigate
+  useEffect(() => {
+    initialScrollDoneRef.current = false;
+    lastMessageIdRef.current = "";
+  }, [id]);
 
-  const handleVideoCall = () => {
-    if (!receiverId) return;
-    startVideoCall({
-      roomId,
-      receiverId,
-      receiverName,
-      receiverAvatar,
-    });
-  };
+  // Detect khi bị kick khỏi group
+  useEffect(() => {
+    if (conversations.length === 0) return;
+    if (found) return;
+    if (!localConversation) return;
 
-  const handleAudioCall = () => {
-    if (!receiverId) return;
+    // chỉ group mới có khái niệm bị kick
+    if (localConversation.type !== ConversationType.GROUP) return;
 
-    startAudioCall({
-      roomId,
-      receiverId,
-      receiverName,
-      receiverAvatar,
-    });
-  };
+    Alert.alert(
+      "Removed from group",
+      `You have been removed from "${localConversation.name}".`,
+      [
+        {
+          text: "OK",
+          onPress: () => router.replace("/(tabs)/message"),
+        },
+      ]
+    );
+  }, [conversations, found, localConversation, router]);
 
   // Scroll lần đầu sau khi load xong
   useEffect(() => {
@@ -195,15 +320,16 @@ export default function ChatScreen() {
   }, [id, markAsRead]);
 
   return (
-    <View
+    <KeyboardAvoidingView
       style={{
         flex: 1,
-        paddingTop: Platform.OS === "android" ? 14 : 52,
-        backgroundColor: semantic.background,
+        backgroundColor: isDark ? chatColors.dark[500] : chatColors.light[500],
       }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={insets.top}
     >
-      <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1 }}>
-        {/* Header: back Arrow (accent), avatar 45x45, name — match old chats/[id].tsx */}
+      <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
+        {/* Header */}
         <View
           style={{
             flexDirection: "row",
@@ -211,13 +337,15 @@ export default function ChatScreen() {
             justifyContent: "space-between",
             paddingHorizontal: 12,
             paddingTop: 12,
-            paddingBottom: 4,
-            shadowColor: colors.dark[500],
+            paddingBottom: 8,
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 1 },
             shadowOpacity: 0.1,
             shadowRadius: 2,
             elevation: 2,
-            backgroundColor: semantic.background,
+            backgroundColor: isDark
+              ? chatColors.dark[500]
+              : chatColors.light[500],
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
@@ -226,7 +354,7 @@ export default function ChatScreen() {
               style={{ paddingTop: 8, paddingRight: 8 }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <ArrowIcon size={30} color={semantic.primary} />
+              <ArrowIcon size={30} color="#768D85" />
             </TouchableOpacity>
             <View
               style={{
@@ -266,12 +394,6 @@ export default function ChatScreen() {
               gap: 8,
             }}
           >
-            <TouchableOpacity onPress={handleAudioCall}>
-              <CallIcon size={28} color={iconColor} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleVideoCall}>
-              <VideoCallIcon size={30} color={iconColor} />
-            </TouchableOpacity>
             <TouchableOpacity onPress={() => setInfoModalVisible(true)}>
               <InfoIcon size={30} color={iconColor} />
             </TouchableOpacity>
@@ -286,9 +408,11 @@ export default function ChatScreen() {
               paddingHorizontal: 12,
               paddingVertical: 8,
               gap: 8,
-              backgroundColor: semantic.background,
+              backgroundColor: isDark
+                ? chatColors.dark[500]
+                : chatColors.light[500],
               borderBottomWidth: 1,
-              borderBottomColor: BORDER_DEFAULT,
+              borderBottomColor: isDark ? "#333" : "#E5E7EB",
             }}
           >
             <TextInput
@@ -296,7 +420,7 @@ export default function ChatScreen() {
               value={searchQuery}
               onChangeText={handleSearch}
               placeholder="Search messages..."
-              placeholderTextColor={semantic.placeholder}
+              placeholderTextColor={isDark ? "#888" : "#92898A"}
               style={{
                 flex: 1,
                 fontSize: 14,
@@ -304,8 +428,8 @@ export default function ChatScreen() {
                 paddingHorizontal: 16,
                 borderRadius: 9999,
                 borderWidth: 1,
-                borderColor: BORDER_DEFAULT,
-                color: semantic.text,
+                borderColor: isDark ? "#444" : "#E5E7EB",
+                color: isDark ? "#CFBFAD" : "#1E2021",
               }}
             />
             <TouchableOpacity
@@ -315,9 +439,7 @@ export default function ChatScreen() {
                 setSearchResults([]);
               }}
             >
-              <Text style={{ color: semantic.primary, fontSize: 14 }}>
-                Cancel
-              </Text>
+              <Text style={{ color: "#FFAABB", fontSize: 14 }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -365,12 +487,10 @@ export default function ChatScreen() {
               maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
               ListHeaderComponent={
                 isLoadingMore ? (
-                  <View
-                    style={{ paddingVertical: 12, alignItems: "center" }}
-                  >
+                  <View style={{ paddingVertical: 12, alignItems: "center" }}>
                     <Text
                       style={{
-                        color: semantic.textMuted,
+                        color: isDark ? "#888" : "#92898A",
                         fontSize: 13,
                       }}
                     >
@@ -378,12 +498,10 @@ export default function ChatScreen() {
                     </Text>
                   </View>
                 ) : hasMore ? (
-                  <View
-                    style={{ paddingVertical: 12, alignItems: "center" }}
-                  >
+                  <View style={{ paddingVertical: 12, alignItems: "center" }}>
                     <Text
                       style={{
-                        color: semantic.textMuted,
+                        color: isDark ? "#888" : "#92898A",
                         fontSize: 13,
                       }}
                     >
@@ -409,7 +527,16 @@ export default function ChatScreen() {
                     isOwn={item.senderId === currentUserId}
                     showDateSeparator={showDateSeparator}
                     dateLabel={formatDateLabel(item.createdAt)}
-                    otherAvatarUrl={conversation?.avatarUrl}
+                    otherAvatarUrl={
+                      isGroup
+                        ? (participantAvatarMap[item.senderId] ?? null)
+                        : (conversation?.avatarUrl ?? null)
+                    }
+                    senderName={getSenderName(item.senderId)}
+                    onMessageRevoked={handleMessageRevoked}
+                    onMessageDeleted={handleMessageDeleted}
+                    onMessageEdited={handleMessageEdited}
+                    onMessageReverted={handleMessageReverted}
                   />
                 );
               }}
@@ -425,14 +552,17 @@ export default function ChatScreen() {
                 </View>
               }
             />
-            <MessageInput
-              onSend={sendMessage}
-              onSendFile={sendFile}
-              placeholder="Aa..."
-            />
+            {/* Input area — paddingBottom = keyboard height when visible, 0 when hidden */}
+            <View style={{ paddingBottom: insets.bottom }}>
+              <MessageInput
+                onSend={sendMessage}
+                onSendFile={sendFile}
+                placeholder="Aa..."
+              />
+            </View>
           </>
         )}
       </SafeAreaView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

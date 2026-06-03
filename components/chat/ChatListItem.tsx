@@ -3,10 +3,11 @@ import React from "react";
 import { TouchableOpacity, View } from "react-native";
 
 import { Avatar, Text } from "@/components/ui";
-import { ChatConversationDto } from "@/dtos";
+import { ChatConversationDto, ConversationType } from "@/dtos";
 
 interface ChatListItemProps {
   conversation: ChatConversationDto;
+  currentUserId?: string;
 }
 
 function formatTime(updatedAt: string): string {
@@ -22,7 +23,21 @@ function formatTime(updatedAt: string): string {
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-function getLastMessagePreview(conversation: ChatConversationDto): string {
+function getSenderName(
+  conversation: ChatConversationDto,
+  senderId: string | undefined
+): string {
+  if (!senderId) return "";
+  const participant = conversation.participants?.find(
+    (p) => p.id === senderId
+  );
+  return participant?.name ?? "";
+}
+
+function getLastMessagePreview(
+  conversation: ChatConversationDto,
+  currentUserId?: string
+): string {
   const last = conversation.lastMessage;
   if (!last) return "No messages yet";
   if (last.isRevoked) return "Message unsent";
@@ -31,9 +46,29 @@ function getLastMessagePreview(conversation: ChatConversationDto): string {
   return "Message";
 }
 
-export function ChatListItem({ conversation }: ChatListItemProps) {
+function getLastMessagePrefix(
+  conversation: ChatConversationDto,
+  currentUserId?: string
+): string {
+  const last = conversation.lastMessage;
+  if (!last || last.isRevoked) return "";
+
+  const isOwn = last.senderId === currentUserId;
+  const isGroup = conversation.type === ConversationType.GROUP;
+
+  if (isOwn) return "You: ";
+
+  if (!isGroup) return "";
+
+  const senderName = last.sender?.name ?? getSenderName(conversation, last.senderId);
+  const firstName = senderName.split(" ")[0];
+  return firstName ? `${firstName}: ` : "";
+}
+
+export function ChatListItem({ conversation, currentUserId }: ChatListItemProps) {
   const router = useRouter();
-  const preview = getLastMessagePreview(conversation);
+  const preview = getLastMessagePreview(conversation, currentUserId);
+  const prefix = getLastMessagePrefix(conversation, currentUserId);
   const timeStr = formatTime(conversation.updatedAt);
 
   return (
@@ -59,7 +94,7 @@ export function ChatListItem({ conversation }: ChatListItemProps) {
           </Text>
         </View>
         <Text variant="muted" numberOfLines={1} className="mt-0.5 text-sm">
-          {preview}
+          {prefix}{preview}
         </Text>
       </View>
       {conversation.unreadCount != null && conversation.unreadCount > 0 && (

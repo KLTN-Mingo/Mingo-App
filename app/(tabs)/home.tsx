@@ -7,17 +7,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import {
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { CommentModal } from "@/components/post/CommentModal";
 import { PostCard } from "@/components/post/PostCard";
-import {
-  NotificationIcon,
-  ReportIcon,
-} from "@/components/shared/icons/Icons";
+import { NotificationIcon, ReportIcon } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { SearchBarTrigger } from "@/components/shared/ui/search-bar";
 import { HomeSkeleton } from "@/components/skeleton";
@@ -58,7 +53,8 @@ export default function HomeScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
-  const [notificationCount, setNotificationCount] = useState<NotificationCountDto | null>(null);
+  const [notificationCount, setNotificationCount] =
+    useState<NotificationCountDto | null>(null);
 
   // Convert profile to UserMinimalDto for components
   const userMinimal: UserMinimalDto | null = profile
@@ -208,7 +204,10 @@ export default function HomeScreen() {
         {
           text: "Edit",
           onPress: () =>
-            router.push({ pathname: "/create-post", params: { id: post.id } } as any),
+            router.push({
+              pathname: "/create-post",
+              params: { id: post.id },
+            } as any),
         },
         {
           text: "Delete",
@@ -224,7 +223,8 @@ export default function HomeScreen() {
                     await postService.deletePost(post.id);
                     setPosts((prev) => prev.filter((p) => p.id !== post.id));
                   } catch (e: unknown) {
-                    const msg = e instanceof Error ? e.message : "Cannot delete";
+                    const msg =
+                      e instanceof Error ? e.message : "Cannot delete";
                     Alert.alert("Error", msg);
                   }
                 },
@@ -270,7 +270,11 @@ export default function HomeScreen() {
         text: "See more like this",
         onPress: async () => {
           try {
-            await postService.submitFeedFeedback(post.id, "see_more", activeTab);
+            await postService.submitFeedFeedback(
+              post.id,
+              "see_more",
+              activeTab
+            );
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Cannot send feedback";
             Alert.alert("Error", msg);
@@ -316,17 +320,14 @@ export default function HomeScreen() {
           onPress={handleTryAgain}
           className="mt-4 bg-primary px-6 py-3 rounded-full"
         >
-          <Text className="text-white font-semibold">
-            Đăng nhập lại
-          </Text>
+          <Text className="text-white font-semibold">Đăng nhập lại</Text>
         </TouchableOpacity>
       </ScreenContainer>
     );
   }
 
-    return (
-    <ScreenContainer
-    >
+  return (
+    <ScreenContainer>
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -335,11 +336,17 @@ export default function HomeScreen() {
           <View className="gap-5 mb-5">
             {/* Header: logo + thông báo */}
             <View className="flex-row items-center justify-between">
-              <Text style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 24 }}>
-                <Text className="text-text-light dark:text-text-dark" style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 20 }}>
+              <Text style={{ fontFamily: "Montserrat-SemiBold", fontSize: 24 }}>
+                <Text
+                  className="text-text-light dark:text-text-dark"
+                  style={{ fontFamily: "Montserrat-SemiBold", fontSize: 20 }}
+                >
                   Min
                 </Text>
-                <Text className="text-primary" style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 20 }}>
+                <Text
+                  className="text-primary"
+                  style={{ fontFamily: "Montserrat-SemiBold", fontSize: 20 }}
+                >
                   gle
                 </Text>
               </Text>
@@ -349,13 +356,16 @@ export default function HomeScreen() {
                 // hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <NotificationIcon size={24} color={semantic.text} />
-                {Boolean(notificationCount?.unread) && notificationCount!.unread > 0 && (
-                  <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full px-1 bg-primary dark:bg-primary-light border border-white dark:border-background-dark items-center justify-center">
-                    <Text className="text-[10px] leading-[10px] text-white font-semibold">
-                      {notificationCount!.unread > 99 ? "99+" : notificationCount!.unread}
-                    </Text>
-                  </View>
-                )}
+                {Boolean(notificationCount?.unread) &&
+                  notificationCount!.unread > 0 && (
+                    <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full px-1 bg-primary dark:bg-primary-light border border-white dark:border-background-dark items-center justify-center">
+                      <Text className="text-[10px] leading-[10px] text-white font-semibold">
+                        {notificationCount!.unread > 99
+                          ? "99+"
+                          : notificationCount!.unread}
+                      </Text>
+                    </View>
+                  )}
               </TouchableOpacity>
             </View>
 

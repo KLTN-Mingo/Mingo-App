@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { MessageResponseDto } from "@/dtos";
+import { pusherClient, setPusherAuthToken } from "@/lib/pusher";
 import { messageService } from "@/services/message.service";
 
 const PAGE_SIZE = 20;
@@ -8,7 +9,8 @@ const PAGE_SIZE = 20;
 export function useChatMessages(
   conversationId: string | undefined,
   isGroup: boolean = false,
-  onMessageSent?: (message: MessageResponseDto) => void
+  onMessageSent?: (message: MessageResponseDto) => void,
+  onNewBoxCreated?: (newBoxId: string) => void
 ) {
   const [allMessages, setAllMessages] = useState<MessageResponseDto[]>([]);
   const [messages, setMessages] = useState<MessageResponseDto[]>([]);
@@ -17,7 +19,26 @@ export function useChatMessages(
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pageRef = useRef(1);
+  const mountedRef = useRef(true);
 
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Reset toàn bộ state khi đổi conversation để tránh stale data
+  useEffect(() => {
+    setAllMessages([]);
+    setMessages([]);
+    setHasMore(false);
+    setError(null);
+    setIsLoading(true);
+    pageRef.current = 1;
+  }, [conversationId]);
+
+  // ── Fetch messages ──────────────────────────────────────────────────────────
   const fetchMessages = useCallback(async () => {
     if (!conversationId) {
       setAllMessages([]);
@@ -34,13 +55,22 @@ export function useChatMessages(
         isGroup
       );
       setAllMessages(list);
-      const sliced = list.slice(-PAGE_SIZE);
-      setMessages(sliced);
+      setMessages(list.slice(-PAGE_SIZE));
       setHasMore(list.length > PAGE_SIZE);
     } catch (err: any) {
-      setError(err.message || "Failed to load messages");
-      setAllMessages([]);
-      setMessages([]);
+      const msg: string = err?.message ?? "";
+      if (
+        msg.toLowerCase().includes("not found") ||
+        msg.toLowerCase().includes("something went wrong")
+      ) {
+        setAllMessages([]);
+        setMessages([]);
+        setError(null);
+      } else {
+        setError(msg || "Failed to load messages");
+        setAllMessages([]);
+        setMessages([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -50,25 +80,151 @@ export function useChatMessages(
     fetchMessages();
   }, [fetchMessages]);
 
+  // ── Pusher real-time ────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const channelName = `private-${conversationId}`;
+
+    const setup = async () => {
+      try {
+        // Set token trước khi subscribe
+        await setPusherAuthToken();
+
+        const channel = pusherClient.subscribe(channelName);
+
+        channel.bind("new-message", (data: any) => {
+          if (!mountedRef.current) return;
+
+          const newMsg: MessageResponseDto = {
+            id: data.id,
+            conversationId: data.boxId,
+            senderId: data.createBy,
+            content: data.text ?? "",
+            createdAt: data.createAt,
+            isRevoked: data.flag === false,
+            readBy: data.readedId ?? [],
+            attachment: data.contentId?.url
+              ? {
+                  url: data.contentId.url,
+                  type: data.contentId.type ?? "file",
+                  duration: data.contentId.duration,
+                }
+              : undefined,
+          };
+
+          setAllMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+
+          setMessages((cur) => {
+            if (cur.some((m) => m.id === newMsg.id)) return cur;
+            return [...cur, newMsg];
+          });
+        });
+
+        channel.bind("revoke-message", (data: any) => {
+          if (!mountedRef.current) return;
+          const update = (list: MessageResponseDto[]) =>
+            list.map((m) =>
+              m.id === data.id
+                ? { ...m, isRevoked: true, content: "Message revoked" }
+                : m
+            );
+          setAllMessages(update);
+          setMessages(update);
+        });
+
+        channel.bind("message-edited", (data: any) => {
+          if (!mountedRef.current) return;
+          const update = (list: MessageResponseDto[]) =>
+            list.map((m) =>
+              m.id === data.id
+                ? {
+                    ...m,
+                    content: data.text,
+                    isEdited: true,
+                    updatedAt: data.updatedAt,
+                  }
+                : m
+            );
+          setAllMessages(update);
+          setMessages(update);
+        });
+
+        channel.bind("delete-message", (data: any) => {
+          if (!mountedRef.current) return;
+          const update = (list: MessageResponseDto[]) =>
+            list.map((m) =>
+              m.id === data.id
+                ? { ...m, isDeleted: true, content: "Message deleted" }
+                : m
+            );
+          setAllMessages(update);
+          setMessages(update);
+        });
+
+        channel.bind("unsend-message", (data: any) => {
+          if (!mountedRef.current) return;
+          const update = (list: MessageResponseDto[]) =>
+            list.map((m) =>
+              m.id === data.id
+                ? { ...m, isRevoked: true, content: "Message unsent" }
+                : m
+            );
+          setAllMessages(update);
+          setMessages(update);
+        });
+
+        channel.bind("pusher:subscription_error", (err: any) => {
+          console.error("Pusher subscription error:", err);
+        });
+      } catch (err) {
+        console.error("Pusher setup error:", err);
+      }
+    };
+
+    setup();
+
+    return () => {
+      pusherClient.unsubscribe(channelName);
+    };
+  }, [conversationId]);
+
+  // ── Load more ───────────────────────────────────────────────────────────────
   const loadMore = useCallback(() => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     const nextPage = pageRef.current + 1;
     pageRef.current = nextPage;
     const totalLoaded = nextPage * PAGE_SIZE;
-    const sliced = allMessages.slice(-totalLoaded);
-    setMessages(sliced);
+    setMessages(allMessages.slice(-totalLoaded));
     setHasMore(allMessages.length > totalLoaded);
     setIsLoadingMore(false);
   }, [allMessages, hasMore, isLoadingMore]);
 
+  // ── Send message ────────────────────────────────────────────────────────────
   const sendMessage = useCallback(
     async (content: string) => {
       if (!conversationId || !content.trim()) return;
       try {
-        await messageService.sendMessage(conversationId, content.trim());
-        const latest = await messageService.getMessagesForBox(
+        const result = await messageService.sendMessage(
           conversationId,
+          content.trim()
+        );
+
+        // If a new box was created: navigate immediately, don't fetch.
+        // The hook will remount with the new conversationId and fetchMessages will run correctly.
+        if ((result as any)?.isNew && (result as any)?.boxId) {
+          onNewBoxCreated?.((result as any).boxId);
+          return;
+        }
+
+        // Existing box: fetch normally
+        const actualBoxId = (result as any)?.boxId ?? conversationId;
+        const latest = await messageService.getMessagesForBox(
+          actualBoxId,
           isGroup
         );
         const newMsg = latest[latest.length - 1];
@@ -88,9 +244,10 @@ export function useChatMessages(
         throw err;
       }
     },
-    [conversationId, isGroup, onMessageSent]
+    [conversationId, isGroup, onMessageSent, onNewBoxCreated]
   );
 
+  // ── Send file ───────────────────────────────────────────────────────────────
   const sendFile = useCallback(
     async (file: {
       uri: string;
@@ -125,15 +282,17 @@ export function useChatMessages(
     [conversationId, isGroup, onMessageSent]
   );
 
+  // ── Mark as read ────────────────────────────────────────────────────────────
   const markAsRead = useCallback(async () => {
     if (!conversationId) return;
     try {
       await messageService.markAsRead(conversationId);
-    } catch (err) {
-      console.error("Error marking as read:", err);
+    } catch {
+      // ignore
     }
   }, [conversationId]);
 
+  // ── Append message ──────────────────────────────────────────────────────────
   const appendMessage = useCallback((message: MessageResponseDto) => {
     setAllMessages((prev) => {
       if (prev.some((m) => m.id === message.id)) return prev;
@@ -143,6 +302,64 @@ export function useChatMessages(
       return next;
     });
   }, []);
+
+  // ── Update single message locally (edit) ───────────────────────────────────
+  const updateMessageLocally = useCallback(
+    (messageId: string, newContent: string) => {
+      const now = new Date().toISOString();
+      const update = (list: MessageResponseDto[]) =>
+        list.map((msg) =>
+          msg.id === messageId
+            ? { ...msg, content: newContent, isEdited: true, updatedAt: now }
+            : msg
+        );
+      setAllMessages(update);
+      setMessages(update);
+    },
+    []
+  );
+
+  // ── Revoke message locally (optimistic + Pusher fallback) ─────────────────
+  const revokeMessageLocally = useCallback((messageId: string) => {
+    const update = (list: MessageResponseDto[]) =>
+      list.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, isRevoked: true, content: "Message revoked" }
+          : msg
+      );
+    setAllMessages(update);
+    setMessages(update);
+  }, []);
+
+  // ── Delete message locally (optimistic + Pusher fallback) ─────────────────
+  const deleteMessageLocally = useCallback((messageId: string) => {
+    const update = (list: MessageResponseDto[]) =>
+      list.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, isDeleted: true, content: "Message deleted" }
+          : msg
+      );
+    setAllMessages(update);
+    setMessages(update);
+  }, []);
+
+  // ── Revert message back to original (rollback on API fail) ───────────────
+  // Stores original state snapshot before optimistic update.
+  // Callers should store snapshot before calling revoke/delete locally.
+  const revertMessageLocally = useCallback(
+    (
+      messageId: string,
+      snapshot: MessageResponseDto
+    ) => {
+      setAllMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? snapshot : msg))
+      );
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? snapshot : msg))
+      );
+    },
+    []
+  );
 
   return {
     messages,
@@ -156,5 +373,9 @@ export function useChatMessages(
     sendFile,
     markAsRead,
     appendMessage,
+    updateMessageLocally,
+    revokeMessageLocally,
+    deleteMessageLocally,
+    revertMessageLocally,
   };
 }

@@ -14,9 +14,8 @@ import "react-native-reanimated";
 import { BORDER_DEFAULT, colors } from "@/constants/designTokens";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { CallProvider } from "@/context/CallContext";
-import {
-  NotificationProvider,
-} from "@/context/NotificationContext";
+import { ChatProvider } from "@/context/ChatContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import {
   ThemeProvider as AppThemeProvider,
   useTheme,
@@ -77,9 +76,9 @@ function ThemedNavigation() {
   return (
     <ThemeProvider value={navigationTheme}>
       <Stack
-       screenOptions={{
-        headerShown: false,
-      }}
+        screenOptions={{
+          headerShown: false,
+        }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -87,12 +86,12 @@ function ThemedNavigation() {
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}
         />
-        <Stack.Screen name="create-post" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="post/[id]" options={{ presentation: 'card' }} />
-        <Stack.Screen name="profile/[id]" options={{ presentation: 'card' }} />
-        <Stack.Screen name="search" options={{ presentation: 'card' }} />
-        <Stack.Screen name="edit-profile" options={{ presentation: 'card' }} />
-        <Stack.Screen name="chat/index" options={{ presentation: 'card' }} />
+        <Stack.Screen name="create-post" options={{ presentation: "modal" }} />
+        <Stack.Screen name="post/[id]" options={{ presentation: "card" }} />
+        <Stack.Screen name="profile/[id]" options={{ presentation: "card" }} />
+        <Stack.Screen name="search" options={{ presentation: "card" }} />
+        <Stack.Screen name="edit-profile" options={{ presentation: "card" }} />
+        <Stack.Screen name="chat/index" options={{ presentation: "card" }} />
       </Stack>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
     </ThemeProvider>
@@ -118,24 +117,28 @@ export default function RootLayout() {
     <AuthProvider>
       <NotificationProviderWrapper>
         <CallProvider>
-          <View className="flex-1 font-sans" style={{ flex: 1 }}>
-            <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
-            <AppThemeProvider>
-              <ThemedNavigation />
-            </AppThemeProvider>
-          </View>
+          <ChatProvider>
+            <View className="flex-1 font-sans" style={{ flex: 1 }}>
+              <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
+              <AppThemeProvider>
+                <ThemedNavigation />
+              </AppThemeProvider>
+            </View>
+          </ChatProvider>
         </CallProvider>
       </NotificationProviderWrapper>
     </AuthProvider>
   );
 }
 
-function NotificationProviderWrapper({ children }: { children: React.ReactNode }) {
+function NotificationProviderWrapper({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { profile } = useAuth();
 
   return (
-    <NotificationProvider userId={profile?.id}>
-      {children}
-    </NotificationProvider>
+    <NotificationProvider userId={profile?.id}>{children}</NotificationProvider>
   );
 }

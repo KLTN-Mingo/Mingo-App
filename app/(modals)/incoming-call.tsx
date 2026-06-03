@@ -1,15 +1,14 @@
-import type { OngoingCall } from "@/dtos/call.dto";
 import { useCall } from "@/context/CallContext";
+import type { OngoingCall } from "@/dtos/call.dto";
 import { useRingtone } from "@/hooks/useRingtone";
 import { useEffect } from "react";
 import {
-  View,
+  ImageBackground,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
+  View,
 } from "react-native";
-import { colors, statusColors } from "@/styles/colors";
 
 export default function IncomingCallScreen() {
   const { ongoingCall, acceptCall, rejectCall } = useCall();
@@ -47,9 +46,7 @@ export default function IncomingCallScreen() {
     <>
       <View style={styles.topContainer}>
         <Text style={styles.title}>Incoming call</Text>
-        <Text style={styles.caller}>
-          {caller?.profile?.name ?? "Unknown"}
-        </Text>
+        <Text style={styles.caller}>{caller?.profile?.name ?? "Unknown"}</Text>
         <Text style={styles.subtitle}>
           {ongoingCall.isVideoCall ? "Video call" : "Audio call"}
         </Text>
@@ -90,24 +87,24 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     padding: 20,
-    backgroundColor: colors.dark[500],
+    backgroundColor: "#000",
   },
   topContainer: {
     alignItems: "center",
     marginTop: 50,
   },
   title: {
-    color: colors.light[400],
+    color: "#fff",
     fontSize: 28,
     marginBottom: 16,
     fontWeight: "bold",
   },
   caller: {
-    color: colors.light[400],
+    color: "#fff",
     fontSize: 22,
     marginBottom: 8,
     fontWeight: "400",
-    textShadowColor: colors.dark[500],
+    textShadowColor: "#000",
   },
   subtitle: {
     color: "rgba(255,255,255,0.8)",
@@ -127,15 +124,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   acceptButton: {
-    backgroundColor: statusColors.success.dark,
+    backgroundColor: "green",
     marginRight: 10,
   },
   rejectButton: {
-    backgroundColor: statusColors.error.dark,
+    backgroundColor: "red",
     marginLeft: 10,
   },
   buttonText: {
-    color: colors.light[400],
+    color: "#fff",
     fontWeight: "bold",
     textAlign: "center",
   },

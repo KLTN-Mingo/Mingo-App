@@ -9,6 +9,7 @@ import {
   ApiResponse,
   ChatConversationDto,
   ConversationType,
+  CreateGroupDto,
   MessageResponseDto,
 } from "@/dtos";
 import { authService } from "@/services/auth.service";
@@ -113,6 +114,14 @@ export interface MessageFileInput {
   duration?: number;
 }
 
+export interface FriendOnlineItem {
+  id: string;
+  name: string;
+  avatar: string;
+  verified: boolean;
+  onlineStatus: boolean;
+}
+
 /**
  * Backend expects content as:
  * - Text: plain string.
@@ -140,15 +149,20 @@ function getFormatFromFileName(name?: string | null): string {
 
 class MessageServiceClass {
   private async getAuthHeaders(
-    omitContentType?: boolean
+    isFormData: boolean
   ): Promise<Record<string, string>> {
-    const token = await AsyncStorage.getItem("accessToken");
+    const token = await authService.getAccessToken();
+
     const headers: Record<string, string> = {
       Authorization: `Bearer ${token}`,
     };
-    if (!omitContentType) {
+
+    // CHỈ set application/json khi không phải là FormData
+    if (!isFormData) {
       headers["Content-Type"] = "application/json";
     }
+    // Nếu là FormData, TUYỆT ĐỐI không định nghĩa Content-Type, để fetch tự xử lý
+
     return headers;
   }
 
@@ -184,6 +198,7 @@ class MessageServiceClass {
     const json = (await response.json()) as ApiResponse<T>;
 
     if (!response.ok) {
+      console.log("Backend Error Payload:", JSON.stringify(json));
       const msg =
         typeof (json as { message?: string }).message === "string"
           ? (json as { message: string }).message
@@ -276,6 +291,33 @@ class MessageServiceClass {
       success: d.success ?? true,
       messages: Array.isArray(d.messages) ? d.messages : [],
     };
+  }
+
+  async getFriendsWithOnlineStatus(): Promise<FriendOnlineItem[]> {
+    const token = await AsyncStorage.getItem("accessToken");
+    const response = await fetch(`${API_URL}/messages/friends/online-status`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    const json = await response.json();
+    if (!response.ok)
+      throw new Error(json.message ?? "Failed to fetch friends");
+    return (json.data?.friends ?? []) as FriendOnlineItem[];
+  }
+
+  async getOrCreateDirectBox(
+    targetUserId: string
+  ): Promise<{ boxId: string; isNew: boolean }> {
+    const conversations = await this.getConversations();
+    const existing = conversations.find(
+      (c) =>
+        c.type === ConversationType.DM &&
+        c.participantIds?.includes(targetUserId)
+    );
+    if (existing) return { boxId: existing.id, isNew: false };
+    return { boxId: targetUserId, isNew: true };
   }
 
   /**
@@ -432,6 +474,85 @@ class MessageServiceClass {
     console.log("Report conversation:", boxId);
   }
 
+  /** GET /boxes/:boxId/detail — group members and info */
+  async getGroupDetail(boxId: string): Promise<{
+    members: {
+      id: string;
+      name?: string;
+      avatarUrl?: string;
+      role: "admin" | "member";
+    }[];
+    category?: "friends" | "family" | "work" | "other";
+  }> {
+    const data = await this.request<{
+      group: {
+        members: {
+          _id: string;
+          name?: string;
+          avatar?: string;
+          phoneNumber?: string;
+          onlineStatus?: boolean;
+        }[];
+        adminIds: { _id: string }[];
+        category?: "friends" | "family" | "work" | "other";
+      };
+    }>("GET", `/boxes/${encodeURIComponent(boxId)}/detail`);
+
+    const adminMap = new Set((data.group?.adminIds ?? []).map((a) => a._id));
+    return {
+      members: (data.group?.members ?? []).map((m) => ({
+        id: m._id,
+        name: m.name,
+        avatarUrl: m.avatar,
+        role: adminMap.has(m._id) ? ("admin" as const) : ("member" as const),
+      })),
+      category: data.group?.category,
+    };
+  }
+
+  /** POST /boxes/:boxId/members — add member(s) */
+  async addGroupMember(boxId: string, memberId: string): Promise<void> {
+    await this.request<{ message?: string }>(
+      "POST",
+      `/boxes/${encodeURIComponent(boxId)}/members`,
+      { body: { memberIds: [memberId] } }
+    );
+  }
+
+  /** DELETE /boxes/:boxId/members/:memberId — remove a member */
+  async removeGroupMember(boxId: string, memberId: string): Promise<void> {
+    await this.request<{ message?: string }>(
+      "DELETE",
+      `/boxes/${encodeURIComponent(boxId)}/members/${encodeURIComponent(memberId)}`
+    );
+  }
+
+  /** POST /boxes/:boxId/leave — leave the group */
+  async leaveGroup(boxId: string): Promise<void> {
+    await this.request<{ message?: string }>(
+      "POST",
+      `/boxes/${encodeURIComponent(boxId)}/leave`
+    );
+  }
+
+  /** PATCH /boxes/:boxId/admins/promote — promote member to admin */
+  async promoteToAdmin(boxId: string, memberId: string): Promise<void> {
+    await this.request<{ message?: string }>(
+      "PATCH",
+      `/boxes/${encodeURIComponent(boxId)}/admins/promote`,
+      { body: { memberId } }
+    );
+  }
+
+  /** PATCH /boxes/:boxId/admins/demote — demote admin to member */
+  async demoteFromAdmin(boxId: string, memberId: string): Promise<void> {
+    await this.request<{ message?: string }>(
+      "PATCH",
+      `/boxes/${encodeURIComponent(boxId)}/admins/demote`,
+      { body: { memberId } }
+    );
+  }
+
   // ─── Helpers for existing UI (map to app DTOs) ───────────────────────────────
 
   private mapBoxToConversation(
@@ -460,6 +581,7 @@ class MessageServiceClass {
         type: ConversationType.GROUP,
         name: box.groupName ?? "Group",
         avatarUrl: box.groupAva,
+        category: (box as any).category ?? "other",
         updatedAt,
         participantIds,
         participants,
@@ -537,6 +659,22 @@ class MessageServiceClass {
     };
   }
 
+  /** Single box by ID — returns as ChatConversationDto. */
+  async getBoxInfo(boxId: string): Promise<ChatConversationDto | null> {
+    try {
+      const data = await this.request<{
+        box: MessageBoxResponse | GroupBoxResponse;
+        readStatus: boolean;
+      }>("GET", `/boxes/${encodeURIComponent(boxId)}`);
+      const userStr = await AsyncStorage.getItem("user");
+      const currentUserId = userStr ? (JSON.parse(userStr)?.id as string) : "";
+      if (!data.box) return null;
+      return this.mapBoxToConversation(data.box, currentUserId);
+    } catch {
+      return null;
+    }
+  }
+
   /** Combined conversation list (direct + groups) for list screen. */
   async getConversations(): Promise<ChatConversationDto[]> {
     const userStr = await AsyncStorage.getItem("user");
@@ -569,6 +707,31 @@ class MessageServiceClass {
       ? await this.getGroupMessages(boxId)
       : await this.getMessages(boxId);
     return (data.messages ?? []).map((m) => this.mapMessageToDto(m));
+  }
+
+  async createGroup(
+    leaderId: string, // Giữ nguyên tham số này để không lỗi các file khác
+    dto: CreateGroupDto
+  ): Promise<{ success: boolean; message: string; box: any }> {
+    // Sửa thành "/boxes" vì MESSAGES_BASE đã bao gồm đoạn "/api/messages"
+    return this.request("POST", "/boxes", {
+      body: dto,
+    });
+  }
+
+  async updateGroupCategory(
+    boxId: string,
+    category: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request("PATCH", `/boxes/${boxId}/category`, {
+      body: { category },
+    });
+  }
+
+  async getGroupCategory(
+    boxId: string
+  ): Promise<{ success: boolean; category: string }> {
+    return this.request("GET", `/boxes/${boxId}/category`);
   }
 }
 
