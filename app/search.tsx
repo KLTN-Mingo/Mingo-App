@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import {
   ArrowIcon,
   CancelIcon,
@@ -17,6 +18,7 @@ import { Avatar, Icon, Text } from "@/components/ui";
 import { paletteIcon } from "@/constants/designTokens";
 import { useTheme } from "@/context/ThemeContext";
 import type {
+  SearchHashtagItemDto,
   SearchPostItemDto,
   SearchUserItemDto,
 } from "@/dtos";
@@ -30,7 +32,7 @@ import { searchService } from "@/services/search.service";
 const MIN_QUERY_LEN = 2;
 /** Số item/lần fetch — BE giới hạn tối đa 20. */
 const PAGE_LIMIT = 10;
-type SearchTab = "users" | "posts";
+type SearchTab = "users" | "posts" | "hashtags";
 
 interface PaginatedState<T> {
   items: T[];
@@ -63,6 +65,9 @@ export default function SearchScreen() {
   const [postsState, setPostsState] = useState<
     PaginatedState<SearchPostItemDto>
   >(() => emptyPaginated<SearchPostItemDto>());
+  const [hashtagsState, setHashtagsState] = useState<
+    PaginatedState<SearchHashtagItemDto>
+  >(() => emptyPaginated<SearchHashtagItemDto>());
 
   const history = useSearchHistory();
 
@@ -95,6 +100,12 @@ export default function SearchScreen() {
         total: res.pagination.postsTotal,
         loadingMore: false,
       });
+      setHashtagsState({
+        items: res.hashtags,
+        page: 1,
+        total: res.pagination.hashtagsTotal ?? res.hashtags.length,
+        loadingMore: false,
+      });
       setActiveTab("users");
     } catch (e) {
       console.error("[search] global failed", e);
@@ -103,6 +114,7 @@ export default function SearchScreen() {
       setSubmittedQuery(q);
       setUsersState(emptyPaginated<SearchUserItemDto>());
       setPostsState(emptyPaginated<SearchPostItemDto>());
+      setHashtagsState(emptyPaginated<SearchHashtagItemDto>());
     } finally {
       setLoading(false);
     }
@@ -178,6 +190,41 @@ export default function SearchScreen() {
     postsState.page,
   ]);
 
+  const loadMoreHashtags = useCallback(async () => {
+    if (!submittedQuery) return;
+    if (hashtagsState.loadingMore) return;
+    if (hashtagsState.page === 0) return;
+    if (hashtagsState.items.length >= hashtagsState.total) return;
+
+    setHashtagsState((s) => ({ ...s, loadingMore: true }));
+    try {
+      const r = await searchService.searchHashtags(
+        submittedQuery,
+        hashtagsState.page + 1,
+        PAGE_LIMIT
+      );
+      setHashtagsState((s) => {
+        const seen = new Set(s.items.map((h) => h.tag));
+        const fresh = r.hashtags.filter((h) => !seen.has(h.tag));
+        return {
+          items: [...s.items, ...fresh],
+          page: s.page + 1,
+          total: r.total || s.total,
+          loadingMore: false,
+        };
+      });
+    } catch (e) {
+      console.error("[search] load more hashtags failed", e);
+      setHashtagsState((s) => ({ ...s, loadingMore: false }));
+    }
+  }, [
+    submittedQuery,
+    hashtagsState.loadingMore,
+    hashtagsState.items.length,
+    hashtagsState.total,
+    hashtagsState.page,
+  ]);
+
   const handlePickUser = useCallback(
     async (u: { id: string; name?: string; avatar?: string }) => {
       await history.add({ id: u.id, name: u.name, avatar: u.avatar });
@@ -191,6 +238,7 @@ export default function SearchScreen() {
     if (trimmed !== submittedQuery) {
       setUsersState(emptyPaginated<SearchUserItemDto>());
       setPostsState(emptyPaginated<SearchPostItemDto>());
+      setHashtagsState(emptyPaginated<SearchHashtagItemDto>());
       setError(null);
       setSubmittedQuery("");
     }
@@ -207,6 +255,7 @@ export default function SearchScreen() {
   const hasSubmittedResult = !!submittedQuery;
   const users = usersState.items;
   const posts = postsState.items;
+  const hashtags = hashtagsState.items;
 
   const showLocalHistory =
     !hasSubmittedResult && !loading && !error && localHistory.length > 0;
@@ -218,7 +267,7 @@ export default function SearchScreen() {
     localHistory.length === 0;
 
   return (
-    <View className="flex-1 bg-background-light dark:bg-background-dark">
+    <ScreenContainer horizontalPadding="none">
       {/* Header: nhập không gọi API; submit bằng keyboard Search hoặc nút search. */}
       <View className="flex-row items-center px-4 pt-3 pb-2 gap-3">
         <TouchableOpacity
@@ -306,7 +355,7 @@ export default function SearchScreen() {
       {hasSubmittedResult && !loading && !error && (
         <View className="flex-1">
           <SearchTabs activeTab={activeTab} onChange={setActiveTab} />
-          {activeTab === "users" ? (
+          {activeTab === "users" && (
             <FlatList
               data={users}
               keyExtractor={(item) => `result-${item.id}`}
@@ -338,7 +387,8 @@ export default function SearchScreen() {
                 />
               )}
             />
-          ) : (
+          )}
+          {activeTab === "posts" && (
             <FlatList
               data={posts}
               keyExtractor={(item) => `post-${item.id}`}
@@ -359,9 +409,39 @@ export default function SearchScreen() {
               renderItem={({ item }) => <PostResultCard item={item} />}
             />
           )}
+          {activeTab === "hashtags" && (
+            <FlatList
+              data={hashtags}
+              keyExtractor={(item) => `hashtag-${item.tag}`}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 24, paddingTop: 14 }}
+              onEndReachedThreshold={0.5}
+              onEndReached={loadMoreHashtags}
+              ListEmptyComponent={
+                <EmptyState title="Không tìm thấy hashtag phù hợp" />
+              }
+              ListFooterComponent={
+                hashtagsState.loadingMore ? (
+                  <View className="py-4 items-center">
+                    <ActivityIndicator color={iconColor} />
+                  </View>
+                ) : null
+              }
+              renderItem={({ item }) => (
+                <HashtagResultCard
+                  item={item}
+                  onPress={() =>
+                    router.push(
+                      `/hashtag/${encodeURIComponent(item.tag)}` as never
+                    )
+                  }
+                />
+              )}
+            />
+          )}
         </View>
       )}
-    </View>
+    </ScreenContainer>
   );
 }
 
@@ -471,6 +551,11 @@ function SearchTabs({ activeTab, onChange }: SearchTabsProps) {
         active={activeTab === "posts"}
         onPress={() => onChange("posts")}
       />
+      <SearchTabButton
+        label="Hashtags"
+        active={activeTab === "hashtags"}
+        onPress={() => onChange("hashtags")}
+      />
     </View>
   );
 }
@@ -505,6 +590,38 @@ function SearchTabButton({ label, active, onPress }: SearchTabButtonProps) {
 
 interface PostResultCardProps {
   item: SearchPostItemDto;
+}
+
+interface HashtagResultCardProps {
+  item: SearchHashtagItemDto;
+  onPress: () => void;
+}
+
+function HashtagResultCard({ item, onPress }: HashtagResultCardProps) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      className="mx-4 mb-3 rounded-lg bg-surface-light dark:bg-surface-dark px-4 py-3 flex-row items-center"
+    >
+      <View className="w-10 h-10 rounded-full items-center justify-center bg-primary/10">
+        <Text className="text-primary font-bold text-lg">#</Text>
+      </View>
+      <View className="ml-3 flex-1">
+        <Text
+          className="text-base font-semibold text-text-light dark:text-text-dark"
+          numberOfLines={1}
+        >
+          #{item.tag}
+        </Text>
+        {item.postsCount > 0 ? (
+          <Text variant="muted" className="text-sm">
+            {item.postsCount} bài viết
+          </Text>
+        ) : null}
+      </View>
+    </TouchableOpacity>
+  );
 }
 
 function PostResultCard({ item }: PostResultCardProps) {

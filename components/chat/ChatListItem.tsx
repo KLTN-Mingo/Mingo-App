@@ -60,52 +60,67 @@ function getLastMessagePrefix(
 
   if (!isGroup) return "";
 
-  const senderName = last.sender?.name ?? getSenderName(conversation, last.senderId);
+  const senderName =
+    last.sender?.name ?? getSenderName(conversation, last.senderId);
   const firstName = senderName.split(" ")[0];
   return firstName ? `${firstName}: ` : "";
 }
 
-export function ChatListItem({ conversation, currentUserId }: ChatListItemProps) {
+export function ChatListItem({
+  conversation,
+  currentUserId,
+}: ChatListItemProps) {
   const router = useRouter();
   const preview = getLastMessagePreview(conversation, currentUserId);
   const prefix = getLastMessagePrefix(conversation, currentUserId);
   const timeStr = formatTime(conversation.updatedAt);
+  const showOnlineDot =
+    conversation.unreadCount == null ? true : conversation.unreadCount >= 0;
 
   return (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={() => router.push(`/chat/${conversation.id}`)}
-      className="flex-row items-center px-4 py-3 bg-background-light dark:bg-background-dark"
+      className="flex-row items-center px-4 py-3"
     >
-      <Avatar
-        source={
-          conversation.avatarUrl ? { uri: conversation.avatarUrl } : undefined
-        }
-        fallback={conversation.name?.charAt(0)?.toUpperCase() || "?"}
-        size="lg"
-      />
+      <View className="relative">
+        <Avatar
+          source={
+            conversation.avatarUrl ? { uri: conversation.avatarUrl } : undefined
+          }
+          fallback={conversation.name?.charAt(0)?.toUpperCase() || "?"}
+          size="lg"
+        />
+        {showOnlineDot ? (
+          <View className="absolute -right-0.5 -bottom-0.5 w-3.5 h-3.5 rounded-full bg-[#22C55E] border-2 border-background-light dark:border-background-dark" />
+        ) : null}
+      </View>
+
       <View className="flex-1 ml-3 min-w-0">
         <View className="flex-row items-center justify-between">
-          <Text variant="semibold" numberOfLines={1} className="flex-1 text-text-light dark:text-text-dark">
+          <Text
+            variant="semibold"
+            numberOfLines={1}
+            className="flex-1 text-text-light dark:text-text-dark text-lg leading-6"
+          >
             {conversation.name || "Unknown"}
           </Text>
-          <Text variant="muted" className="text-xs ml-2">
+          <Text
+            variant="muted"
+            className="text-xs ml-2 text-text-muted-light dark:text-text-muted-dark"
+          >
             {timeStr}
           </Text>
         </View>
-        <Text variant="muted" numberOfLines={1} className="mt-0.5 text-sm">
-          {prefix}{preview}
+        <Text
+          variant="muted"
+          numberOfLines={1}
+          className="mt-0.5 text-sm text-text-light dark:text-text-dark"
+        >
+          {prefix}
+          {preview}
         </Text>
       </View>
-      {conversation.unreadCount != null && conversation.unreadCount > 0 && (
-        <View className="w-5 h-5 rounded-full bg-primary items-center justify-center ml-2">
-          <Text className="text-xs text-white font-semibold">
-            {conversation.unreadCount > 99
-              ? "99+"
-              : conversation.unreadCount}{" "}
-          </Text>
-        </View>
-      )}
     </TouchableOpacity>
   );
 }

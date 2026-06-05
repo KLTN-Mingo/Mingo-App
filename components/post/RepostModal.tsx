@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 
+import { SafeModalSheet } from "@/components/containers/SafeLayout";
 import { CancelIcon } from "@/components/shared/icons/Icons";
 import { Avatar, Button, Text, TextArea } from "@/components/ui";
 import { paletteIcon } from "@/constants/designTokens";
@@ -95,7 +96,7 @@ export function RepostModal({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1 justify-end bg-black/40"
       >
-        <View className="rounded-t-[20px] bg-background-light dark:bg-background-dark px-4 pt-4 pb-6">
+        <SafeModalSheet>
           <View className="flex-row items-center mb-3">
             <Text className="flex-1 text-base font-semibold text-text-light dark:text-text-dark">
               Repost bài viết
@@ -149,7 +150,7 @@ export function RepostModal({
           >
             Repost
           </Button>
-        </View>
+        </SafeModalSheet>
       </KeyboardAvoidingView>
     </Modal>
   );

@@ -64,6 +64,16 @@ export function ProfileInfo({
 }: ProfileInfoProps) {
   const colorScheme = useColorScheme() ?? "light";
   const iconColor = paletteIcon[colorScheme];
+  const cardShadowStyle =
+    colorScheme === "light"
+      ? {
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 17.5,
+          elevation: 4,
+        }
+      : undefined;
 
   const dob = formatIsoDateDisplay(user.dateOfBirth);
   const joined = formatIsoDateDisplay(user.createdAt);
@@ -181,7 +191,10 @@ export function ProfileInfo({
           <Text className="text-sm font-semibold text-text-secondary-light dark:text-text-secondary-dark mb-3">
             Information
           </Text>
-          <View className="rounded-lg bg-sheet-light dark:bg-sheet-dark py-5 px-5 gap-4">
+          <View
+            className="rounded-lg bg-white dark:bg-surface-dark py-5 px-5 gap-4"
+            style={cardShadowStyle}
+          >
             {rows.length > 0 ? (
               <View className="gap-4">
                 {rows.map((r) => (

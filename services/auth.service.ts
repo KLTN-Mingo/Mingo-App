@@ -60,6 +60,10 @@ class AuthService {
     await AsyncStorage.multiRemove(["accessToken", "user"]);
   }
 
+  async clearSession(): Promise<void> {
+    await this.clearLocalSession();
+  }
+
   async handleUnauthorizedResponse(
     response: Response,
     message?: string
@@ -102,8 +106,11 @@ class AuthService {
       body: JSON.stringify(payload),
     });
 
-    await AsyncStorage.setItem("accessToken", response.accessToken);
-    await AsyncStorage.setItem("user", JSON.stringify(response.user));
+    // Khi 2FA bật, BE chưa trả accessToken — chỉ trả `pendingToken`.
+    if (response.accessToken) {
+      await AsyncStorage.setItem("accessToken", response.accessToken);
+      await AsyncStorage.setItem("user", JSON.stringify(response.user));
+    }
 
     return response;
   }
@@ -146,10 +153,94 @@ class AuthService {
     return response;
   }
 
-  async googleLogin(googleToken: string): Promise<AuthResponseDto> {
+  /** Dùng cookie httpOnly — không cần truyền refreshToken trong body. */
+  async refreshAccessToken(): Promise<string | null> {
+    try {
+      const response = await this.request<RefreshTokenResponseDto>(
+        "/refresh-token",
+        { method: "POST" }
+      );
+      if (response?.accessToken) {
+        await AsyncStorage.setItem("accessToken", response.accessToken);
+        return response.accessToken;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  async forgotPassword(payload: { phoneNumber: string }): Promise<void> {
+    await this.request("/forgot-password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // ─── Email verification ──────────────────────────────────────────────────────
+
+  async sendEmailVerification(): Promise<void> {
+    const token = await AsyncStorage.getItem("accessToken");
+    await this.request("/email/send-verification", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  }
+
+  async verifyEmail(payload: { email: string; code: string }): Promise<void> {
+    await this.request("/email/verify", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // ─── Phone OTP verification ──────────────────────────────────────────────────
+
+  async sendPhoneOtp(): Promise<void> {
+    const token = await AsyncStorage.getItem("accessToken");
+    await this.request("/phone/send-otp", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  }
+
+  async verifyPhoneOtp(payload: {
+    phoneNumber: string;
+    code: string;
+  }): Promise<void> {
+    await this.request("/phone/verify-otp", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async resetPassword(payload: {
+    phoneNumber: string;
+    otp: string;
+    newPassword: string;
+  }): Promise<void> {
+    await this.request("/reset-password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async changePassword(payload: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<void> {
+    const token = await AsyncStorage.getItem("accessToken");
+    await this.request("/change-password", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async googleLogin(idToken: string): Promise<AuthResponseDto> {
     const response = await this.request<AuthResponseDto>("/google", {
       method: "POST",
-      body: JSON.stringify({ googleToken }),
+      body: JSON.stringify({ idToken }),
     });
     await AsyncStorage.setItem("accessToken", response.accessToken);
     await AsyncStorage.setItem("user", JSON.stringify(response.user));
@@ -164,27 +255,26 @@ class AuthService {
     });
   }
 
-  async enable2FA(code: string): Promise<void> {
+  async enable2FA(secret: string, code: string): Promise<void> {
     const token = await AsyncStorage.getItem("accessToken");
     await this.request("/2fa/enable", {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ secret, code }),
     });
   }
 
-  async disable2FA(code: string): Promise<void> {
+  async disable2FA(code: string, password: string): Promise<void> {
     const token = await AsyncStorage.getItem("accessToken");
     await this.request("/2fa/disable", {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, password }),
     });
   }
 
   async complete2FALogin(body: {
-    phoneNumber?: string;
-    email?: string;
+    pendingToken: string;
     code: string;
   }): Promise<AuthResponseDto> {
     const response = await this.request<AuthResponseDto>(

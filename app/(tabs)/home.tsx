@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { CommentModal } from "@/components/post/CommentModal";
 import { PostCard } from "@/components/post/PostCard";
+import { TrendingPostsRow } from "@/components/post/TrendingPostsRow";
 import { NotificationIcon, ReportIcon } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { SearchBarTrigger } from "@/components/shared/ui/search-bar";
@@ -23,10 +24,13 @@ import {
   NotificationCountDto,
   PaginationDto,
   PostResponseDto,
+  ReportEntityType,
   UserMinimalDto,
 } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useReport } from "@/hooks/use-report";
 import { useSharePost } from "@/hooks/use-share-post";
+import { interactionService } from "@/services/interaction.service";
 import { notificationService } from "@/services/notification.service";
 import { postService } from "@/services/post.service";
 import { getSemantic, getStatusColor } from "@/styles/colors";
@@ -150,6 +154,22 @@ export default function HomeScreen() {
     );
   };
 
+  const handleViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: { item: PostResponseDto }[] }) => {
+      viewableItems.forEach((vi) => {
+        if (vi?.item?.id) {
+          interactionService.trackView(vi.item.id, activeTab);
+        }
+      });
+    },
+    [activeTab]
+  );
+
+  const viewabilityConfig = React.useRef({
+    itemVisiblePercentThreshold: 60,
+    minimumViewTime: 2000,
+  }).current;
+
   const handleCommentPress = (postId: string) => {
     setCommentPostId(postId);
   };
@@ -168,9 +188,13 @@ export default function HomeScreen() {
     );
   };
 
-  const handleSaveChange = (postId: string, isSaved: boolean) => {
+  const handleSaveChange = (
+    postId: string,
+    isSaved: boolean,
+    savesCount: number
+  ) => {
     setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, isSaved } : p))
+      prev.map((p) => (p.id === postId ? { ...p, isSaved, savesCount } : p))
     );
   };
 
@@ -182,6 +206,9 @@ export default function HomeScreen() {
           p.id === postId ? { ...p, sharesCount: p.sharesCount + sentCount } : p
         )
       );
+      void postService
+        .sharePost(postId, { sharedTo: "message" })
+        .catch((e) => console.warn("[recommendation] share action failed", e));
     },
     onReposted: ({ postId }) => {
       setPosts((prev) =>
@@ -189,8 +216,13 @@ export default function HomeScreen() {
           p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
         )
       );
+      void postService
+        .sharePost(postId, { sharedTo: "feed" })
+        .catch((e) => console.warn("[recommendation] share action failed", e));
     },
   });
+
+  const report = useReport();
 
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}` as any);
@@ -281,6 +313,16 @@ export default function HomeScreen() {
           }
         },
       },
+      {
+        text: "Báo cáo",
+        style: "destructive",
+        onPress: () =>
+          report.openReport({
+            entityType: ReportEntityType.POST,
+            entityId: post.id,
+            entityLabel: "bài viết này",
+          }),
+      },
       { text: "Cancel", style: "cancel" },
     ]);
   };
@@ -311,6 +353,7 @@ export default function HomeScreen() {
 
     return (
       <ScreenContainer
+        horizontalPadding="default"
         className="items-center justify-center px-4"
         style={{ paddingBottom: TAB_BAR_FLOAT_RESERVE + insets.bottom }}
       >
@@ -331,7 +374,7 @@ export default function HomeScreen() {
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
-        className="gap-6"
+        className=""
         ListHeaderComponent={
           <View className="gap-5 mb-5">
             {/* Header: logo + thông báo */}
@@ -353,7 +396,6 @@ export default function HomeScreen() {
               <TouchableOpacity
                 onPress={handleNotifications}
                 className="p-2 relative"
-                // hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <NotificationIcon size={24} color={semantic.text} />
                 {Boolean(notificationCount?.unread) &&
@@ -382,6 +424,9 @@ export default function HomeScreen() {
                 />
               ))}
             </View>
+
+            {/* Trending carousel — chỉ ở tab Explore */}
+            {activeTab === "explore" ? <TrendingPostsRow /> : null}
           </View>
         }
         renderItem={({ item }) => (
@@ -395,6 +440,7 @@ export default function HomeScreen() {
             onSaveChange={handleSaveChange}
             onUserPress={handleUserPress}
             onMorePress={handlePostMorePress}
+            recommendationSource={activeTab === "friends" ? "feed" : "explore"}
           />
         )}
         ItemSeparatorComponent={() => <View className="h-4" />}
@@ -408,6 +454,8 @@ export default function HomeScreen() {
         }
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.5}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
         ListEmptyComponent={
           <EmptyState
             title={
@@ -435,6 +483,7 @@ export default function HomeScreen() {
       />
 
       {share.modals}
+      {report.modal}
     </ScreenContainer>
   );
 }

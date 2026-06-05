@@ -35,6 +35,16 @@ export function ProfileHeader({
 }: ProfileHeaderProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const cameraIconColor = paletteIcon[colorScheme];
+  const cardShadowStyle =
+    colorScheme === "light"
+      ? {
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 17.5,
+          elevation: 4,
+        }
+      : undefined;
   
   const subtitleLine = useMemo(() => {
     const phone = user.phoneNumber?.trim();
@@ -107,7 +117,8 @@ export function ProfileHeader({
           <TouchableOpacity
             onPress={isOwnProfile ? onEditBio : undefined}
             activeOpacity={isOwnProfile ? 0.75 : 1}
-            className="rounded-lg bg-sheet-light dark:bg-sheet-dark py-5 px-5 gap-3"
+            className="rounded-lg bg-white dark:bg-surface-dark py-5 px-5 gap-3"
+            style={cardShadowStyle}
           >
             {user.bio ? (
               <Text className="text-[14px] leading-[22px] text-text-light dark:text-text-dark">

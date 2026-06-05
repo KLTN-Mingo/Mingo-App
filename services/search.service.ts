@@ -2,6 +2,7 @@ import type {
   GlobalSearchParams,
   GlobalSearchResultDto,
   GlobalSearchType,
+  SearchHashtagItemDto,
   SearchPostItemDto,
   SearchUserItemDto,
 } from "@/dtos/search.dto";
@@ -69,6 +70,21 @@ class SearchService {
     };
   }
 
+  /** Convenience: chỉ tìm hashtags. */
+  async searchHashtags(
+    q: string,
+    page = 1,
+    limit = 10
+  ): Promise<{ hashtags: SearchHashtagItemDto[]; total: number; page: number; limit: number }> {
+    const r = await this.globalSearch({ q, page, limit, type: "hashtags" });
+    return {
+      hashtags: r.hashtags,
+      total: r.pagination.hashtagsTotal ?? r.hashtags.length,
+      page: r.pagination.page,
+      limit: r.pagination.limit,
+    };
+  }
+
   // ─── helpers ────────────────────────────────────────────────────────────────
 
   private emptyResult(
@@ -80,7 +96,8 @@ class SearchService {
       query,
       users: [],
       posts: [],
-      pagination: { page, limit, usersTotal: 0, postsTotal: 0 },
+      hashtags: [],
+      pagination: { page, limit, usersTotal: 0, postsTotal: 0, hashtagsTotal: 0 },
     };
   }
 
@@ -100,6 +117,7 @@ class SearchService {
 
     const rawUsers = Array.isArray(r.users) ? r.users : [];
     const rawPosts = Array.isArray(r.posts) ? r.posts : [];
+    const rawHashtags = Array.isArray(r.hashtags) ? r.hashtags : [];
     const rawPagination =
       r.pagination && typeof r.pagination === "object"
         ? (r.pagination as Record<string, unknown>)
@@ -109,12 +127,33 @@ class SearchService {
       query: typeof r.query === "string" ? r.query : fallbackQuery,
       users: rawUsers.map((u) => this.normalizeUser(u)),
       posts: rawPosts.map((p) => this.normalizePost(p)),
+      hashtags: rawHashtags.map((h) => this.normalizeHashtag(h)),
       pagination: {
         page: Number(rawPagination.page ?? fallbackPage) || fallbackPage,
         limit: Number(rawPagination.limit ?? fallbackLimit) || fallbackLimit,
         usersTotal: Number(rawPagination.usersTotal ?? 0) || 0,
         postsTotal: Number(rawPagination.postsTotal ?? 0) || 0,
+        hashtagsTotal: Number(rawPagination.hashtagsTotal ?? 0) || 0,
       },
+    };
+  }
+
+  private normalizeHashtag(raw: unknown): SearchHashtagItemDto {
+    if (typeof raw === "string") {
+      return { tag: raw, postsCount: 0 };
+    }
+    const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+    const tag =
+      typeof r.tag === "string"
+        ? r.tag
+        : typeof r.hashtag === "string"
+          ? r.hashtag
+          : typeof r.name === "string"
+            ? r.name
+            : "";
+    return {
+      tag,
+      postsCount: Number(r.postsCount ?? r.count ?? 0) || 0,
     };
   }
 

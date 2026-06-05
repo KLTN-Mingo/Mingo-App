@@ -20,6 +20,7 @@ import { ProfileInfo } from "@/components/profile/ProfileInfo";
 import { ProfileRepostsList } from "@/components/profile/ProfileRepostsList";
 import { ProfileSettingsModal } from "@/components/profile/ProfileSettingsModal";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
+import { ChangePasswordModal } from "@/components/profile/ChangePasswordModal";
 import {
   VideoIcon,
 } from "@/components/shared/icons/Icons";
@@ -54,6 +55,7 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [changePasswordVisible, setChangePasswordVisible] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
   const [bioModalVisible, setBioModalVisible] = useState(false);
@@ -293,9 +295,11 @@ export default function ProfileScreen() {
               }}
               onCommentPress={(postId) => setCommentPostId(postId)}
               onSharePress={share.openSheet}
-              onSaveChange={(postId, isSaved) => {
+              onSaveChange={(postId, isSaved, savesCount) => {
                 setPosts((prev) =>
-                  prev.map((p) => (p.id === postId ? { ...p, isSaved } : p))
+                  prev.map((p) =>
+                    p.id === postId ? { ...p, isSaved, savesCount } : p
+                  )
                 );
               }}
               onUserPress={handleUserPress}
@@ -416,7 +420,7 @@ export default function ProfileScreen() {
   };
 
   return (
-      <ScreenContainer className="gap-6">
+      <ScreenContainer horizontalPadding="none" className="gap-6">
         <ScrollView
           refreshControl={
             <RefreshControl
@@ -429,11 +433,12 @@ export default function ProfileScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
         >
+        <View className="px-4 gap-4">
         {/* Error banner */}
         {profileError && (
           <TouchableOpacity
             onPress={handleRetryFromBanner}
-            className="mx-4 mt-2 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex-row items-center justify-between"
+            className="mt-2 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex-row items-center justify-between"
           >
             <Text className="flex-1 text-amber-800 dark:text-amber-200 text-sm">
               Cannot load latest info. Tap to retry.
@@ -514,8 +519,9 @@ export default function ProfileScreen() {
           onTabChange={setActiveTab}
           onFriendPress={() => router.push("/(tabs)/friend" as any)}
         />
+        </View>
 
-        <View className="min-h-[200px] px-2">{renderTabContent()}</View>
+        <View className="min-h-[200px] px-1">{renderTabContent()}</View>
       </ScrollView>
 
       {/* Modal chỉnh sửa hồ sơ */}
@@ -532,6 +538,11 @@ export default function ProfileScreen() {
         }}
         onOpenAccountSettings={() => {
           setSettingsVisible(false);
+          setChangePasswordVisible(true);
+        }}
+        onOpenBlockedUsers={() => {
+          setSettingsVisible(false);
+          router.push("/blocked-users" as any);
         }}
         themeToggleLabel={
           themeColorScheme === "dark"
@@ -559,6 +570,11 @@ export default function ProfileScreen() {
           if (!bioSaving) setBioModalVisible(false);
         }}
         onSave={handleSaveBio}
+      />
+
+      <ChangePasswordModal
+        visible={changePasswordVisible}
+        onRequestClose={() => setChangePasswordVisible(false)}
       />
 
       <CommentModal

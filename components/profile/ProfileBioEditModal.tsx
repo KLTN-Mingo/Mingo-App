@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 
+import { SafeModalSheet } from "@/components/containers/SafeLayout";
 import { Button, Text, TextArea } from "@/components/ui";
 
 export type ProfileBioEditModalProps = {
@@ -45,7 +46,7 @@ export function ProfileBioEditModal({
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View className="bg-background-light dark:bg-background-dark rounded-t-3xl px-4 pt-2 pb-8">
+          <SafeModalSheet className="rounded-t-3xl pt-2 pb-8">
             <View className="items-center py-2">
               <View className="w-10 h-1 bg-border-light dark:bg-border-dark rounded-full" />
             </View>
@@ -77,7 +78,7 @@ export function ProfileBioEditModal({
                 Lưu
               </Button>
             </View>
-          </View>
+          </SafeModalSheet>
         </KeyboardAvoidingView>
       </View>
     </Modal>

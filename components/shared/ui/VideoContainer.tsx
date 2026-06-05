@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
+// eslint-disable-next-line import/no-unresolved
 import { MediaStream, RTCView } from "react-native-webrtc";
 import { BORDER_DEFAULT } from "@/styles/colors";
 

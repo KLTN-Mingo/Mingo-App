@@ -41,9 +41,45 @@ export async function getAuthHeadersMultipart(): Promise<Record<string, string>>
   return h;
 }
 
+// Singleton promise: N request 401 đồng thời chỉ trigger 1 lần refresh.
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshOnce(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = authService
+      .refreshAccessToken()
+      .catch(() => null)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+/** Chặn refresh đệ quy nếu chính endpoint refresh / login fail 401. */
+function isRefreshableEndpoint(path: string): boolean {
+  return (
+    !path.includes("/auth/refresh-token") &&
+    !path.includes("/auth/login") &&
+    !path.includes("/auth/register") &&
+    !path.includes("/auth/forgot-password") &&
+    !path.includes("/auth/reset-password")
+  );
+}
+
+async function parseJson<T>(response: Response): Promise<ApiEnvelope<T>> {
+  try {
+    const text = await response.text();
+    return text ? (JSON.parse(text) as ApiEnvelope<T>) : {};
+  } catch {
+    throw new Error("Phản hồi từ máy chủ không hợp lệ");
+  }
+}
+
 export async function apiMultipartRequest<T>(
   path: string,
-  formData: FormData
+  formData: FormData,
+  _retry = false
 ): Promise<T> {
   const headers = await getAuthHeadersMultipart();
   const response = await fetch(`${API_URL}${path}`, {
@@ -53,14 +89,12 @@ export async function apiMultipartRequest<T>(
     credentials: "include",
   });
 
-  let json: ApiEnvelope<T> = {};
-  try {
-    const text = await response.text();
-    json = text ? (JSON.parse(text) as ApiEnvelope<T>) : {};
-  } catch {
-    throw new Error("Phản hồi từ máy chủ không hợp lệ");
+  if (response.status === 401 && !_retry && isRefreshableEndpoint(path)) {
+    const newToken = await refreshOnce();
+    if (newToken) return apiMultipartRequest<T>(path, formData, true);
   }
 
+  const json = await parseJson<T>(response);
   const message = json.message || "Something went wrong";
   if (!response.ok) {
     await authService.handleUnauthorizedResponse(response, message);
@@ -79,7 +113,8 @@ export async function apiMultipartRequest<T>(
 
 export async function apiRequest<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  _retry = false
 ): Promise<T> {
   const headers = await getAuthHeaders(options.headers);
   const response = await fetch(`${API_URL}${path}`, {
@@ -88,14 +123,12 @@ export async function apiRequest<T>(
     credentials: "include",
   });
 
-  let json: ApiEnvelope<T> = {};
-  try {
-    const text = await response.text();
-    json = text ? (JSON.parse(text) as ApiEnvelope<T>) : {};
-  } catch {
-    throw new Error("Phản hồi từ máy chủ không hợp lệ");
+  if (response.status === 401 && !_retry && isRefreshableEndpoint(path)) {
+    const newToken = await refreshOnce();
+    if (newToken) return apiRequest<T>(path, options, true);
   }
 
+  const json = await parseJson<T>(response);
   const message = json.message || "Something went wrong";
   if (!response.ok) {
     await authService.handleUnauthorizedResponse(response, message);
@@ -104,7 +137,7 @@ export async function apiRequest<T>(
 
   const data = extractData<T>(json);
   if (data === undefined) {
-    if ((response.status === 204 || response.status === 205) as boolean) {
+    if (response.status === 204 || response.status === 205) {
       return undefined as T;
     }
     return null as T;

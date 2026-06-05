@@ -15,11 +15,14 @@ import { BORDER_DEFAULT, colors } from "@/constants/designTokens";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { CallProvider } from "@/context/CallContext";
 import { ChatProvider } from "@/context/ChatContext";
-import { NotificationProvider } from "@/context/NotificationContext";
+import {
+  NotificationProvider,
+} from "@/context/NotificationContext";
 import {
   ThemeProvider as AppThemeProvider,
   useTheme,
 } from "@/context/ThemeContext";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { Stack } from "expo-router";
 
 SplashScreen.preventAutoHideAsync();
@@ -76,9 +79,9 @@ function ThemedNavigation() {
   return (
     <ThemeProvider value={navigationTheme}>
       <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
+       screenOptions={{
+        headerShown: false,
+      }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -86,12 +89,14 @@ function ThemedNavigation() {
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}
         />
-        <Stack.Screen name="create-post" options={{ presentation: "modal" }} />
-        <Stack.Screen name="post/[id]" options={{ presentation: "card" }} />
-        <Stack.Screen name="profile/[id]" options={{ presentation: "card" }} />
-        <Stack.Screen name="search" options={{ presentation: "card" }} />
-        <Stack.Screen name="edit-profile" options={{ presentation: "card" }} />
-        <Stack.Screen name="chat/index" options={{ presentation: "card" }} />
+        <Stack.Screen name="create-post" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="post/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="profile/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="search" options={{ presentation: 'card' }} />
+        <Stack.Screen name="edit-profile" options={{ presentation: 'card' }} />
+        <Stack.Screen name="chat/index" options={{ presentation: 'card' }} />
+        <Stack.Screen name="hashtag/[tag]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="blocked-users" options={{ presentation: 'card' }} />
       </Stack>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
     </ThemeProvider>
@@ -116,29 +121,39 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <NotificationProviderWrapper>
-        <CallProvider>
-          <ChatProvider>
+        <ChatProviderWrapper>
+          <CallProvider>
             <View className="flex-1 font-sans" style={{ flex: 1 }}>
               <HideSplashWhenReady fontsLoaded={fontsLoaded ?? false} />
               <AppThemeProvider>
                 <ThemedNavigation />
               </AppThemeProvider>
             </View>
-          </ChatProvider>
-        </CallProvider>
+          </CallProvider>
+        </ChatProviderWrapper>
       </NotificationProviderWrapper>
     </AuthProvider>
   );
 }
 
-function NotificationProviderWrapper({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function ChatProviderWrapper({ children }: { children: React.ReactNode }) {
+  const { profile } = useAuth();
+  return <ChatProvider userId={profile?.id}>{children}</ChatProvider>;
+}
+
+function NotificationProviderWrapper({ children }: { children: React.ReactNode }) {
   const { profile } = useAuth();
 
   return (
-    <NotificationProvider userId={profile?.id}>{children}</NotificationProvider>
+    <NotificationProvider userId={profile?.id}>
+      <PushSetup />
+      {children}
+    </NotificationProvider>
   );
+}
+
+function PushSetup() {
+  // Register FCM/APNs token + handle tap deep-links. No UI.
+  usePushNotifications();
+  return null;
 }

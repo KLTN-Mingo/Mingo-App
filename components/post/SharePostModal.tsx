@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 
+import { SafeModalSheet } from "@/components/containers/SafeLayout";
 import {
   CancelIcon,
   SearchIcon,
@@ -161,7 +162,7 @@ export function SharePostModal({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1 justify-end bg-black/40"
       >
-        <View className="rounded-t-[20px] bg-background-light dark:bg-background-dark px-4 pt-4 pb-6 max-h-[85%]">
+        <SafeModalSheet>
           {/* Header */}
           <View className="flex-row items-center mb-3">
             <Text className="flex-1 text-base font-semibold text-text-light dark:text-text-dark">
@@ -245,7 +246,7 @@ export function SharePostModal({
               </Text>
             </View>
           </Button>
-        </View>
+        </SafeModalSheet>
       </KeyboardAvoidingView>
     </Modal>
   );

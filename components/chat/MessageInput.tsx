@@ -3,7 +3,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
-  FlatList,
+  KeyboardAvoidingView,
   Platform,
   Text as RNText,
   StyleSheet,
@@ -14,7 +14,6 @@ import {
 
 import {
   CameraIcon,
-  EmotionIcon,
   ImageIcon,
   MicroIcon,
   PlusIcon,
@@ -24,12 +23,6 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { pickDocument } from "@/lib/utils/document-picker";
 import { pickFromCamera, pickMedia } from "@/lib/utils/gallery-picker";
 
-<<<<<<< HEAD
-const chatColors = {
-  dark: { 100: "#CFBFAD", 500: "#FAFAFA" },
-  light: { 100: "#1E2021", 500: "#FAFAFA" },
-};
-=======
 import { BORDER_DEFAULT, getSemantic, getStatusColor, paletteIcon } from "@/styles/colors";
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -47,7 +40,6 @@ function hexToRgba(hex: string, alpha: number): string {
   const b = intVal & 255;
   return `rgba(${r},${g},${b},${alpha})`;
 }
->>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 
 export type PickedFileLike = {
   uri: string;
@@ -60,707 +52,16 @@ interface MessageInputProps {
   onSend: (content: string) => Promise<void> | void;
   onSendFile?: (file: PickedFileLike) => Promise<void> | void;
   onOpenMic?: () => void;
+  onTypingActivity?: () => void;
   placeholder?: string;
   disabled?: boolean;
 }
-
-// ─── Emoji Picker ──────────────────────────────────────────────────────────────
-
-const EMOJI_CATEGORIES = [
-  {
-    label: "Smileys",
-    emojis: [
-      "😀",
-      "😃",
-      "😄",
-      "😁",
-      "😆",
-      "😅",
-      "🤣",
-      "😂",
-      "🙂",
-      "🙃",
-      "😉",
-      "😊",
-      "😇",
-      "🥰",
-      "😍",
-      "🤩",
-      "😘",
-      "😗",
-      "😚",
-      "😙",
-      "🥲",
-      "😋",
-      "😛",
-      "😜",
-      "🤪",
-      "😝",
-      "🤑",
-      "🤗",
-      "🤭",
-      "🤫",
-      "🤔",
-      "🤐",
-      "🤨",
-      "😐",
-      "😑",
-      "😶",
-      "😏",
-      "😒",
-      "🙄",
-      "😬",
-      "🤥",
-      "😌",
-      "😔",
-      "😪",
-      "🤤",
-      "😴",
-      "😷",
-      "🤒",
-      "🤕",
-    ],
-  },
-  {
-    label: "Gestures",
-    emojis: [
-      "👍",
-      "👎",
-      "👊",
-      "✊",
-      "🤛",
-      "🤜",
-      "🤝",
-      "👏",
-      "🙌",
-      "👐",
-      "🤲",
-      "🤞",
-      "✌️",
-      "🤟",
-      "🤘",
-      "👌",
-      "🤌",
-      "👈",
-      "👉",
-      "👆",
-      "👇",
-      "☝️",
-      "✋",
-      "🤚",
-      "🖐️",
-      "🖖",
-      "👋",
-      "🤏",
-      "✍️",
-      "🙏",
-      "💪",
-      "🦾",
-      "🦿",
-      "🦵",
-      "🦶",
-      "👂",
-      "👃",
-      "🧠",
-      "🫀",
-      "🫁",
-      "🦷",
-      "🦴",
-      "👀",
-      "👁️",
-      "👅",
-      "👄",
-    ],
-  },
-  {
-    label: "Hearts",
-    emojis: [
-      "❤️",
-      "🧡",
-      "💛",
-      "💚",
-      "💙",
-      "💜",
-      "🖤",
-      "🤍",
-      "🤎",
-      "💔",
-      "❣️",
-      "💕",
-      "💞",
-      "💓",
-      "💗",
-      "💖",
-      "💘",
-      "💝",
-      "💟",
-      "♥️",
-      "💝",
-      "❤️‍🔥",
-      "❤️‍🩹",
-    ],
-  },
-  {
-    label: "Nature",
-    emojis: [
-      "🌵",
-      "🎄",
-      "🌲",
-      "🌳",
-      "🌴",
-      "🪵",
-      "🌱",
-      "🌿",
-      "☘️",
-      "🍀",
-      "🎍",
-      "🪴",
-      "🎋",
-      "🍃",
-      "🍂",
-      "🍁",
-      "🍄",
-      "🌾",
-      "💐",
-      "🌷",
-      "🌹",
-      "🥀",
-      "🌺",
-      "🌸",
-      "🌼",
-      "🌻",
-      "🌞",
-      "🌝",
-      "🌛",
-      "🌜",
-      "🌚",
-      "🌕",
-      "🌖",
-      "🌗",
-      "🌘",
-      "🌑",
-      "🌒",
-      "🌓",
-      "🌔",
-      "🌙",
-      "🌎",
-      "🌍",
-      "🌏",
-      "🪐",
-      "💫",
-      "⭐",
-      "🌟",
-      "✨",
-      "⚡",
-      "☄️",
-      "💥",
-      "🔥",
-      "🌪",
-      "🌈",
-      "☀️",
-      "🌤️",
-      "⛅",
-      "🌥",
-      "☁️",
-      "🌧",
-      "⛈",
-      "🌩",
-      "🌨",
-    ],
-  },
-  {
-    label: "Food",
-    emojis: [
-      "🍎",
-      "🍐",
-      "🍊",
-      "🍋",
-      "🍌",
-      "🍉",
-      "🍇",
-      "🍓",
-      "🫐",
-      "🍈",
-      "🍒",
-      "🍑",
-      "🥭",
-      "🍍",
-      "🥥",
-      "🥝",
-      "🍅",
-      "🍆",
-      "🥑",
-      "🥦",
-      "🥬",
-      "🥒",
-      "🌶",
-      "🫑",
-      "🍕",
-      "🍔",
-      "🍟",
-      "🌭",
-      "🍿",
-      "🧂",
-      "🥓",
-      "🍳",
-      "🥞",
-      "🧇",
-      "🍜",
-      "🍝",
-      "🍛",
-      "🍣",
-      "🍱",
-      "🥟",
-      "🍮",
-      "🍦",
-      "🧁",
-      "🍰",
-      "🍪",
-      "🍩",
-      "🍫",
-      "🍿",
-      "☕",
-      "🧃",
-      "🧋",
-    ],
-  },
-  {
-    label: "Animals",
-    emojis: [
-      "🐶",
-      "🐱",
-      "🐭",
-      "🐹",
-      "🐰",
-      "🦊",
-      "🐻",
-      "🐼",
-      "🐨",
-      "🐯",
-      "🦁",
-      "🐮",
-      "🐷",
-      "🐸",
-      "🐵",
-      "🐔",
-      "🐧",
-      "🐦",
-      "🐤",
-      "🦆",
-      "🦅",
-      "🦉",
-      "🦇",
-      "🐺",
-      "🐗",
-      "🐴",
-      "🦄",
-      "🐝",
-      "🪱",
-      "🐛",
-      "🦋",
-      "🐌",
-      "🐞",
-      "🐜",
-      "🪰",
-      "🪲",
-      "🪳",
-      "🦟",
-      "🦗",
-      "🐢",
-      "🐍",
-      "🦎",
-      "🦖",
-      "🦕",
-      "🐙",
-      "🦑",
-      "🦐",
-      "🦞",
-      "🦀",
-      "🐡",
-      "🐠",
-      "🐟",
-      "🐬",
-      "🐳",
-      "🐋",
-      "🦈",
-      "🐊",
-      "🐅",
-      "🐆",
-    ],
-  },
-  {
-    label: "Activities",
-    emojis: [
-      "⚽",
-      "🏀",
-      "🏈",
-      "⚾",
-      "🥎",
-      "🎾",
-      "🏐",
-      "🏉",
-      "🥏",
-      "🎱",
-      "🪀",
-      "🏓",
-      "🏸",
-      "🏒",
-      "🏑",
-      "🥍",
-      "🏏",
-      "🪃",
-      "🥅",
-      "⛳",
-      "🪁",
-      "🏹",
-      "🎣",
-      "🤿",
-      "🥊",
-      "🥋",
-      "🎽",
-      "🛹",
-      "🛼",
-      "🛷",
-      "⛸",
-      "🥌",
-      "🎿",
-      "⛷",
-      "🏂",
-      "🪂",
-      "🏋️",
-      "🤼",
-      "🤸",
-      "🤺",
-      "⛹",
-      "🤾",
-      "🏌️",
-      "🏇",
-      "🧘",
-      "🏄",
-      "🏊",
-      "🤽",
-      "🚣",
-      "🧗",
-      "🚵",
-      "🚴",
-    ],
-  },
-  {
-    label: "Objects",
-    emojis: [
-      "⌚",
-      "📱",
-      "💻",
-      "⌨️",
-      "🖥️",
-      "🖨️",
-      "🖱️",
-      "🖲️",
-      "💽",
-      "💾",
-      "💿",
-      "📀",
-      "📼",
-      "📷",
-      "📸",
-      "📹",
-      "🎥",
-      "📽️",
-      "🎞️",
-      "📞",
-      "☎️",
-      "📟",
-      "📠",
-      "📺",
-      "📻",
-      "🎙️",
-      "🎚️",
-      "🎛️",
-      "🧭",
-      "⏱",
-      "⏲️",
-      "⏰",
-      "🕰️",
-      "⌛",
-      "⏳",
-      "📡",
-      "🔋",
-      "🔌",
-      "💡",
-      "🔦",
-      "🕯️",
-      "🧯",
-      "🛢️",
-      "💸",
-      "💵",
-      "💴",
-      "💶",
-      "💷",
-      "🪙",
-      "💰",
-      "💳",
-      "💎",
-      "⚖️",
-      "🪜",
-      "🧰",
-      "🪛",
-      "🔧",
-      "🔨",
-      "⚒️",
-      "🛠️",
-      "⛏️",
-      "🪚",
-      "🔩",
-      "⚙️",
-      "🪤",
-      "🧱",
-      "⛓️",
-      "🧲",
-      "🔫",
-      "💣",
-      "🧨",
-      "🪓",
-      "🔪",
-      "🗡️",
-      "⚔️",
-      "🛡️",
-      "🚬",
-      "⚰️",
-      "🪦",
-      "⚱️",
-      "🏺",
-      "🔮",
-      "📿",
-      "🧿",
-      "💈",
-      "⚗️",
-      "🔭",
-      "🔬",
-      "🕳️",
-      "🩹",
-      "🩺",
-      "💊",
-      "💉",
-      "🩸",
-      "🧬",
-      "🦠",
-      "🧫",
-      "🧪",
-      "🌡️",
-      "🧹",
-      "🪠",
-      "🧺",
-      "🧻",
-      "🚽",
-      "🚰",
-      "🚿",
-      "🛁",
-      "🛀",
-      "🧼",
-      "🪥",
-      "🪒",
-      "🧽",
-      "🪣",
-      "🧴",
-      "🛎️",
-      "🔑",
-      "🗝️",
-      "🚪",
-      "🪑",
-      "🛋️",
-      "🛏️",
-      "🛌",
-      "🧸",
-      "🪆",
-      "🖼️",
-      "🪞",
-      "🪟",
-      "🛒",
-      "🎁",
-      "🎈",
-      "🎏",
-      "🎀",
-      "🪄",
-      "🪅",
-      "🎊",
-      "🎉",
-      "🎎",
-      "🏮",
-      "🎐",
-      "🧧",
-      "✉️",
-      "📩",
-      "📨",
-      "📧",
-      "💌",
-      "📥",
-      "📤",
-      "📦",
-      "🏷️",
-      "🪧",
-      "📪",
-      "📫",
-      "📬",
-      "📭",
-      "📮",
-      "📯",
-      "📜",
-      "📃",
-      "📄",
-      "📑",
-      "🧾",
-      "📊",
-      "📈",
-      "📉",
-      "🗒️",
-      "🗓️",
-      "📆",
-      "📅",
-      "🗑️",
-      "📇",
-      "🗃️",
-      "🗳️",
-      "🗄️",
-      "📋",
-      "📁",
-      "📂",
-      "🗂️",
-      "🗞️",
-      "📰",
-      "📓",
-      "📔",
-      "📒",
-      "📕",
-      "📗",
-      "📘",
-      "📙",
-      "📚",
-      "📖",
-      "🔖",
-      "🧷",
-      "🔗",
-      "📎",
-      "🖇️",
-      "📐",
-      "📏",
-      "🧮",
-      "📌",
-      "📍",
-      "✂️",
-      "🖊️",
-      "🖋️",
-      "✒️",
-      "🖌️",
-      "🖍️",
-      "📝",
-      "✏️",
-      "🔍",
-      "🔎",
-      "🔏",
-      "🔐",
-      "🔒",
-      "🔓",
-    ],
-  },
-];
-
-interface EmojiPickerProps {
-  onSelect: (emoji: string) => void;
-  onClose: () => void;
-}
-
-function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
-  const colorScheme = useColorScheme() ?? "light";
-  const isDark = colorScheme === "dark";
-  const [activeCategory, setActiveCategory] = useState(0);
-
-  const emojis = EMOJI_CATEGORIES[activeCategory].emojis;
-  const rows: string[][] = [];
-  const cols = 8;
-  for (let i = 0; i < emojis.length; i += cols) {
-    rows.push(emojis.slice(i, i + cols));
-  }
-
-  return (
-    <View
-      style={{
-        borderTopWidth: 1,
-        borderTopColor: isDark ? "#333" : "#E5E7EB",
-        backgroundColor: isDark ? "#252525" : "#FAFAFA",
-        paddingBottom: 4,
-      }}
-    >
-      {/* Category tabs */}
-      <View
-        style={{
-          flexDirection: "row",
-          paddingHorizontal: 8,
-          paddingTop: 6,
-          gap: 2,
-        }}
-      >
-        {EMOJI_CATEGORIES.map((cat, idx) => (
-          <TouchableOpacity
-            key={cat.label}
-            onPress={() => setActiveCategory(idx)}
-            style={{
-              flex: 1,
-              alignItems: "center",
-              paddingVertical: 5,
-              borderRadius: 6,
-              backgroundColor:
-                activeCategory === idx
-                  ? isDark
-                    ? "#3a3a3a"
-                    : "#e8e8e8"
-                  : "transparent",
-            }}
-          >
-            <RNText style={{ fontSize: 14 }}>{cat.emojis[0]}</RNText>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Emoji grid */}
-      <FlatList
-        data={rows}
-        keyExtractor={(_, idx) => String(idx)}
-        style={{ maxHeight: 160 }}
-        renderItem={({ item: row }) => (
-          <View
-            style={{
-              flexDirection: "row",
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-            }}
-          >
-            {row.map((emoji) => (
-              <TouchableOpacity
-                key={emoji}
-                onPress={() => onSelect(emoji)}
-                style={{
-                  width: `${100 / cols}%`,
-                  alignItems: "center",
-                  paddingVertical: 4,
-                }}
-              >
-                <RNText style={{ fontSize: 22 }}>{emoji}</RNText>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
-  );
-}
-
-// ─── MessageInput ─────────────────────────────────────────────────────────────
 
 export function MessageInput({
   onSend,
   onSendFile,
   onOpenMic,
+  onTypingActivity,
   placeholder = "Aa...",
   disabled = false,
 }: MessageInputProps) {
@@ -770,22 +71,14 @@ export function MessageInput({
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [duration, setDuration] = useState(0);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const durationRef = useRef(0);
-  const inputRef = useRef<TextInput>(null);
   const colorScheme = useColorScheme() ?? "light";
-<<<<<<< HEAD
-  const colors = colorScheme === "dark" ? chatColors.dark : chatColors.light;
-  const iconColor = colorScheme === "dark" ? "#ffffff" : "#92898A";
-  const placeholderColor = colorScheme === "dark" ? colors[100] : "#92898A";
-=======
   const semantic = getSemantic(colorScheme);
   const errorColor = getStatusColor(colorScheme, "error");
   const iconColor = paletteIcon[colorScheme];
   const placeholderColor = semantic.placeholder;
   const recordingBadgeBg = hexToRgba(errorColor, 0.1);
->>>>>>> 36502be4165c9aa5ed4f62ad51c90625dae8177d
 
   useEffect(() => {
     recordingRef.current = recording;
@@ -945,6 +238,7 @@ export function MessageInput({
     let destUri: string | null = null;
 
     try {
+      // Lấy duration trước khi stop
       const status = await activeRecording.getStatusAsync();
       const durationMillis =
         typeof (status as any).durationMillis === "number"
@@ -956,9 +250,6 @@ export function MessageInput({
           : durationRef.current;
 
       await activeRecording.stopAndUnloadAsync();
-
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
       const recordingUri = activeRecording.getURI();
 
       await Audio.setAudioModeAsync({
@@ -976,9 +267,11 @@ export function MessageInput({
       const audioType = isIOS ? "audio/m4a" : "audio/mp4";
       const fileName = `voice_${Date.now()}.${audioExt}`;
 
+      // Copy file sang documentDirectory để XHR đọc được
       destUri = `${FileSystem.documentDirectory}${fileName}`;
       await FileSystem.copyAsync({ from: recordingUri, to: destUri });
 
+      // Kiểm tra file tồn tại sau khi copy
       const fileInfo = await FileSystem.getInfoAsync(destUri);
       console.log("Audio file info:", JSON.stringify(fileInfo));
       if (!fileInfo.exists) {
@@ -996,6 +289,7 @@ export function MessageInput({
       console.error("Error stopping recording:", error);
       Alert.alert("Recording error", "Unable to send voice message.");
     } finally {
+      // Cleanup file tạm
       if (destUri) {
         await FileSystem.deleteAsync(destUri, { idempotent: true }).catch(
           () => undefined
@@ -1063,22 +357,21 @@ export function MessageInput({
   const fileBusy = sendingFile;
 
   return (
-    <View style={styles.container}>
-      {showEmojiPicker && (
-        <EmojiPicker
-          onSelect={(emoji) => {
-            setText((prev) => prev + emoji);
-          }}
-          onClose={() => setShowEmojiPicker(false)}
-        />
-      )}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
       <View style={styles.inputContainer}>
         {isRecording ? (
           // ── Recording UI ──────────────────────────────────────────────────
           <>
-            <View style={styles.recordingBadge}>
-              <RNText style={styles.recordingDot}>●</RNText>
-              <RNText style={styles.recordingText}>
+            <View
+              style={[styles.recordingBadge, { backgroundColor: recordingBadgeBg }]}
+            >
+              <RNText style={[styles.recordingDot, { color: errorColor }]}>
+                ●
+              </RNText>
+              <RNText style={[styles.recordingText, { color: errorColor }]}>
                 {formatDuration(duration)}
               </RNText>
             </View>
@@ -1088,10 +381,12 @@ export function MessageInput({
               disabled={sendingFile}
               style={[
                 styles.recordingActionBtn,
-                { backgroundColor: "#768D85", opacity: sendingFile ? 0.5 : 1 },
+                { backgroundColor: semantic.primary, opacity: sendingFile ? 0.5 : 1 },
               ]}
             >
-              <RNText style={styles.recordingActionText}>
+              <RNText
+                style={[styles.recordingActionText, { color: semantic.onPrimary }]}
+              >
                 {sendingFile ? "Sending..." : "Send"}
               </RNText>
             </TouchableOpacity>
@@ -1101,11 +396,11 @@ export function MessageInput({
               disabled={sendingFile}
               style={[
                 styles.recordingActionBtn,
-                { backgroundColor: "#E5E7EB", opacity: sendingFile ? 0.5 : 1 },
+                { backgroundColor: semantic.surfaceMuted, opacity: sendingFile ? 0.5 : 1 },
               ]}
             >
               <RNText
-                style={[styles.recordingActionText, { color: "#6B7280" }]}
+                style={[styles.recordingActionText, { color: semantic.textMuted }]}
               >
                 Cancel
               </RNText>
@@ -1146,33 +441,22 @@ export function MessageInput({
               <MicroIcon size={28} color={iconColor} />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => {
-                setShowEmojiPicker((prev) => !prev);
-                if (showEmojiPicker) {
-                  inputRef.current?.focus();
-                }
-              }}
-              style={{ opacity: showEmojiPicker ? 1 : 0.8 }}
-            >
-              <EmotionIcon size={30} color={iconColor} />
-            </TouchableOpacity>
-
             <TextInput
-              ref={inputRef}
               value={text}
-              onChangeText={setText}
+              onChangeText={(t) => {
+                setText(t);
+                if (t.length > 0) onTypingActivity?.();
+              }}
               placeholder={placeholder}
               placeholderTextColor={placeholderColor}
               multiline
               maxLength={4000}
               editable={!disabled}
-              onFocus={() => setShowEmojiPicker(false)}
               style={[
                 styles.input,
                 {
-                  borderColor: colorScheme === "dark" ? colors[100] : "#E5E7EB",
-                  color: colors[100],
+                  borderColor: BORDER_DEFAULT,
+                  color: semantic.text,
                 },
               ]}
             />
@@ -1185,28 +469,29 @@ export function MessageInput({
                 opacity: text.trim() && !disabled && !sending ? 1 : 0.5,
               }}
             >
-              <SendIcon size={28} color="#768D85" />
+              <SendIcon size={28} color={semantic.primary} />
             </TouchableOpacity>
           </>
         )}
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    // No justifyContent — input takes only its natural height
-    // Bottom padding handled by parent (chat screen) via insets
+    justifyContent: "flex-end",
+    marginBottom: 5,
+    marginTop: 5,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingBottom: 0,
+    paddingBottom: 20,
     paddingHorizontal: 10,
-    gap: 4,
+    gap: 6,
     paddingTop: 4,
-    minHeight: 54,
+    minHeight: 60,
   },
   input: {
     flex: 1,
@@ -1225,15 +510,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: "rgba(239,68,68,0.1)",
   },
   recordingDot: {
-    color: "#EF4444",
     fontSize: 10,
     fontFamily: "Montserrat-Regular",
   },
   recordingText: {
-    color: "#EF4444",
     fontSize: 14,
     fontWeight: "600",
     fontFamily: "Montserrat-SemiBold",
@@ -1244,7 +526,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   recordingActionText: {
-    color: "#fff",
     fontSize: 13,
     fontWeight: "600",
     fontFamily: "Montserrat-SemiBold",
