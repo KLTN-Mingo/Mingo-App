@@ -1,53 +1,55 @@
-// services/culture.service.ts
-import { apiRequest } from "./api-client";
-
-export interface CultureTerm {
-  term: string;
-  meaning: string;
-  origin?: string;
-  category?: string;
-  confidence?: number;
-}
-
-export interface PostCultureTermsResponse {
-  analyzed: boolean;
-  terms: CultureTerm[];
-}
+import {
+  CultureTermDto,
+  CultureTermsResponseDto,
+  ReportTermRequestDto,
+} from "@/dtos";
+import { apiRequest } from "@/services/api-client";
 
 class CultureService {
-  /**
-   * GET /api/culture/posts/:postId/culture-terms
-   * Lấy danh sách thuật ngữ văn hóa (slang) trong một bài viết.
-   */
-  async getPostCultureTerms(postId: string): Promise<PostCultureTermsResponse> {
-    return apiRequest<PostCultureTermsResponse>(
+  /** GET /culture/posts/:postId/culture-terms — slang đã phát hiện trong post. */
+  async getPostCultureTerms(postId: string): Promise<CultureTermDto[]> {
+    const raw = await apiRequest<unknown>(
       `/culture/posts/${encodeURIComponent(postId)}/culture-terms`
     );
+    return this.normalizeTerms(raw);
   }
 
-  /**
-   * POST /api/culture/posts/:postId/reanalyze
-   * Yêu cầu BE phân tích lại bài viết (sau khi user chỉnh sửa).
-   */
-  async reAnalyzePost(postId: string): Promise<void> {
-    return apiRequest<void>(
+  /** POST /culture/posts/:postId/reanalyze — gọi sau khi user edit post. */
+  async reanalyzePost(postId: string): Promise<void> {
+    await apiRequest<unknown>(
       `/culture/posts/${encodeURIComponent(postId)}/reanalyze`,
       { method: "POST" }
     );
   }
 
-  /**
-   * POST /api/culture/posts/:postId/report-term
-   * Báo cáo một thuật ngữ bị giải thích sai.
-   */
-  async reportTerm(postId: string, term: string): Promise<void> {
-    return apiRequest<void>(
+  async reAnalyzePost(postId: string): Promise<void> {
+    await this.reanalyzePost(postId);
+  }
+
+  /** POST /culture/posts/:postId/report-term — báo nghĩa sai. */
+  async reportTerm(
+    postId: string,
+    payload: ReportTermRequestDto | string
+  ): Promise<void> {
+    const body: ReportTermRequestDto =
+      typeof payload === "string" ? { term: payload } : payload;
+
+    await apiRequest<unknown>(
       `/culture/posts/${encodeURIComponent(postId)}/report-term`,
       {
         method: "POST",
-        body: JSON.stringify({ term }),
+        body: JSON.stringify(body),
       }
     );
+  }
+
+  private normalizeTerms(raw: unknown): CultureTermDto[] {
+    if (Array.isArray(raw)) return raw as CultureTermDto[];
+    if (raw && typeof raw === "object") {
+      const o = raw as Partial<CultureTermsResponseDto>;
+      if (Array.isArray(o.terms)) return o.terms;
+    }
+    return [];
   }
 }
 

@@ -139,14 +139,23 @@ class UserService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    _retry = false
   ): Promise<T> {
     const headers = await this.getAuthHeaders();
 
     const response = await fetch(`${API_URL}/users${endpoint}`, {
       ...options,
       headers: { ...headers, ...options.headers },
+      credentials: "include",
     });
+
+    if (response.status === 401 && !_retry) {
+      const refreshedToken = await authService.refreshAccessToken();
+      if (refreshedToken) {
+        return this.request<T>(endpoint, options, true);
+      }
+    }
 
     let json: Record<string, unknown> = {};
     try {
@@ -316,7 +325,8 @@ class UserService {
   async searchUsers(
     query: string,
     page = 1,
-    limit = 20
+    limit = 20,
+    _retry = false
   ): Promise<PaginatedPublicUsersDto> {
     const params = new URLSearchParams({
       search: query.trim(),
@@ -326,7 +336,14 @@ class UserService {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${API_URL}/users?${params.toString()}`, {
       headers,
+      credentials: "include",
     });
+    if (response.status === 401 && !_retry) {
+      const refreshedToken = await authService.refreshAccessToken();
+      if (refreshedToken) {
+        return this.searchUsers(query, page, limit, true);
+      }
+    }
     let json: Record<string, unknown> = {};
     try {
       const text = await response.text();
@@ -394,12 +411,19 @@ class UserService {
   }
 
   /** GET /users/phone/:phoneNumber — tìm user qua số điện thoại */
-  async getUserByPhone(phoneNumber: string): Promise<PublicUserDto> {
+  async getUserByPhone(phoneNumber: string, _retry = false): Promise<PublicUserDto> {
     const params = new URLSearchParams({ phoneNumber: phoneNumber.trim() });
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${API_URL}/users/phone/${encodeURIComponent(phoneNumber.trim())}`, {
       headers,
+      credentials: "include",
     });
+    if (response.status === 401 && !_retry) {
+      const refreshedToken = await authService.refreshAccessToken();
+      if (refreshedToken) {
+        return this.getUserByPhone(phoneNumber, true);
+      }
+    }
     let json: Record<string, unknown> = {};
     try {
       const text = await response.text();

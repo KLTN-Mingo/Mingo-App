@@ -65,7 +65,8 @@ export function Button({
   return (
     <TouchableOpacity
       className={twMerge(
-        `items-center justify-center rounded-full gap-2 self-stretch ${variantClasses[variant]} ${sizeClasses[size]} ${disabled || loading ? "opacity-50" : ""} ${className}`,
+        `items-center justify-center rounded-full gap-2 self-stretch ${variantClasses[variant]} ${sizeClasses[size]} ${disabled || loading ? "opacity-50" : ""}`,
+        className,
       )}
       disabled={disabled || loading}
       activeOpacity={0.8}
@@ -76,7 +77,10 @@ export function Button({
           color={variant === "primary" || variant === "danger" ? "#FFFFFF" : paletteIcon[colorScheme]}
         />
       ) : (
-        <Text className={`${textVariantClasses[variant]} ${textSizeClasses[size]}`}>
+        <Text
+          className={`${textVariantClasses[variant]} ${textSizeClasses[size]} text-center leading-5`}
+          style={{ lineHeight: 20 }}
+        >
           {children}
         </Text>
       )}

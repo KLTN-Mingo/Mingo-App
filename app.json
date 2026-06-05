@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "bundleIdentifier": "com.huynh013704.mingoapp",
       "supportsTablet": true
     },
     "android": {
@@ -44,6 +45,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a50a8de1-8b4b-4e13-a45a-ab9b7c9cb431"
+      }
     }
   }
 }

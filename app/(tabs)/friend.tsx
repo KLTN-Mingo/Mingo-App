@@ -318,11 +318,14 @@ export default function FriendScreen() {
 
   return (
     // <View className="flex-1 bg-background-light dark:bg-background-dark">
-    <ScreenContainer className="gap-6">
+    <ScreenContainer horizontalPadding="default" className="gap-6">
       {/* Header */}
       <View className="">
         <View className="flex-row justify-between items-center">
-          <Text style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 24 }}>
+          <Text
+            className="text-title-light dark:text-title-dark leading-[32px]"
+            style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 24 }}
+          >
             Friends
           </Text>
           <View className="flex-row gap-4">

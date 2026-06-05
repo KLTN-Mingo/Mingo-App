@@ -21,12 +21,23 @@ export function FriendCard({
   const colorScheme = useColorScheme() ?? 'light';
   const verifiedIconColor = paletteIcon[colorScheme];
   const moreIconColor = paletteIcon.lightMuted;
+  const cardShadowStyle =
+    colorScheme === "light"
+      ? {
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 17.5,
+          elevation: 4,
+        }
+      : undefined;
 
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
-      className="flex-row items-center px-4 py-4"
+      className="flex-row items-center px-4 py-4 mb-3 rounded-lg bg-white dark:bg-surface-dark"
+      style={cardShadowStyle}
     >
       {/* Avatar with close friend indicator */}
       <View className="relative">
