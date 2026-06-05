@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Dimensions,
   Image,
   TouchableOpacity,
@@ -20,6 +21,7 @@ import {
 } from "@/components/shared/icons/Icons";
 import { Avatar, Text } from "@/components/ui";
 import { CultureTermDto, PostResponseDto, UserMinimalDto } from "@/dtos";
+import { FollowApi } from "@/services/follow.service";
 import { postService } from "@/services/post.service";
 import { colors, paletteIcon, statusColors } from "@/styles/colors";
 
@@ -43,6 +45,7 @@ interface PostCardProps {
   hiddenReason?: string;
   /** Highlight slang/idiom trong nội dung (Culture Translation). */
   cultureTerms?: CultureTermDto[];
+  recommendationSource?: "explore" | "feed";
 }
 
 export function PostCard({
@@ -57,6 +60,7 @@ export function PostCard({
   onSharePress,
   hiddenReason,
   cultureTerms,
+  recommendationSource,
 }: PostCardProps) {
   const colorScheme = useColorScheme() ?? "light";
 
@@ -83,6 +87,16 @@ export function PostCard({
   const [isSaved, setIsSaved] = useState(post.isSaved ?? false);
   const [savesCount, setSavesCount] = useState(post.savesCount ?? 0);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followRequested, setFollowRequested] = useState(false);
+  const effectiveCultureTerms =
+    Array.isArray(cultureTerms) && cultureTerms.length > 0
+      ? cultureTerms
+      : Array.isArray(post.culturalTerms)
+        ? post.culturalTerms
+        : [];
+  const showCultureAnalyzing =
+    post.cultureAnalyzed === false && effectiveCultureTerms.length === 0;
 
   useEffect(() => {
     setIsSaved(post.isSaved ?? false);
@@ -224,6 +238,32 @@ export function PostCard({
   const isOwnPost =
     currentUser?.id && post.userId && currentUser.id === post.userId;
 
+  const canFollowFromPost =
+    Boolean(currentUser?.id) &&
+    Boolean(post.userId) &&
+    !isOwnPost &&
+    Boolean(recommendationSource);
+
+  const handleFollowFromPost = async () => {
+    if (!canFollowFromPost || followLoading || followRequested) return;
+
+    setFollowLoading(true);
+    try {
+      await FollowApi.sendFollowRequest(post.userId, {
+        postId: post.id,
+        source: recommendationSource,
+        deviceType: "web",
+      });
+      setFollowRequested(true);
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Cannot send follow request";
+      Alert.alert("Error", msg);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
   return (
     <View style={cardShadowStyle} className="rounded-[10px]">
       <View className="p-4 overflow-hidden rounded-[10px] bg-white dark:bg-surface-dark gap-4">
@@ -259,6 +299,18 @@ export function PostCard({
             </View>
           </TouchableOpacity>
 
+          {canFollowFromPost ? (
+            <TouchableOpacity
+              onPress={handleFollowFromPost}
+              disabled={followLoading || followRequested}
+              className="mr-2 px-3 py-1.5 rounded-full bg-primary dark:bg-primary-light"
+            >
+              <Text className="text-xs font-semibold text-white">
+                {followRequested ? "Sent" : followLoading ? "..." : "Follow"}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+
           {onMorePress && currentUser?.id ? (
             <TouchableOpacity onPress={() => onMorePress(post)} className="p-2">
               <ThreeDotsIcon size={20} color={theme.icon} />
@@ -269,10 +321,10 @@ export function PostCard({
         {/* Content */}
         {post.contentText && (
           <View className="">
-            {cultureTerms && cultureTerms.length > 0 ? (
+            {effectiveCultureTerms.length > 0 ? (
               <CultureHighlightedText
                 text={post.contentText}
-                terms={cultureTerms}
+                terms={effectiveCultureTerms}
                 baseTextClassName="text-[27px] leading-[27px] text-text-light dark:text-text-dark"
               />
             ) : (
@@ -280,6 +332,11 @@ export function PostCard({
                 {post.contentText}
               </Text>
             )}
+            {showCultureAnalyzing ? (
+              <Text variant="muted" className="mt-1 text-xs">
+                Đang phân tích văn hoá...
+              </Text>
+            ) : null}
           </View>
         )}
 
@@ -342,15 +399,16 @@ export function PostCard({
           {/* Like */}
           <TouchableOpacity
             onPress={handleLike}
-            className="flex-row items-center gap-3"
+            className="flex-row items-center gap-2"
             disabled={likeLoading}
           >
             <LikeIcon
               size={24}
               color={isLiked ? statusColors.error.dark : theme.icon}
+              filled={isLiked}
             />
             {likesCount > 0 && (
-              <Text className="text-[17px] text-text-muted-dark">
+              <Text className="text-[17px] text-text-light dark:text-text-dark">
                 {likesCount}
               </Text>
             )}
@@ -359,11 +417,11 @@ export function PostCard({
           {/* Comment */}
           <TouchableOpacity
             onPress={() => onCommentPress?.(post.id)}
-            className="flex-row items-center gap-3"
+            className="flex-row items-center gap-2"
           >
             <CommentIcon size={23} color={theme.icon} />
             {post.commentsCount > 0 && (
-              <Text className="text-[17px] text-text-muted-dark">
+              <Text className="text-[17px] text-text-light dark:text-text-dark">
                 {post.commentsCount}
               </Text>
             )}
@@ -372,12 +430,12 @@ export function PostCard({
           {/* Share */}
           <TouchableOpacity
             onPress={handleShare}
-            className="flex-row items-center gap-3"
+            className="flex-row items-center gap-2"
             disabled={shareLoading}
           >
             <ShareIcon size={22} color={theme.icon} />
             {sharesCount > 0 && (
-              <Text className="text-[17px] text-text-muted-dark">
+              <Text className="text-[17px] text-text-light dark:text-text-dark">
                 {sharesCount}
               </Text>
             )}

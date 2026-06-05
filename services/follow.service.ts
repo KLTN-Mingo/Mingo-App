@@ -11,6 +11,7 @@ import {
   PaginatedFriendsDto,
   RelationshipStatusDto,
   RelationshipType,
+  SendFollowRequestDto,
 } from "@/dtos";
 import { PaginationDto } from "@/dtos/common.dto";
 import { UserMinimalDto } from "@/dtos/user.dto";
@@ -289,10 +290,14 @@ export const FollowApi = {
     return mapMingoStats(raw);
   },
 
-  sendFollowRequest: (userId: string) =>
+  sendFollowRequest: (userId: string, context?: Omit<SendFollowRequestDto, "userId" | "targetUserId">) =>
     fetchFollow("/request", {
       method: "POST",
-      body: JSON.stringify({ targetUserId: userId }),
+      body: JSON.stringify(
+        context?.postId
+          ? { userId, ...context }
+          : { targetUserId: userId }
+      ),
     }),
 
   unfollow: (userId: string) =>

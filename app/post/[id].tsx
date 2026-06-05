@@ -21,13 +21,18 @@ import { ArrowIcon } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
-import { ReportEntityType } from "@/dtos";
+import {
+  CommentResponseDto,
+  FeedTab,
+  PostDetailDto,
+  PostResponseDto,
+  ReportEntityType,
+  UserMinimalDto,
+} from "@/dtos";
 import { useReport } from "@/hooks/use-report";
 import { useAuth } from "@/context/AuthContext";
-import { CommentResponseDto, CultureTermDto, PostDetailDto, PostResponseDto, UserMinimalDto } from "@/dtos";
 import { useSharePost } from "@/hooks/use-share-post";
 import { commentService } from "@/services/comment.service";
-import { cultureService } from "@/services/culture.service";
 import { postService } from "@/services/post.service";
 import { colors, getSemantic } from "@/styles/colors";
 
@@ -36,7 +41,11 @@ type CommentTreeNode = CommentResponseDto & {
 };
 
 export default function PostDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, source, tab } = useLocalSearchParams<{
+    id: string;
+    source?: string;
+    tab?: FeedTab;
+  }>();
   const { profile } = useAuth();
   const colorScheme = useColorScheme();
   const themeColors =
@@ -46,7 +55,6 @@ export default function PostDetailScreen() {
 
   const [post, setPost] = useState<PostResponseDto | null>(null);
   const [comments, setComments] = useState<CommentResponseDto[]>([]);
-  const [cultureTerms, setCultureTerms] = useState<CultureTermDto[]>([]);
   const [loadingPost, setLoadingPost] = useState(true);
   const [loadingComments, setLoadingComments] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -57,6 +65,16 @@ export default function PostDetailScreen() {
   const [expandedReplyIds, setExpandedReplyIds] = useState<Record<string, boolean>>({});
   const [loadingReplyIds, setLoadingReplyIds] = useState<Record<string, boolean>>({});
   const inputRef = useRef<TextInput>(null);
+  const feedTab: FeedTab | undefined =
+    tab === "explore" || tab === "friends"
+      ? tab
+      : source === "explore"
+        ? "explore"
+        : source === "feed"
+          ? "friends"
+          : undefined;
+  const recommendationSource =
+    feedTab === "explore" ? "explore" : feedTab === "friends" ? "feed" : undefined;
 
   const currentUser: UserMinimalDto | null = profile
     ? {
@@ -75,6 +93,9 @@ export default function PostDetailScreen() {
           ? { ...prev, sharesCount: prev.sharesCount + sentCount }
           : prev
       );
+      void postService
+        .sharePost(postId, { sharedTo: "message" })
+        .catch((e) => console.warn("[recommendation] share action failed", e));
     },
     onReposted: ({ postId }) => {
       setPost((prev) =>
@@ -82,6 +103,9 @@ export default function PostDetailScreen() {
           ? { ...prev, sharesCount: prev.sharesCount + 1 }
           : prev
       );
+      void postService
+        .sharePost(postId, { sharedTo: "feed" })
+        .catch((e) => console.warn("[recommendation] share action failed", e));
     },
   });
 
@@ -90,10 +114,6 @@ export default function PostDetailScreen() {
     try {
       const data = await postService.getPostById(id);
       setPost(data);
-      cultureService
-        .getPostCultureTerms(id)
-        .then((terms) => setCultureTerms(terms))
-        .catch((e) => console.warn("[culture] load terms failed", e));
     } catch (err) {
       console.warn("Cannot load post:", err);
     } finally {
@@ -263,7 +283,7 @@ export default function PostDetailScreen() {
         text: "Hide post",
         onPress: async () => {
           try {
-            await postService.submitFeedFeedback(p.id, "hide");
+            await postService.submitFeedFeedback(p.id, "hide", feedTab);
             router.back();
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Cannot send feedback";
@@ -275,7 +295,7 @@ export default function PostDetailScreen() {
         text: "Not interested",
         onPress: async () => {
           try {
-            await postService.submitFeedFeedback(p.id, "not_interested");
+            await postService.submitFeedFeedback(p.id, "not_interested", feedTab);
             router.back();
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Cannot send feedback";
@@ -287,7 +307,7 @@ export default function PostDetailScreen() {
         text: "See more like this",
         onPress: async () => {
           try {
-            await postService.submitFeedFeedback(p.id, "see_more");
+            await postService.submitFeedFeedback(p.id, "see_more", feedTab);
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Cannot send feedback";
             Alert.alert("Error", msg);
@@ -471,7 +491,6 @@ export default function PostDetailScreen() {
           post={post}
           currentUser={currentUser}
           hiddenReason={(post as PostDetailDto).hiddenReason}
-          cultureTerms={cultureTerms}
           onLikeChange={(postId, isLiked) =>
             setPost((prev) =>
               prev
@@ -500,6 +519,7 @@ export default function PostDetailScreen() {
           }
           onCommentPress={() => inputRef.current?.focus()}
           onMorePress={handlePostMorePress}
+          recommendationSource={recommendationSource}
         />
         <View
           className="px-4 py-3 border-b"

@@ -27,7 +27,11 @@ export enum RelationshipType {
 // ─── Follow Request DTOs ───────────────────────────────────────────────────────
 
 export interface SendFollowRequestDto {
-  targetUserId: string;
+  targetUserId?: string;
+  userId?: string;
+  postId?: string;
+  source?: "explore" | "feed";
+  deviceType?: "ios" | "android" | "web";
 }
 
 export interface RespondFollowRequestDto {

@@ -1,5 +1,11 @@
 import React, { useMemo, useState } from "react";
-import { Modal, ScrollView, TouchableOpacity, useColorScheme, View } from "react-native";
+import {
+  Modal,
+  ScrollView,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
 
 import { Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
@@ -7,7 +13,7 @@ import { CultureTermDto } from "@/dtos";
 
 export interface CultureHighlightedTextProps {
   text: string;
-  terms: CultureTermDto[];
+  terms?: CultureTermDto[] | null;
   className?: string;
   /** Cho phép caller override style chữ thường (non-highlighted). */
   baseTextClassName?: string;
@@ -18,7 +24,24 @@ interface Segment {
   term?: CultureTermDto;
 }
 
-function buildSegments(text: string, terms: CultureTermDto[]): Segment[] {
+function getToneColor(tone: CultureTermDto["tone"] | undefined, isDark: boolean) {
+  switch (tone) {
+    case "tích cực":
+      return isDark ? "#6EE7B7" : "#047857";
+    case "hài hước":
+      return isDark ? "#FBBF24" : "#B45309";
+    case "tiêu cực":
+      return isDark ? "#FCA5A5" : "#DC2626";
+    case "trung tính":
+    default:
+      return isDark ? "#93C5FD" : "#2563EB";
+  }
+}
+
+export function buildCultureSegments(
+  text: string,
+  terms: CultureTermDto[] = []
+): Segment[] {
   if (!terms.length) return [{ text }];
 
   const sorted = [...terms]
@@ -45,7 +68,7 @@ function buildSegments(text: string, terms: CultureTermDto[]): Segment[] {
   if (cursor < text.length) {
     out.push({ text: text.slice(cursor) });
   }
-  return out;
+  return out.length ? out : [{ text }];
 }
 
 /**
@@ -62,7 +85,10 @@ export function CultureHighlightedText({
   const colors = isDark ? paletteDark : paletteLight;
   const [selected, setSelected] = useState<CultureTermDto | null>(null);
 
-  const segments = useMemo(() => buildSegments(text, terms), [text, terms]);
+  const segments = useMemo(
+    () => buildCultureSegments(text, Array.isArray(terms) ? terms : []),
+    [text, terms]
+  );
 
   if (segments.length === 1 && !segments[0].term) {
     return (
@@ -87,7 +113,10 @@ export function CultureHighlightedText({
               key={i}
               onPress={() => setSelected(s.term ?? null)}
               style={{
-                color: "#2E8B7B",
+                color: getToneColor(s.term.tone, isDark),
+                backgroundColor: isDark
+                  ? "rgba(255,255,255,0.08)"
+                  : "rgba(37,99,235,0.08)",
                 textDecorationLine: "underline",
                 textDecorationStyle: "dotted",
                 fontWeight: "600",
@@ -107,13 +136,13 @@ export function CultureHighlightedText({
       >
         <TouchableOpacity
           activeOpacity={1}
-          className="flex-1 items-center justify-center px-6"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          className="flex-1 justify-end"
+          style={{ backgroundColor: "rgba(0,0,0,0.35)" }}
           onPress={() => setSelected(null)}
         >
           <TouchableOpacity
             activeOpacity={1}
-            className="w-full max-w-sm rounded-2xl p-5"
+            className="w-full rounded-t-2xl p-5"
             style={{
               backgroundColor: colors.background,
               borderWidth: 1,
@@ -130,7 +159,7 @@ export function CultureHighlightedText({
               >
                 <Text
                   className="text-lg font-bold mb-1"
-                  style={{ color: "#2E8B7B" }}
+                  style={{ color: getToneColor(selected.tone, isDark) }}
                 >
                   {selected.term}
                 </Text>

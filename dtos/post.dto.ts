@@ -1,4 +1,5 @@
 import { PaginationDto, PaginationParams } from "./common.dto";
+import { CultureTermDto } from "./culture.dto";
 import { UserMinimalDto } from "./user.dto";
 
 // ─── Enums ─────────────────────────────────────────────────────────────────────
@@ -131,6 +132,8 @@ export interface PostResponseDto {
   moderationStatus: ModerationStatus;
   isHidden: boolean;
   isEdited: boolean;
+  cultureAnalyzed?: boolean;
+  culturalTerms?: CultureTermDto[];
   createdAt: string;
   updatedAt: string;
 }

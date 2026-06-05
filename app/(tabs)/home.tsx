@@ -152,9 +152,6 @@ export default function HomeScreen() {
           : p
       )
     );
-    if (isLiked) {
-      interactionService.trackAction(postId, "like", activeTab);
-    }
   };
 
   const handleViewableItemsChanged = useCallback(
@@ -183,9 +180,6 @@ export default function HomeScreen() {
         p.id === postId ? { ...p, commentsCount: p.commentsCount + delta } : p
       )
     );
-    if (delta > 0) {
-      interactionService.trackAction(postId, "comment", activeTab);
-    }
   };
 
   const handleShareChange = (postId: string, nextCount: number) => {
@@ -204,9 +198,6 @@ export default function HomeScreen() {
         p.id === postId ? { ...p, isSaved, savesCount } : p
       )
     );
-    if (isSaved) {
-      interactionService.trackAction(postId, "save", activeTab);
-    }
   };
 
   const share = useSharePost({
@@ -217,7 +208,9 @@ export default function HomeScreen() {
           p.id === postId ? { ...p, sharesCount: p.sharesCount + sentCount } : p
         )
       );
-      interactionService.trackAction(postId, "share", activeTab);
+      void postService
+        .sharePost(postId, { sharedTo: "message" })
+        .catch((e) => console.warn("[recommendation] share action failed", e));
     },
     onReposted: ({ postId }) => {
       setPosts((prev) =>
@@ -225,7 +218,9 @@ export default function HomeScreen() {
           p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
         )
       );
-      interactionService.trackAction(postId, "share", activeTab);
+      void postService
+        .sharePost(postId, { sharedTo: "feed" })
+        .catch((e) => console.warn("[recommendation] share action failed", e));
     },
   });
 
@@ -314,7 +309,6 @@ export default function HomeScreen() {
               "see_more",
               activeTab
             );
-            interactionService.trackAction(post.id, "see_more", activeTab);
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Cannot send feedback";
             Alert.alert("Error", msg);
@@ -448,6 +442,7 @@ export default function HomeScreen() {
             onSaveChange={handleSaveChange}
             onUserPress={handleUserPress}
             onMorePress={handlePostMorePress}
+            recommendationSource={activeTab === "friends" ? "feed" : "explore"}
           />
         )}
         ItemSeparatorComponent={() => <View className="h-4" />}

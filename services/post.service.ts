@@ -8,17 +8,13 @@ import {
   UpdatePostRequestDto,
 } from "@/dtos";
 import { PaginationDto } from "@/dtos/common.dto";
+import { apiMultipartRequest, apiRequest } from "@/services/api-client";
 
 /** Góp ý feed — Mingo doc + một số BE cũ */
 export type FeedFeedbackType =
   | "hide"
   | "not_interested"
-  | "see_more"
-  | "like"
-  | "skip"
-  | "interested"
-  | "seen";
-import { apiMultipartRequest, apiRequest } from "@/services/api-client";
+  | "see_more";
 
 /** Ký tự không hiển thị: backend yêu cầu contentText khi chưa có media trong JSON (upload media sau). */
 const MEDIA_ONLY_PLACEHOLDER = "\u2060";
@@ -64,6 +60,13 @@ class PostService {
       savesCount: Number(raw?.savesCount ?? 0),
       isSaved: Boolean(raw?.isSaved),
       viewsCount: Number(raw?.viewsCount ?? 0),
+      cultureAnalyzed:
+        typeof raw?.cultureAnalyzed === "boolean"
+          ? raw.cultureAnalyzed
+          : undefined,
+      culturalTerms: Array.isArray(raw?.culturalTerms)
+        ? raw.culturalTerms
+        : [],
       createdAt: raw?.createdAt ?? new Date().toISOString(),
       updatedAt: raw?.updatedAt ?? raw?.createdAt ?? new Date().toISOString(),
     } as PostResponseDto;

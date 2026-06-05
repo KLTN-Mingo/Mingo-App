@@ -13,7 +13,10 @@ import { SearchBarInput } from "@/components/shared/ui/search-bar";
 import { Text } from "@/components/ui";
 import { getSemantic } from "@/constants/designTokens";
 import { useTheme } from "@/context/ThemeContext";
-import { useVNLocationSuggestions } from "@/hooks/use-vn-locations";
+import {
+  useVNLocationSuggestions,
+  type VNLocationSuggestion,
+} from "@/hooks/use-vn-locations";
 
 interface LocationPickerModalProps {
   visible: boolean;
@@ -21,6 +24,8 @@ interface LocationPickerModalProps {
   onClose: () => void;
   onSelect: (locationName: string) => void;
 }
+
+type LocationOption = string | VNLocationSuggestion;
 
 function splitAddressParts(input: string): {
   prefix: string;
@@ -66,6 +71,11 @@ export function LocationPickerModal({
       "Nha Trang",
     ],
     []
+  );
+  const locationOptions = useMemo<LocationOption[]>(
+    () =>
+      locationQuery.trim().length > 0 ? suggestions : popularSuggestions,
+    [locationQuery, popularSuggestions, suggestions]
   );
 
   useEffect(() => {
@@ -121,11 +131,11 @@ export function LocationPickerModal({
 	            Gợi ý lấy từ dữ liệu địa chỉ Việt Nam trong app.
 	          </Text>
 
-	          {locationQuery.trim().length > 0 ? (
-	            <Text className="mb-2 text-xs text-text-muted-light dark:text-text-muted-dark">
-	              Từ khóa: "{locationQuery.trim()}"
-	            </Text>
-	          ) : null}
+          {locationQuery.trim().length > 0 ? (
+            <Text className="mb-2 text-xs text-text-muted-light dark:text-text-muted-dark">
+              Từ khóa: {locationQuery.trim()}
+            </Text>
+          ) : null}
 
 	          {initialValue ? (
 	            <View className="mb-3 flex-row items-center rounded-full bg-input-light dark:bg-input-dark px-3 py-2">
@@ -151,7 +161,7 @@ export function LocationPickerModal({
 	          ) : null}
 
           <FlatList
-            data={locationQuery.trim().length > 0 ? suggestions : popularSuggestions}
+            data={locationOptions}
             keyExtractor={(it) =>
               typeof it === "string" ? `popular-${it}` : it.id
             }
