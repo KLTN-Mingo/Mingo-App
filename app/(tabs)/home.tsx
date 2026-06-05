@@ -194,9 +194,7 @@ export default function HomeScreen() {
     savesCount: number
   ) => {
     setPosts((prev) =>
-      prev.map((p) =>
-        p.id === postId ? { ...p, isSaved, savesCount } : p
-      )
+      prev.map((p) => (p.id === postId ? { ...p, isSaved, savesCount } : p))
     );
   };
 
@@ -372,7 +370,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScreenContainer horizontalPadding="default">
+    <ScreenContainer>
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -389,7 +387,7 @@ export default function HomeScreen() {
                   Min
                 </Text>
                 <Text
-                  className="text-title-light dark:text-title-dark"
+                  className="text-primary"
                   style={{ fontFamily: "Montserrat-SemiBold", fontSize: 20 }}
                 >
                   gle

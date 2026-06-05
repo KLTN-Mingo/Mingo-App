@@ -22,16 +22,23 @@ class CultureService {
     );
   }
 
+  async reAnalyzePost(postId: string): Promise<void> {
+    await this.reanalyzePost(postId);
+  }
+
   /** POST /culture/posts/:postId/report-term — báo nghĩa sai. */
   async reportTerm(
     postId: string,
-    payload: ReportTermRequestDto
+    payload: ReportTermRequestDto | string
   ): Promise<void> {
+    const body: ReportTermRequestDto =
+      typeof payload === "string" ? { term: payload } : payload;
+
     await apiRequest<unknown>(
       `/culture/posts/${encodeURIComponent(postId)}/report-term`,
       {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       }
     );
   }

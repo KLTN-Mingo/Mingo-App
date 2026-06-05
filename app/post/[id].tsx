@@ -1,25 +1,32 @@
 import { formatDistanceToNow } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  TextInput,
+  Image,
   TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 
-import { CommentComposer } from "@/components/post/CommentComposer";
-import { PostCard } from "@/components/post/PostCard";
+import { CultureHighlightedText } from "@/components/post/CultureHighlightedText";
+import { ModerationBanner } from "@/components/post/ModerationBanner";
 import { CommentThreadItem } from "@/components/post/CommentThreadItem";
-import { ArrowIcon } from "@/components/shared/icons/Icons";
+import {
+  ArrowIcon,
+  CommentIcon,
+  LikeIcon,
+  LocationIcon,
+  SaveIcon,
+  ShareIcon,
+  ThreeDotsIcon,
+} from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
-import { Text } from "@/components/ui";
+import { Avatar, Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
 import {
   CommentResponseDto,
@@ -34,7 +41,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useSharePost } from "@/hooks/use-share-post";
 import { commentService } from "@/services/comment.service";
 import { postService } from "@/services/post.service";
-import { colors, getSemantic } from "@/styles/colors";
+import { colors, getSemantic, paletteIcon, statusColors } from "@/styles/colors";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 type CommentTreeNode = CommentResponseDto & {
   children: CommentTreeNode[];
@@ -57,14 +66,10 @@ export default function PostDetailScreen() {
   const [comments, setComments] = useState<CommentResponseDto[]>([]);
   const [loadingPost, setLoadingPost] = useState(true);
   const [loadingComments, setLoadingComments] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [commentText, setCommentText] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentDraft, setEditCommentDraft] = useState("");
-  const [replyTarget, setReplyTarget] = useState<CommentResponseDto | null>(null);
   const [expandedReplyIds, setExpandedReplyIds] = useState<Record<string, boolean>>({});
   const [loadingReplyIds, setLoadingReplyIds] = useState<Record<string, boolean>>({});
-  const inputRef = useRef<TextInput>(null);
   const feedTab: FeedTab | undefined =
     tab === "explore" || tab === "friends"
       ? tab
@@ -73,9 +78,6 @@ export default function PostDetailScreen() {
         : source === "feed"
           ? "friends"
           : undefined;
-  const recommendationSource =
-    feedTab === "explore" ? "explore" : feedTab === "friends" ? "feed" : undefined;
-
   const currentUser: UserMinimalDto | null = profile
     ? {
         id: profile.id,
@@ -137,46 +139,6 @@ export default function PostDetailScreen() {
     fetchPost();
     fetchComments();
   }, [fetchPost, fetchComments]);
-
-  const handleSubmitComment = async () => {
-    const text = commentText.trim();
-    if (!text || submitting) return;
-    if (!id) return;
-
-    setSubmitting(true);
-    try {
-      if (replyTarget) {
-        const newReply = await commentService.createReply(id, replyTarget.id, {
-          contentText: text,
-          parentCommentId: replyTarget.id,
-          originalCommentId: replyTarget.originalCommentId ?? replyTarget.id,
-        });
-        setComments((prev) => [newReply, ...prev]);
-        setExpandedReplyIds((prev) => ({ ...prev, [replyTarget.id]: true }));
-        setComments((prev) =>
-          prev.map((c) =>
-            c.id === replyTarget.id
-              ? { ...c, repliesCount: c.repliesCount + 1 }
-              : c
-          )
-        );
-      } else {
-        const newComment = await commentService.createComment(id, {
-          contentText: text,
-        });
-        setComments((prev) => [newComment, ...prev]);
-      }
-      setCommentText("");
-      setReplyTarget(null);
-      if (post) {
-        setPost({ ...post, commentsCount: post.commentsCount + 1 });
-      }
-    } catch (err) {
-      console.warn("Cannot submit comment:", err);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const buildCommentTree = useCallback((items: CommentResponseDto[]): CommentTreeNode[] => {
     const map = new Map<string, CommentTreeNode>();
@@ -375,6 +337,86 @@ export default function PostDetailScreen() {
     }
   };
 
+  const renderMentions = (targetPost: PostResponseDto) => {
+    if (!targetPost.mentions || targetPost.mentions.length === 0) return null;
+    const mentionNames = targetPost.mentions.map((m) => m.name).filter(Boolean);
+    if (mentionNames.length === 0) return null;
+
+    if (mentionNames.length === 1) {
+      return (
+        <Text className="text-text-muted-light dark:text-text-muted-dark">
+          {" "}
+          with{" "}
+          <Text className="font-semibold text-text-light dark:text-text-dark">
+            {mentionNames[0]}
+          </Text>
+        </Text>
+      );
+    }
+
+    return (
+      <Text className="text-text-muted-light dark:text-text-muted-dark">
+        {" "}
+        with{" "}
+        <Text className="font-semibold text-text-light dark:text-text-dark">
+          {mentionNames[0]}
+        </Text>{" "}
+        and {mentionNames.length - 1} others
+      </Text>
+    );
+  };
+
+  const handleLikePost = async () => {
+    if (!post) return;
+    const nextLiked = !post.isLiked;
+    const previous = post;
+    setPost({
+      ...post,
+      isLiked: nextLiked,
+      likesCount: nextLiked
+        ? post.likesCount + 1
+        : Math.max(0, post.likesCount - 1),
+    });
+    try {
+      if (nextLiked) {
+        await postService.likePost(post.id);
+      } else {
+        await postService.unlikePost(post.id);
+      }
+    } catch (error) {
+      setPost(previous);
+      console.warn("Cannot update like:", error);
+    }
+  };
+
+  const handleSharePost = () => {
+    if (!post) return;
+    share.openSheet(post);
+  };
+
+  const handleSavePost = async () => {
+    if (!post || !currentUser?.id) return;
+    const nextSaved = !post.isSaved;
+    const previous = post;
+    setPost({
+      ...post,
+      isSaved: nextSaved,
+      savesCount: nextSaved
+        ? (post.savesCount ?? 0) + 1
+        : Math.max(0, (post.savesCount ?? 0) - 1),
+    });
+    try {
+      if (nextSaved) {
+        await postService.savePost(post.id, "default");
+      } else {
+        await postService.unsavePost(post.id);
+      }
+    } catch (error) {
+      setPost(previous);
+      console.warn("Cannot update saved post:", error);
+    }
+  };
+
   const commentTree = buildCommentTree(comments);
 
   const handleToggleReplies = useCallback(
@@ -436,10 +478,7 @@ export default function PostDetailScreen() {
             editDraft={editCommentDraft}
             onEditDraftChange={setEditCommentDraft}
             onLike={() => handleLikeComment(item)}
-            onReply={() => {
-              setReplyTarget(item);
-              inputRef.current?.focus();
-            }}
+            onReply={() => undefined}
             mentionName={parentName}
             onDelete={isOwner ? () => handleDeleteComment(item) : undefined}
             onSaveEdit={() => handleSaveEditComment(item.id)}
@@ -485,120 +524,239 @@ export default function PostDetailScreen() {
       );
     }
     if (!post) return null;
+
+    const theme = {
+      icon: paletteIcon[colorScheme === "dark" ? "dark" : "light"],
+      iconMuted: paletteIcon.lightMuted,
+    };
+    const effectiveCultureTerms =
+      Array.isArray(post.culturalTerms) && post.culturalTerms.length > 0
+        ? post.culturalTerms
+        : [];
+    const showCultureAnalyzing =
+      post.cultureAnalyzed === false && effectiveCultureTerms.length === 0;
+    const mediaBaseWidth = SCREEN_WIDTH - 32;
+    const mediaWidth = post.media?.[0]?.width;
+    const mediaHeight = post.media?.[0]?.height;
+    const singleMediaHeight =
+      mediaWidth && mediaHeight
+        ? Math.min(
+            460,
+            Math.max(260, (mediaBaseWidth * mediaHeight) / mediaWidth)
+          )
+        : mediaBaseWidth;
+    const isOwnPost =
+      Boolean(currentUser?.id) &&
+      Boolean(post.userId) &&
+      currentUser?.id === post.userId;
+
     return (
-      <>
-        <PostCard
-          post={post}
-          currentUser={currentUser}
-          hiddenReason={(post as PostDetailDto).hiddenReason}
-          onLikeChange={(postId, isLiked) =>
-            setPost((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    isLiked,
-                    likesCount: isLiked
-                      ? prev.likesCount + 1
-                      : prev.likesCount - 1,
-                  }
-                : prev
-            )
-          }
-          onShareChange={(postId, nextCount) =>
-            setPost((prev) =>
-              prev && prev.id === postId ? { ...prev, sharesCount: nextCount } : prev
-            )
-          }
-          onSharePress={share.openSheet}
-          onSaveChange={(postId, isSaved, savesCount) =>
-            setPost((prev) =>
-              prev && prev.id === postId
-                ? { ...prev, isSaved, savesCount }
-                : prev
-            )
-          }
-          onCommentPress={() => inputRef.current?.focus()}
-          onMorePress={handlePostMorePress}
-          recommendationSource={recommendationSource}
-        />
-        <View
-          className="px-4 py-3 border-b"
-          style={{ borderBottomColor: themeColors.border }}
-        >
+      <View className="px-4 pt-4 pb-3 gap-4">
+        {isOwnPost ? (
+          <ModerationBanner
+            status={post.moderationStatus}
+            isHidden={post.isHidden}
+            hiddenReason={(post as PostDetailDto).hiddenReason}
+          />
+        ) : null}
+
+        <View className="flex-row items-start">
+          <TouchableOpacity
+            onPress={() =>
+              post.userId ? router.push(`/profile/${post.userId}` as any) : undefined
+            }
+            className="flex-row items-center flex-1"
+            activeOpacity={0.75}
+          >
+            <Avatar
+              source={post.user?.avatar ? { uri: post.user.avatar } : undefined}
+              fallback={post.user?.name}
+              size="md"
+              className="h-10 w-10"
+            />
+            <View className="ml-3 flex-1">
+              <View className="flex-row flex-wrap items-center">
+                <Text className="text-[16px] font-semibold text-text-light dark:text-text-dark">
+                  {post.user?.name || "Unknown"}
+                </Text>
+                {renderMentions(post)}
+              </View>
+              <Text className="mt-0.5 text-xs text-text-muted-light dark:text-text-muted-dark">
+                {formatTime(post.createdAt)}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {currentUser?.id ? (
+            <TouchableOpacity
+              onPress={() => handlePostMorePress(post)}
+              className="p-2"
+              activeOpacity={0.7}
+            >
+              <ThreeDotsIcon size={20} color={theme.icon} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {post.contentText ? (
+          <View>
+            {effectiveCultureTerms.length > 0 ? (
+              <CultureHighlightedText
+                text={post.contentText}
+                terms={effectiveCultureTerms}
+                baseTextClassName="text-[27px] leading-[31px] text-text-light dark:text-text-dark"
+              />
+            ) : (
+              <Text className="text-[27px] leading-[31px] text-text-light dark:text-text-dark">
+                {post.contentText}
+              </Text>
+            )}
+            {showCultureAnalyzing ? (
+              <Text variant="muted" className="mt-1 text-xs">
+                Dang phan tich van hoa...
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        {post.location?.name ? (
+          <View className="flex-row items-center gap-1">
+            <LocationIcon size={14} color={theme.iconMuted} />
+            <Text className="text-xs text-text-muted-light dark:text-text-muted-dark">
+              {post.location.name}
+            </Text>
+          </View>
+        ) : null}
+
+        {post.media && post.media.length > 0 ? (
+          <View>
+            {post.media.length === 1 ? (
+              <Image
+                source={{ uri: post.media[0].mediaUrl }}
+                style={{ width: "100%", height: singleMediaHeight }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View className="flex-row flex-wrap">
+                {post.media.slice(0, 4).map((media, index) => (
+                  <Image
+                    key={media.id}
+                    source={{ uri: media.mediaUrl }}
+                    style={{
+                      width: "50%",
+                      height: mediaBaseWidth / 2,
+                    }}
+                    resizeMode="cover"
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        <View className="flex-row items-center gap-5">
+          <TouchableOpacity
+            onPress={handleLikePost}
+            className="flex-row items-center gap-2"
+            activeOpacity={0.75}
+          >
+            <LikeIcon
+              size={24}
+              color={post.isLiked ? statusColors.error.dark : theme.icon}
+              filled={post.isLiked}
+            />
+            {post.likesCount > 0 ? (
+              <Text className="text-[17px] text-text-light dark:text-text-dark">
+                {post.likesCount}
+              </Text>
+            ) : null}
+          </TouchableOpacity>
+
+          <View className="flex-row items-center gap-2">
+            <CommentIcon size={23} color={theme.icon} />
+            {post.commentsCount > 0 ? (
+              <Text className="text-[17px] text-text-light dark:text-text-dark">
+                {post.commentsCount}
+              </Text>
+            ) : null}
+          </View>
+
+          <TouchableOpacity
+            onPress={handleSharePost}
+            className="flex-row items-center gap-2"
+            activeOpacity={0.75}
+          >
+            <ShareIcon size={22} color={theme.icon} />
+            {post.sharesCount > 0 ? (
+              <Text className="text-[17px] text-text-light dark:text-text-dark">
+                {post.sharesCount}
+              </Text>
+            ) : null}
+          </TouchableOpacity>
+
+          {currentUser?.id ? (
+            <TouchableOpacity
+              onPress={handleSavePost}
+              className="flex-row items-center gap-3 ml-auto"
+              activeOpacity={0.75}
+            >
+              <SaveIcon
+                size={22}
+                color={post.isSaved ? colors.primary[100] : theme.icon}
+              />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        <View className="pt-1">
           <Text
-            className="font-semibold"
-            style={{ color: themeColors.textPrimary }}
+            className="font-semibold text-text-light dark:text-text-dark"
+            style={{ fontSize: 16 }}
           >
             {post.commentsCount > 0
               ? `${post.commentsCount} comments`
               : "No comments yet"}
           </Text>
         </View>
-      </>
+      </View>
     );
   };
 
   return (
     <ScreenContainer
-      horizontalPadding="none"
+      horizontalPadding="default"
       style={{ paddingBottom: 0, backgroundColor: semantic.background }}
     >
-      {/* Header */}
-      <View
-        className="flex-row items-center px-4 py-3 border-b"
-        style={{
-          backgroundColor: semantic.surface,
-          borderBottomColor: semantic.border,
-        }}
-      >
-        <TouchableOpacity onPress={() => router.replace("/(tabs)/home" as any)} className="mr-3 p-1">
-          <ArrowIcon size={22} color={semantic.text} />
+      <View className="flex-row items-center">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="mr-2"
+          activeOpacity={0.75}
+        >
+          <ArrowIcon size={35} color={semantic.title} />
         </TouchableOpacity>
-        <Text className="font-semibold text-lg" style={{ color: semantic.text }}>
+        <Text className="text-xl font-semibold leading-[28px] text-title-light dark:text-title-dark flex-1">
           Post
         </Text>
       </View>
 
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >
-        {/* Comments list */}
-        <FlatList
-          data={commentTree}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => renderCommentNode(item)}
-          ListHeaderComponent={<ListHeader />}
-          style={{ backgroundColor: semantic.background }}
-          ListEmptyComponent={
-            loadingComments ? (
-              <View className="py-8 items-center">
-                <ActivityIndicator color={colors.primary[100]} />
-              </View>
-            ) : (
-              <EmptyState title="No comments yet" />
-            )
-          }
-          contentContainerStyle={{ paddingBottom: 16 }}
-        />
-
-        <CommentComposer
-          colors={themeColors}
-          avatarUri={currentUser?.avatar}
-          avatarFallback={currentUser?.name}
-          value={commentText}
-          onChangeText={setCommentText}
-          onSubmit={handleSubmitComment}
-          submitting={submitting}
-          inputRef={inputRef}
-          placeholder={
-            replyTarget
-              ? `Reply to ${replyTarget.user?.name ?? "this comment"}...`
-              : "Write comment..."
-          }
-        />
-      </KeyboardAvoidingView>
+      <FlatList
+        data={commentTree}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => renderCommentNode(item)}
+        ListHeaderComponent={<ListHeader />}
+        style={{ backgroundColor: semantic.background }}
+        ListEmptyComponent={
+          loadingComments ? (
+            <View className="py-8 items-center">
+              <ActivityIndicator color={colors.primary[100]} />
+            </View>
+          ) : (
+            <EmptyState title="No comments yet" />
+          )
+        }
+        contentContainerStyle={{ paddingBottom: 24 }}
+      />
 
       {share.modals}
       {report.modal}

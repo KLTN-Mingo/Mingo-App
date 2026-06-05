@@ -1,6 +1,5 @@
-import Svg, { Path, Rect, Circle } from "react-native-svg";
-import { useTheme } from "@react-navigation/native";
 import { statusColors } from "@/styles/colors";
+import Svg, { Circle, Path, Rect } from "react-native-svg";
 const SearchIcon = ({ size = 24, color }) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 256 256" fill="none">
@@ -290,7 +289,11 @@ const PlusIcon = ({ size = 50, color = "currentColor" }) => (
   </Svg>
 );
 
-const MicroIcon = ({ size = 24, color = "currentColor", onClick = undefined }) => (
+const MicroIcon = ({
+  size = 24,
+  color = "currentColor",
+  onClick = undefined,
+}) => (
   <Svg
     width={size}
     height={size}
@@ -407,12 +410,14 @@ const BlockIcon = ({ size = 24, color = "currentColor" }) => (
 const TrashIcon = ({ size = 24, color = "currentColor" }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
-      fill="none"
-      stroke={color}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      d="M4 7h16m-10 4v6m4-6v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M7.81166 6.17065C7.85456 5.47587 8.05238 4.48385 8.74916 3.68256C9.48616 2.83356 10.5802 2.40356 11.9992 2.40356C13.4192 2.40356 14.5122 2.83356 15.2502 3.68256C15.9468 4.48369 16.1443 5.47581 16.187 6.17065H20.0756C20.4896 6.17065 20.8256 6.50665 20.8256 6.92065C20.8256 7.33465 20.4896 7.67065 20.0756 7.67065H3.92456C3.51056 7.67065 3.17456 7.33465 3.17456 6.92065C3.17456 6.50665 3.51056 6.17065 3.92456 6.17065H7.81166ZM14.6842 6.17065C14.6464 5.71875 14.5136 5.11744 14.1122 4.65956C13.6722 4.15756 12.9612 3.90356 11.9992 3.90356C11.0382 3.90356 10.3272 4.15756 9.88616 4.65956C9.48476 5.11744 9.35218 5.71875 9.31447 6.17065H14.6842Z"
+      fill={color}
+    />
+    <Path
+      d="M11.989 22.3884C9.03002 22.3884 7.20802 21.8754 6.08202 20.7274C4.49397 19.1084 4.54596 16.4546 4.6179 12.783L4.61802 12.7764C4.63502 11.9154 4.65302 10.9894 4.65302 9.99341C4.65302 9.57941 4.98902 9.24341 5.40302 9.24341C5.81702 9.24341 6.15302 9.57941 6.15302 9.99341C6.15302 10.9994 6.13502 11.9364 6.11702 12.8064C6.05002 16.2394 6.00602 18.5064 7.15302 19.6764C7.96302 20.5034 9.50002 20.8884 11.989 20.8884C14.483 20.8884 16.023 20.5014 16.837 19.6724C17.991 18.4955 17.948 16.2147 17.883 12.762L17.8812 12.6653C17.8657 11.8365 17.849 10.9455 17.849 9.99341C17.849 9.57941 18.185 9.24341 18.599 9.24341C19.013 9.24341 19.349 9.57941 19.349 9.99341C19.349 10.9724 19.366 11.8844 19.383 12.7334L19.3832 12.7411C19.4521 16.4311 19.5019 19.0985 17.907 20.7234C16.778 21.8744 14.952 22.3884 11.989 22.3884Z"
+      fill={color}
     />
   </Svg>
 );
@@ -1004,7 +1009,10 @@ export const DocTypeIcon = ({ size = 70, color = statusColors.info.light }) => {
   );
 };
 
-export const PptTypeIcon = ({ size = 70, color = statusColors.error.light }) => {
+export const PptTypeIcon = ({
+  size = 70,
+  color = statusColors.error.light,
+}) => {
   // Red for PowerPoint
   return (
     <Svg
@@ -1024,7 +1032,10 @@ export const PptTypeIcon = ({ size = 70, color = statusColors.error.light }) => 
   );
 };
 
-export const PdfTypeIcon = ({ size = 70, color = statusColors.error.light }) => {
+export const PdfTypeIcon = ({
+  size = 70,
+  color = statusColors.error.light,
+}) => {
   // Red for PDF
   return (
     <Svg
@@ -1380,82 +1391,94 @@ const AddMediaIcon = ({ size = 24, color = "currentColor" }) => (
     />
   </Svg>
 );
+
+const TagIcon = ({ size = 50, color = "currentColor" }) => (
+  <Svg width={size} height={size} viewBox="0 0 50 50" fill="none">
+    <Path
+      fill={color}
+      d="M38.5 27.1L22.9 42.7c-.8.8-1.8 1.2-2.9 1.2s-2.1-.4-2.9-1.2L7.3 32.9C6.5 32.1 6 31.1 6 30s.4-2.1 1.2-2.9L22.9 11.5C23.7 10.5 24.8 10 26 10h10c2.2 0 4 1.8 4 4v10c0 1.2-.5 2.3-1.5 3.1M38 14H26L10.4 29.6c-.4.4-.4 1 0 1.4l9.8 9.8c.4.4 1 .4 1.4 0L37.2 25.1c.5-.5.8-1.1.8-1.8V14"
+    />
+    <Path fill={color} d="M32 16a2 2 0 1 1 0 4a2 2 0 0 1 0-4" />
+  </Svg>
+);
+
 export {
-  AddMediaIcon,
-  HobbyIcon,
-  LocationPinIcon,
-  JobIcon,
-  DobIcon,
-  GenderFemaleIcon,
-  GenderMaleIcon,
-  EmailIcon,
-  CalendarIcon,
+  ActivityIcon,
   AddIcon,
-  SearchIcon,
-  MessageIcon,
-  PictureIcon,
-  VideoIcon,
-  EmotionIcon,
-  LikeIcon,
-  CommentIcon,
-  ShareIcon,
-  MenuIcon,
+  AddMediaIcon,
   ArrowIcon,
-  CallIcon,
-  VideoCallIcon,
-  InfoIcon,
-  CameraIcon,
-  ImageIcon,
-  PlusIcon,
-  MicroIcon,
-  SendIcon,
-  UserIcon,
-  NotificationIcon,
-  NotificationOffIcon,
-  FileIcon,
-  ReportIcon,
-  BlockIcon,
-  TrashIcon,
-  SettingsIcon,
-  SaveIcon,
-  HistoryIcon,
-  PostIcon,
-  FriendIcon,
-  MediaIcon,
-  ProfileIcon,
-  KeyIcon,
-  ThreeDot,
+  ArrowLeftIcon,
   ArrowRightIcon,
-  PenIcon,
-  SoccerIcon,
-  SwimIcon,
-  RunIcon,
-  BookIcon,
-  GameIcon,
-  ChefIcon,
-  PlaneIcon,
-  CodeIcon,
-  PaletteIcon,
-  DanceIcon,
-  YogaIcon,
   BikeIcon,
+  BlockIcon,
+  BookIcon,
+  CalendarIcon,
+  CallIcon,
+  CameraIcon,
+  CancelIcon,
+  ChefIcon,
+  ChessIcon,
+  CircleFillIcon,
+  CircleTickIcon,
+  CodeIcon,
+  CommentIcon,
+  CraftingIcon,
+  DanceIcon,
+  DobIcon,
+  EmailIcon,
+  EmotionIcon,
+  FileIcon,
   FishingIcon,
   FlowerIcon,
-  CraftingIcon,
+  FriendIcon,
+  GameIcon,
+  GenderFemaleIcon,
+  GenderMaleIcon,
+  HistoryIcon,
+  HobbyIcon,
+  ImageIcon,
+  InfoIcon,
+  JobIcon,
+  KeyIcon,
+  LikeIcon,
+  LinkIcon,
+  LocationIcon,
+  LocationPinIcon,
+  LockIcon,
+  LogoutIcon,
+  MediaIcon,
+  MenuIcon,
+  MessageIcon,
+  MicroIcon,
+  MicrophoneIcon,
+  MoonIcon,
   MovieIcon,
   MusicIcon,
-  ChessIcon,
-  MicrophoneIcon,
-  CancelIcon,
-  LinkIcon,
-  ThreeDotsIcon,
-  CircleTickIcon,
-  CircleFillIcon,
-  LogoutIcon,
-  LocationIcon,
-  ArrowLeftIcon,
-  ActivityIcon,
-  LockIcon,
+  NotificationIcon,
+  NotificationOffIcon,
+  PaletteIcon,
+  PenIcon,
+  PictureIcon,
+  PlaneIcon,
+  PlusIcon,
+  PostIcon,
+  ProfileIcon,
+  ReportIcon,
+  RunIcon,
+  SaveIcon,
+  SearchIcon,
+  SendIcon,
+  SettingsIcon,
+  ShareIcon,
+  SoccerIcon,
   SunIcon,
-  MoonIcon,
+  SwimIcon,
+  TagIcon,
+  ThreeDot,
+  ThreeDotsIcon,
+  TrashIcon,
+  UserIcon,
+  VideoCallIcon,
+  VideoIcon,
+  YogaIcon,
 };

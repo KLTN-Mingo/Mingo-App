@@ -1,17 +1,16 @@
 import { useCall } from "@/context/CallContext";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
+  Image,
   SafeAreaView,
   StatusBar,
   StyleSheet,
+  Text,
   TouchableOpacity,
-  Image,
+  View,
 } from "react-native";
-import { colors, statusColors } from "@/styles/colors";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -31,7 +30,9 @@ export default function CallRoomScreen() {
   const [callDuration, setCallDuration] = useState(0);
   const isVideo = isVideoCall === "true";
   const isOutgoing = ongoingCall?.callStatus === "outgoing";
-  const isConnected = ongoingCall?.callStatus === "connected" || (ongoingCall && ongoingCall.callStatus !== "outgoing");
+  const isConnected =
+    ongoingCall?.callStatus === "connected" ||
+    (ongoingCall && ongoingCall.callStatus !== "outgoing");
 
   useEffect(() => {
     if (!isConnected) return;
@@ -49,7 +50,8 @@ export default function CallRoomScreen() {
 
   const remoteName =
     ongoingCall?.participants?.receiver?.profile?.name ?? "Unknown";
-  const remoteAvatar = receiverAva || ongoingCall?.participants?.receiver?.profile?.avatar;
+  const remoteAvatar =
+    receiverAva || ongoingCall?.participants?.receiver?.profile?.avatar;
 
   if (isOutgoing) {
     return (
@@ -77,7 +79,7 @@ export default function CallRoomScreen() {
             onPress={endCall}
             style={[styles.controlButton, styles.endCall]}
           >
-            <Ionicons name="call" size={26} color={colors.light[400]} />
+            <Ionicons name="call" size={26} color="#fff" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -101,9 +103,7 @@ export default function CallRoomScreen() {
               <Text style={styles.callingText}>{remoteName}</Text>
             </View>
           )}
-          <Text style={styles.callingSubtext}>
-            {formatTime(callDuration)}
-          </Text>
+          <Text style={styles.callingSubtext}>{formatTime(callDuration)}</Text>
         </View>
 
         <View style={styles.controls}>
@@ -111,7 +111,7 @@ export default function CallRoomScreen() {
             onPress={endCall}
             style={[styles.controlButton, styles.endCall]}
           >
-            <Ionicons name="call" size={26} color={colors.light[400]} />
+            <Ionicons name="call" size={26} color="#fff" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -145,7 +145,7 @@ export default function CallRoomScreen() {
           onPress={endCall}
           style={[styles.controlButton, styles.endCall]}
         >
-          <Ionicons name="call" size={26} color={colors.light[400]} />
+          <Ionicons name="call" size={26} color="#fff" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -155,11 +155,11 @@ export default function CallRoomScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dark[500],
+    backgroundColor: "#000",
   },
   remoteVideo: {
     flex: 1,
-    backgroundColor: colors.dark[500],
+    backgroundColor: "#1a1a1a",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -172,10 +172,10 @@ const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: colors.dark[500],
+    backgroundColor: "#1a1a1a",
   },
   callingText: {
-    color: colors.light[400],
+    color: "#fff",
     fontSize: 18,
   },
   callingSubtext: {
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   },
   audioCallBackground: {
     flex: 1,
-    backgroundColor: colors.dark[500],
+    backgroundColor: "#1a1a1a",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -194,25 +194,25 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: colors.light[400],
+    borderColor: "#fff",
   },
   avatarPlaceholder: {
     width: 100,
     height: 100,
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: colors.light[400],
-    backgroundColor: colors.dark[200],
+    borderColor: "#fff",
+    backgroundColor: "#333",
     justifyContent: "center",
     alignItems: "center",
   },
   avatarPlaceholderText: {
-    color: colors.light[400],
+    color: "#fff",
     fontSize: 36,
     fontWeight: "600",
   },
   remoteName: {
-    color: colors.light[400],
+    color: "#fff",
     fontSize: 20,
     marginTop: 16,
     fontWeight: "500",
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   endCall: {
-    backgroundColor: statusColors.error.dark,
+    backgroundColor: "#ff4d4d",
     borderRadius: 50,
   },
 });

@@ -1,14 +1,15 @@
-import React from 'react';
-import { Image, TouchableOpacity, View } from 'react-native';
+import React from "react";
+import { Image, TouchableOpacity, View } from "react-native";
 
-import { Avatar, Icon, Text } from '@/components/ui';
+import { TrashIcon } from "@/components/shared/icons/Icons";
+import { Avatar, Icon, Text } from "@/components/ui";
+import { useTheme } from "@/context/ThemeContext";
 import {
   getNotificationMessage,
   NotificationResponseDto,
   NotificationType,
-} from '@/dtos';
-import { paletteIcon, statusColors } from '@/styles/colors';
-import { useTheme } from '@/context/ThemeContext';
+} from "@/dtos";
+import { getSemantic, paletteIcon, statusColors } from "@/styles/colors";
 
 interface NotificationCardProps {
   notification: NotificationResponseDto;
@@ -23,92 +24,92 @@ function getNotificationIcon(type: NotificationType): {
 } {
   const icons: Record<string, { name: string; color: string; bgColor: string }> = {
     [NotificationType.POST_LIKE]: {
-      name: 'heart.fill',
+      name: "heart.fill",
       color: statusColors.error.light,
-      bgColor: 'bg-red-100 dark:bg-red-900/30',
+      bgColor: "bg-red-100 dark:bg-red-900/30",
     },
     [NotificationType.POST_COMMENT]: {
-      name: 'bubble.left.fill',
+      name: "bubble.left.fill",
       color: statusColors.info.light,
-      bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+      bgColor: "bg-blue-100 dark:bg-blue-900/30",
     },
     [NotificationType.POST_SHARE]: {
-      name: 'arrowshape.turn.up.right.fill',
+      name: "arrowshape.turn.up.right.fill",
       color: statusColors.success.light,
-      bgColor: 'bg-green-100 dark:bg-green-900/30',
+      bgColor: "bg-green-100 dark:bg-green-900/30",
     },
     [NotificationType.POST_MENTION]: {
-      name: 'at',
+      name: "at",
       color: statusColors.info.light,
-      bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+      bgColor: "bg-purple-100 dark:bg-purple-900/30",
     },
     [NotificationType.MEDIA_LIKE]: {
-      name: 'heart.fill',
+      name: "heart.fill",
       color: statusColors.error.light,
-      bgColor: 'bg-red-100 dark:bg-red-900/30',
+      bgColor: "bg-red-100 dark:bg-red-900/30",
     },
     [NotificationType.MEDIA_COMMENT]: {
-      name: 'bubble.left.fill',
+      name: "bubble.left.fill",
       color: statusColors.info.light,
-      bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+      bgColor: "bg-blue-100 dark:bg-blue-900/30",
     },
     [NotificationType.COMMENT_LIKE]: {
-      name: 'heart.fill',
+      name: "heart.fill",
       color: statusColors.error.light,
-      bgColor: 'bg-red-100 dark:bg-red-900/30',
+      bgColor: "bg-red-100 dark:bg-red-900/30",
     },
     [NotificationType.COMMENT_REPLY]: {
-      name: 'arrowshape.turn.up.left.fill',
+      name: "arrowshape.turn.up.left.fill",
       color: statusColors.info.light,
-      bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+      bgColor: "bg-blue-100 dark:bg-blue-900/30",
     },
     [NotificationType.COMMENT_MENTION]: {
-      name: 'at',
+      name: "at",
       color: statusColors.info.light,
-      bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+      bgColor: "bg-purple-100 dark:bg-purple-900/30",
     },
     [NotificationType.FOLLOW_REQUEST]: {
-      name: 'person.badge.plus',
+      name: "person.badge.plus",
       color: statusColors.warning.light,
-      bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+      bgColor: "bg-amber-100 dark:bg-amber-900/30",
     },
     [NotificationType.FOLLOW_ACCEPTED]: {
-      name: 'person.fill.checkmark',
+      name: "person.fill.checkmark",
       color: statusColors.success.light,
-      bgColor: 'bg-green-100 dark:bg-green-900/30',
+      bgColor: "bg-green-100 dark:bg-green-900/30",
     },
     [NotificationType.FOLLOW_NEW]: {
-      name: 'person.fill.badge.plus',
-      color: '#768D85',
-      bgColor: 'bg-primary/20 dark:bg-primary/30',
+      name: "person.fill.badge.plus",
+      color: "#768D85",
+      bgColor: "bg-primary/20 dark:bg-primary/30",
     },
     [NotificationType.CLOSE_FRIEND_REQUEST]: {
-      name: 'star.fill',
+      name: "star.fill",
       color: statusColors.warning.light,
-      bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+      bgColor: "bg-amber-100 dark:bg-amber-900/30",
     },
     [NotificationType.CLOSE_FRIEND_ACCEPTED]: {
-      name: 'star.fill',
+      name: "star.fill",
       color: statusColors.success.light,
-      bgColor: 'bg-green-100 dark:bg-green-900/30',
+      bgColor: "bg-green-100 dark:bg-green-900/30",
     },
     [NotificationType.MESSAGE_NEW]: {
-      name: 'envelope.fill',
+      name: "envelope.fill",
       color: statusColors.info.light,
-      bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+      bgColor: "bg-blue-100 dark:bg-blue-900/30",
     },
     [NotificationType.SYSTEM]: {
-      name: 'bell.fill',
-      color: '#6B6B6B',
-      bgColor: 'bg-gray-100 dark:bg-gray-800',
+      name: "bell.fill",
+      color: "#6B6B6B",
+      bgColor: "bg-gray-100 dark:bg-gray-800",
     },
   };
 
   return (
     icons[type] || {
-      name: 'bell.fill',
-      color: '#768D85',
-      bgColor: 'bg-primary/20 dark:bg-primary/30',
+      name: "bell.fill",
+      color: "#768D85",
+      bgColor: "bg-primary/20 dark:bg-primary/30",
     }
   );
 }
@@ -118,12 +119,12 @@ function getTimeAgo(dateString: string): string {
   const date = new Date(dateString);
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (seconds < 60) return 'Vừa xong';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} phút trước`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)} ngày trước`;
-  if (seconds < 2592000) return `${Math.floor(seconds / 604800)} tuần trước`;
-  return `${Math.floor(seconds / 2592000)} tháng trước`;
+  if (seconds < 60) return "Just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+  if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+  return `${Math.floor(seconds / 2592000)}mo ago`;
 }
 
 export function NotificationCard({
@@ -132,6 +133,7 @@ export function NotificationCard({
   onDelete,
 }: NotificationCardProps) {
   const { colorScheme } = useTheme();
+  const semantic = getSemantic(colorScheme);
   const iconMutedColor = paletteIcon[colorScheme];
 
   const { actor, notificationType, content, thumbnailUrl, isRead, createdAt } =
@@ -142,13 +144,18 @@ export function NotificationCard({
   const timeAgo = getTimeAgo(createdAt);
 
   return (
-    <View className="flex-row items-stretch bg-background-light dark:bg-background-dark">
+    <View
+      className={`flex-row items-stretch rounded-lg ${
+        isRead
+          ? "bg-component-light dark:bg-component-dark"
+          : "bg-primary/10 dark:bg-primary/15"
+      }`}
+    >
       <TouchableOpacity
         onPress={() => onPress?.(notification)}
-        activeOpacity={0.7}
-        className="flex-1 flex-row items-start p-4"
+        activeOpacity={0.72}
+        className="flex-1 flex-row items-start px-3 py-3"
       >
-        {/* Avatar with Icon Badge */}
         <View className="relative">
           <Avatar
             source={actor?.avatar ? { uri: actor.avatar } : undefined}
@@ -157,53 +164,56 @@ export function NotificationCard({
           />
           <View
             className={`absolute -bottom-1 -right-1 rounded-full p-1 ${icon.bgColor}`}
+            style={{ borderWidth: 2, borderColor: semantic.surface }}
           >
             <Icon name={icon.name} size={12} color={icon.color} />
           </View>
         </View>
 
-        {/* Content */}
-        <View className="flex-1 ml-3">
-          <Text className={`text-text-light dark:text-text-dark ${!isRead ? 'font-bold' : ''}`} numberOfLines={2}>
+        <View className="flex-1 ml-3 min-w-0">
+          <Text
+            className={`text-text-light dark:text-text-dark ${
+              !isRead ? "font-semibold" : ""
+            }`}
+            numberOfLines={2}
+            style={{ fontSize: 14, lineHeight: 20 }}
+          >
             {message}
           </Text>
 
-          {content && (
+          {content ? (
             <Text variant="muted" numberOfLines={1} className="mt-0.5 text-sm">
               &quot;{content}&quot;
             </Text>
-          )}
+          ) : null}
 
-          <Text
-            variant="muted"
-            className="text-xs mt-1"
-          >
+          <Text variant="muted" className="text-xs mt-1" style={{ lineHeight: 16 }}>
             {timeAgo}
           </Text>
         </View>
 
-        {thumbnailUrl && (
+        {thumbnailUrl ? (
           <Image
             source={{ uri: thumbnailUrl }}
             className="w-12 h-12 rounded-lg ml-2"
             resizeMode="cover"
           />
-        )}
+        ) : null}
 
-        {/* Unread dot */}
-        {!isRead && (
-          <View className="w-2 h-2 rounded-sm bg-primary ml-2 mt-1 self-start" />
-        )}
+        {!isRead ? (
+          <View className="w-2 h-2 rounded-full bg-primary ml-2 mt-1.5 self-start" />
+        ) : null}
       </TouchableOpacity>
 
       {onDelete ? (
         <TouchableOpacity
           onPress={() => onDelete(notification)}
-          className="justify-center px-3 bg-background-light dark:bg-background-dark"
-          accessibilityLabel="Xóa thông báo"
+          className="justify-center px-3"
+          accessibilityLabel="Delete notification"
           hitSlop={{ top: 12, bottom: 12, left: 8, right: 12 }}
+          activeOpacity={0.72}
         >
-          <Icon name="trash" size={18} color={iconMutedColor} />
+          <TrashIcon size={20} color={iconMutedColor} />
         </TouchableOpacity>
       ) : null}
     </View>

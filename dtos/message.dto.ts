@@ -52,7 +52,9 @@ export interface MessageResponseDto {
   contentType?: MessageContentType;
   createdAt: string;
   updatedAt?: string;
+  isEdited?: boolean;
   isRevoked?: boolean;
+  isDeleted?: boolean;
   readBy?: string[];
 }
 
@@ -66,9 +68,18 @@ export interface ChatConversationDto {
   updatedAt: string;
   participantIds?: string[];
   participants?: UserMinimalDto[];
+  category?: string;
 }
 
 export interface PaginatedMessagesDto {
   messages: MessageResponseDto[];
   pagination: PaginationDto;
+}
+
+export interface CreateGroupDto {
+  membersIds: string[];
+  groupName: string;
+  groupAva?: string;
+  description?: string;
+  category?: "friends" | "family" | "work" | "other";
 }
