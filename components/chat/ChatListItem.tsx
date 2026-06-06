@@ -76,12 +76,17 @@ export function ChatListItem({
   const timeStr = formatTime(conversation.updatedAt);
   const showOnlineDot =
     conversation.unreadCount == null ? true : conversation.unreadCount >= 0;
+  const categoryLabel =
+    conversation.type === ConversationType.GROUP && conversation.category
+      ? conversation.category.charAt(0).toUpperCase() +
+        conversation.category.slice(1).toLowerCase()
+      : "";
 
   return (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={() => router.push(`/chat/${conversation.id}`)}
-      className="flex-row items-center px-4 py-3"
+      className="flex-row items-center rounded-2xl bg-component-light px-4 py-3 dark:bg-component-dark"
     >
       <View className="relative">
         <Avatar
@@ -98,28 +103,55 @@ export function ChatListItem({
 
       <View className="flex-1 ml-3 min-w-0">
         <View className="flex-row items-center justify-between">
-          <Text
-            variant="semibold"
-            numberOfLines={1}
-            className="flex-1 text-text-light dark:text-text-dark text-lg leading-6"
-          >
-            {conversation.name || "Unknown"}
-          </Text>
+          <View className="flex-1 flex-row items-center min-w-0">
+            <Text
+              variant="semibold"
+              numberOfLines={1}
+              className="shrink text-base leading-6 text-text-light dark:text-text-dark"
+            >
+              {conversation.name || "Unknown"}
+            </Text>
+            {categoryLabel ? (
+              <View className="ml-2 rounded-full bg-primary/10 px-2 py-1">
+                <Text
+                  numberOfLines={1}
+                  className="text-primary text-[11px] font-semibold"
+                >
+                  {categoryLabel}
+                </Text>
+              </View>
+            ) : null}
+          </View>
           <Text
             variant="muted"
-            className="text-xs ml-2 text-text-muted-light dark:text-text-muted-dark"
+            className="ml-2 text-xs text-text-muted-light dark:text-text-muted-dark"
           >
             {timeStr}
           </Text>
         </View>
-        <Text
-          variant="muted"
-          numberOfLines={1}
-          className="mt-0.5 text-sm text-text-light dark:text-text-dark"
-        >
-          {prefix}
-          {preview}
-        </Text>
+
+        <View className="mt-1 flex-row items-center">
+          <Text
+            variant="muted"
+            numberOfLines={1}
+            className={`flex-1 text-sm ${
+              (conversation.unreadCount ?? 0) > 0
+                ? "font-medium text-text-light dark:text-text-dark"
+                : "text-text-muted-light dark:text-text-muted-dark"
+            }`}
+          >
+            {prefix}
+            {preview}
+          </Text>
+
+          {(conversation.unreadCount ?? 0) > 0 ? (
+            <View className="ml-2 min-w-[20px] rounded-full bg-primary px-1.5 py-0.5 items-center justify-center">
+              <Text className="text-[11px] font-semibold text-white">
+                {conversation.unreadCount}
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </View>
     </TouchableOpacity>
   );

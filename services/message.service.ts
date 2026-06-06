@@ -468,79 +468,10 @@ class MessageServiceClass {
     );
   }
 
-  /** POST /messages/boxes — tạo box mới (1-1 hoặc group). */
-  async createBox(payload: {
-    receiverIds: string[];
-    groupName?: string;
-  }): Promise<{ boxId: string }> {
-    const data = await this.request<{ boxId?: string; _id?: string; box?: { _id?: string } }>(
-      "POST",
-      "/boxes",
-      { body: payload }
-    );
-    const boxId =
-      (data as any)?.boxId ??
-      (data as any)?._id ??
-      (data as any)?.box?._id ??
-      "";
-    return { boxId };
-  }
-
-  /** Mở (hoặc tạo) DM box với user X — returns boxId */
-  async openDirectBoxWith(userId: string): Promise<string> {
-    const { boxId } = await this.createBox({ receiverIds: [userId] });
-    return boxId;
-  }
-
-  /** PATCH /messages/boxes/:boxId/info — đổi tên/mô tả group. */
-  async updateBoxInfo(
-    boxId: string,
-    payload: { groupName?: string; description?: string }
-  ): Promise<void> {
-    await this.request("PATCH", `/boxes/${encodeURIComponent(boxId)}/info`, {
-      body: payload,
-    });
-  }
-
-  /** POST /messages/boxes/:boxId/members — thêm thành viên group. */
-  async addMembers(boxId: string, memberIds: string[]): Promise<void> {
-    await this.request("POST", `/boxes/${encodeURIComponent(boxId)}/members`, {
-      body: { memberIds },
-    });
-  }
-
-  /** DELETE /messages/boxes/:boxId/members/:memberId — kick thành viên. */
-  async kickMember(boxId: string, memberId: string): Promise<void> {
-    await this.request(
-      "DELETE",
-      `/boxes/${encodeURIComponent(boxId)}/members/${encodeURIComponent(memberId)}`
-    );
-  }
-
-  /** POST /messages/boxes/:boxId/leave — rời group. */
-  async leaveBox(boxId: string): Promise<void> {
-    await this.request("POST", `/boxes/${encodeURIComponent(boxId)}/leave`);
-  }
-
-  /** PUT /messages/status/online | /offline */
-  async setOnlineStatus(online: boolean): Promise<void> {
-    await this.request(
-      "PUT",
-      `/status/${online ? "online" : "offline"}`
-    );
-  }
-
-  /**
-   * Báo cáo box — không có endpoint riêng, dùng report.service với entityType="user"
-   * trên người trong DM. Để callsite quyết định cách báo cáo cụ thể.
-   *
-   * @deprecated Dùng `reportService.reportUser()` thay thế.
-   */
+  /** POST report — tạm thời log, backend chưa có endpoint */
   async reportConversation(boxId: string): Promise<void> {
-    console.warn(
-      "[message] reportConversation deprecated, use reportService instead. boxId=",
-      boxId
-    );
+    // TODO: implement khi backend có endpoint /report
+    console.log("Report conversation:", boxId);
   }
 
   /** GET /boxes/:boxId/detail — group members and info */

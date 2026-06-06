@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  TextInput as RNTextInput,
   ScrollView,
   TouchableOpacity,
   View,
@@ -12,7 +11,8 @@ import {
 
 import { ScreenContainer } from '@/components/containers/ScreenContainer';
 import { CallIcon, SearchIcon } from '@/components/shared/icons/Icons';
-import { Avatar } from '@/components/ui';
+import { SearchBarInput } from '@/components/shared/ui/search-bar';
+import { Avatar, BackButton } from '@/components/ui';
 import { Text } from '@/components/ui/Text';
 import { PublicUserDto } from '@/dtos';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -49,7 +49,7 @@ export default function AddFriendScreen() {
     try {
       const user = await userService.getUserByPhone(phoneNumber.trim());
       setFoundUser(user);
-    } catch (err) {
+    } catch {
       setError('Không tìm thấy người dùng với số điện thoại này');
     } finally {
       setLoading(false);
@@ -85,35 +85,30 @@ export default function AddFriendScreen() {
 
   return (
       <ScreenContainer className="gap-4">
-        {/* Search Bar */}
-        <View
-          className={`flex-row items-center rounded-full px-4 py-3 ${
-            isDark ? 'bg-surface-dark' : 'bg-surface-light'
-          }`}
-        >
-          <View className="mr-2">
-            <SearchIcon size={20} color={theme.textMuted} />
-          </View>
-          <RNTextInput
-            className="flex-1 text-base"
-            style={{ color: theme.text }}
-            placeholder="Enter phone number"
-            placeholderTextColor={theme.textMuted}
-            value={phoneNumber}
-            onChangeText={(text) => {
-              setPhoneNumber(text);
-              setError('');
-            }}
-            keyboardType="phone-pad"
-          />
-          <TouchableOpacity
-            onPress={handleSearchByPhone}
-            disabled={loading}
-            className="ml-2"
-          >
-            <CallIcon size={24} color={theme.primary} />
-          </TouchableOpacity>
-        </View>
+        <BackButton className="-ml-4" />
+
+        <SearchBarInput
+          placeholder="Enter phone number"
+          value={phoneNumber}
+          onChangeText={(text) => {
+            setPhoneNumber(text);
+            setError('');
+          }}
+          keyboardType="phone-pad"
+          returnKeyType="search"
+          onSubmitEditing={handleSearchByPhone}
+          rightElement={
+            <TouchableOpacity
+              onPress={handleSearchByPhone}
+              disabled={loading}
+              className="ml-2"
+              accessibilityRole="button"
+              accessibilityLabel="Search by phone number"
+            >
+              <CallIcon size={24} color={theme.primary} />
+            </TouchableOpacity>
+          }
+        />
 
         {/* Loading */}
         {loading && (
