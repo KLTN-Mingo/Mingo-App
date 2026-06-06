@@ -40,7 +40,13 @@ import { useReport } from "@/hooks/use-report";
 import { useAuth } from "@/context/AuthContext";
 import { useSharePost } from "@/hooks/use-share-post";
 import { commentService } from "@/services/comment.service";
+import { FollowApi } from "@/services/follow.service";
+import {
+  frontendCacheKeys,
+  invalidateCacheKeys,
+} from "@/services/frontend-cache";
 import { postService } from "@/services/post.service";
+import { isPostPermissionDeniedError } from "@/services/post-permission";
 import { colors, getSemantic, paletteIcon, statusColors } from "@/styles/colors";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -66,6 +72,7 @@ export default function PostDetailScreen() {
   const [comments, setComments] = useState<CommentResponseDto[]>([]);
   const [loadingPost, setLoadingPost] = useState(true);
   const [loadingComments, setLoadingComments] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentDraft, setEditCommentDraft] = useState("");
   const [expandedReplyIds, setExpandedReplyIds] = useState<Record<string, boolean>>({});
@@ -111,17 +118,47 @@ export default function PostDetailScreen() {
     },
   });
 
+  const handlePostPermissionDenied = useCallback(
+    async (targetPost?: PostResponseDto | null) => {
+      const activePost = targetPost ?? post;
+      if (!activePost) return;
+
+      invalidateCacheKeys([
+        frontendCacheKeys.postDetail(activePost.id),
+        frontendCacheKeys.feedPosts,
+        frontendCacheKeys.savedPosts,
+        frontendCacheKeys.relationship(activePost.userId),
+        frontendCacheKeys.followStats(activePost.userId),
+        frontendCacheKeys.userPosts(activePost.userId),
+      ]);
+
+      try {
+        await FollowApi.getRelationshipStatus(activePost.userId);
+      } catch {
+        // best-effort refresh
+      }
+
+      setAccessDenied(true);
+      setPost(null);
+    },
+    [post]
+  );
+
   const fetchPost = useCallback(async () => {
     if (!id) return;
     try {
       const data = await postService.getPostById(id);
+      setAccessDenied(false);
       setPost(data);
     } catch (err) {
+      if (isPostPermissionDeniedError(err)) {
+        await handlePostPermissionDenied();
+      }
       console.warn("Cannot load post:", err);
     } finally {
       setLoadingPost(false);
     }
-  }, [id]);
+  }, [handlePostPermissionDenied, id]);
 
   const fetchComments = useCallback(async () => {
     if (!id) return;
@@ -385,6 +422,9 @@ export default function PostDetailScreen() {
       }
     } catch (error) {
       setPost(previous);
+      if (isPostPermissionDeniedError(error)) {
+        await handlePostPermissionDenied(previous);
+      }
       console.warn("Cannot update like:", error);
     }
   };
@@ -413,6 +453,9 @@ export default function PostDetailScreen() {
       }
     } catch (error) {
       setPost(previous);
+      if (isPostPermissionDeniedError(error)) {
+        await handlePostPermissionDenied(previous);
+      }
       console.warn("Cannot update saved post:", error);
     }
   };
@@ -523,7 +566,16 @@ export default function PostDetailScreen() {
         </View>
       );
     }
-    if (!post) return null;
+    if (!post) {
+      if (accessDenied) {
+        return (
+          <View className="px-4 py-10">
+            <EmptyState title="Bạn không còn quyền xem bài viết này" />
+          </View>
+        );
+      }
+      return null;
+    }
 
     const theme = {
       icon: paletteIcon[colorScheme === "dark" ? "dark" : "light"],

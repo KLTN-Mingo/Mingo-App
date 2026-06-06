@@ -26,6 +26,7 @@ import { paletteIcon } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
 import {
   CloseFriendStatus,
+  FollowStatus,
   PostResponseDto,
   PublicUserDto,
   RelationshipStatusDto,
@@ -33,6 +34,11 @@ import {
   UserMinimalDto,
   UserProfileDto,
 } from "@/dtos";
+import { getFollowActionState } from "@/services/follow-contract";
+import {
+  frontendCacheKeys,
+  subscribeCacheInvalidation,
+} from "@/services/frontend-cache";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useReport } from "@/hooks/use-report";
 import { useSharePost } from "@/hooks/use-share-post";
@@ -44,7 +50,8 @@ import { colors, getSemantic } from "@/styles/colors";
 type TabKey = "posts" | "photos" | "videos" | "reposts";
 
 export default function UserProfileDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string | string[] }>();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { profile: me } = useAuth();
   const colorScheme = useColorScheme() ?? "light";
   const semantic = getSemantic(colorScheme);
@@ -89,6 +96,46 @@ export default function UserProfileDetailScreen() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    if (!id) return;
+
+    const unsubscribe = [
+      subscribeCacheInvalidation(frontendCacheKeys.relationship(id), fetchData),
+      subscribeCacheInvalidation(
+        frontendCacheKeys.followStats(id),
+        fetchData
+      ),
+      ...(me?.id
+        ? [
+            subscribeCacheInvalidation(
+              frontendCacheKeys.followStats(me.id),
+              fetchData
+            ),
+            subscribeCacheInvalidation(
+              frontendCacheKeys.pendingFollowRequests,
+              fetchData
+            ),
+            subscribeCacheInvalidation(
+              frontendCacheKeys.sentFollowRequests,
+              fetchData
+            ),
+            subscribeCacheInvalidation(
+              frontendCacheKeys.pendingCloseFriendRequests,
+              fetchData
+            ),
+            subscribeCacheInvalidation(
+              frontendCacheKeys.closeFriends,
+              fetchData
+            ),
+          ]
+        : []),
+    ];
+
+    return () => {
+      unsubscribe.forEach((dispose) => dispose());
+    };
+  }, [fetchData, id, me?.id]);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchData();
@@ -125,8 +172,12 @@ export default function UserProfileDetailScreen() {
     if (!id || isMine || acting) return;
     setActing(true);
     try {
-      if (relationship?.isFollowing) {
+      const followAction = getFollowActionState(relationship);
+
+      if (followAction.action === "unfollow") {
         await FollowApi.unfollow(id);
+      } else if (followAction.action === "cancel_request") {
+        await FollowApi.cancelRequest(id);
       } else {
         await FollowApi.sendFollowRequest(id);
       }
@@ -142,9 +193,43 @@ export default function UserProfileDetailScreen() {
     try {
       if (relationship?.closeFriendStatus === CloseFriendStatus.ACCEPTED) {
         await FollowApi.removeCloseFriend(id);
+      } else if (relationship?.closeFriendStatus === CloseFriendStatus.PENDING) {
+        Alert.alert(
+          "Bạn thân",
+          "Yêu cầu bạn thân đang chờ phản hồi."
+        );
+        return;
+      } else if (!relationship?.isFriend) {
+        Alert.alert(
+          "Bạn thân",
+          "Chỉ có thể thêm bạn thân khi cả hai đã theo dõi nhau."
+        );
       } else {
         await FollowApi.sendCloseFriendRequest(id);
       }
+      await fetchData();
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const handleIncomingFollowResponse = async (accept: boolean) => {
+    if (!id || acting) return;
+
+    setActing(true);
+    try {
+      const pending = await FollowApi.getPendingRequests();
+      const request = pending.requests.find(
+        (item) =>
+          item.user.id === id && item.status === FollowStatus.PENDING
+      );
+
+      if (!request) {
+        await fetchData();
+        return;
+      }
+
+      await FollowApi.respondToRequest(request.id, accept);
       await fetchData();
     } finally {
       setActing(false);
@@ -229,11 +314,13 @@ export default function UserProfileDetailScreen() {
     ]);
   };
 
-  const followLabel = relationship?.isFollowing ? "Unfollow" : "Follow";
+  const followActionState = getFollowActionState(relationship);
   const closeFriendLabel =
     relationship?.closeFriendStatus === CloseFriendStatus.ACCEPTED
-      ? "Remove best friend"
-      : "Add best friend";
+      ? "Bạn thân"
+      : relationship?.closeFriendStatus === CloseFriendStatus.PENDING
+        ? "Đang chờ bạn thân"
+        : "Thêm bạn thân";
 
   if (loading) return <ProfileSkeleton />;
   if (!user) {
@@ -419,19 +506,45 @@ export default function UserProfileDetailScreen() {
           </Button>
         ) : (
           <View className="gap-2">
+            {relationship?.followerStatus === FollowStatus.PENDING ? (
+              <View className="flex-row gap-2">
+                <Button
+                  variant="primary"
+                  onPress={() => handleIncomingFollowResponse(true)}
+                  disabled={acting}
+                  className="flex-1"
+                >
+                  Chấp nhận
+                </Button>
+                <Button
+                  variant="outline"
+                  onPress={() => handleIncomingFollowResponse(false)}
+                  disabled={acting}
+                  className="flex-1"
+                >
+                  Từ chối
+                </Button>
+              </View>
+            ) : null}
             <View className="flex-row gap-2">
               <Button
-                variant={relationship?.isFollowing ? "outline" : "primary"}
+                variant={
+                  followActionState.action === "follow" ? "primary" : "outline"
+                }
                 onPress={handleFollowAction}
                 disabled={acting}
                 className="flex-1"
               >
-                {followLabel}
+                {followActionState.label}
               </Button>
               <Button
                 variant="outline"
                 onPress={handleCloseFriendAction}
-                disabled={acting}
+                disabled={
+                  acting ||
+                  (!relationship?.isFriend &&
+                    relationship?.closeFriendStatus !== CloseFriendStatus.ACCEPTED)
+                }
                 className="flex-1"
               >
                 {closeFriendLabel}

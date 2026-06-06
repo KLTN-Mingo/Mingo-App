@@ -4,8 +4,8 @@ import { Image, Text as RNText, TouchableOpacity, View } from "react-native";
 import { CameraIcon } from "@/components/shared/icons/Icons";
 import { Text } from "@/components/ui";
 import { UserProfileDto } from "@/dtos";
-import { paletteIcon } from "@/styles/colors";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { paletteIcon } from "@/styles/colors";
 
 const COVER_HEIGHT = 180;
 
@@ -33,7 +33,7 @@ export function ProfileHeader({
   isOwnProfile = true,
   onEditBio,
 }: ProfileHeaderProps) {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const cameraIconColor = paletteIcon[colorScheme];
   const cardShadowStyle =
     colorScheme === "light"
@@ -45,7 +45,7 @@ export function ProfileHeader({
           elevation: 4,
         }
       : undefined;
-  
+
   const subtitleLine = useMemo(() => {
     const phone = user.phoneNumber?.trim();
     if (phone) return phone;
@@ -113,7 +113,7 @@ export function ProfileHeader({
           )}
         </TouchableOpacity>
 
-        <View className="flex-1 ml-3 min-w-0" style={{ paddingTop: 70 }}>
+        <View className="flex-1 ml-3 min-w-0 mt-10">
           <TouchableOpacity
             onPress={isOwnProfile ? onEditBio : undefined}
             activeOpacity={isOwnProfile ? 0.75 : 1}

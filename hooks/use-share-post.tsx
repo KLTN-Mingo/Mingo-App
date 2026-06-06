@@ -57,7 +57,7 @@ export function useSharePost(options: UseSharePostOptions = {}) {
     <>
       <SharePostModal
         visible={!!dmPost}
-        postId={dmPost?.id ?? null}
+        post={dmPost}
         onShared={(info) => {
           onShared?.(info);
           setDmPost(null);

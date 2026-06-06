@@ -1221,6 +1221,7 @@ interface InfoChatProps {
   conversation: ChatConversationDto | null;
   onDeleteChat?: (conversationId: string) => void;
   onOpenSearch?: () => void;
+  onCategoryChange?: (conversationId: string, category: string) => void;
 }
 
 type GroupMember = {
@@ -1237,6 +1238,7 @@ export function InfoChat({
   conversation,
   onDeleteChat,
   onOpenSearch,
+  onCategoryChange,
 }: InfoChatProps) {
   const router = useRouter();
   const { profile } = useAuth();
@@ -2217,6 +2219,7 @@ export function InfoChat({
                         newCat
                       );
                       setCategory(newCat);
+                      onCategoryChange?.(conversation!.id, newCat);
                     } catch (err: any) {
                       Alert.alert(
                         "Error",

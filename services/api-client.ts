@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { authService } from "@/services/auth.service";
+import { ApiError } from "@/services/api-error";
 
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -8,6 +9,7 @@ export const API_URL =
 type ApiEnvelope<T> = {
   success?: boolean;
   message?: string;
+  code?: string;
   data?: T;
   result?: T;
   payload?: T;
@@ -98,7 +100,10 @@ export async function apiMultipartRequest<T>(
   const message = json.message || "Something went wrong";
   if (!response.ok) {
     await authService.handleUnauthorizedResponse(response, message);
-    throw new Error(message);
+    throw new ApiError(message, {
+      status: response.status,
+      code: json.code,
+    });
   }
 
   const data = extractData<T>(json);
@@ -132,7 +137,10 @@ export async function apiRequest<T>(
   const message = json.message || "Something went wrong";
   if (!response.ok) {
     await authService.handleUnauthorizedResponse(response, message);
-    throw new Error(message);
+    throw new ApiError(message, {
+      status: response.status,
+      code: json.code,
+    });
   }
 
   const data = extractData<T>(json);

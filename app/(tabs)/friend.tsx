@@ -27,6 +27,10 @@ import {
   FriendDto,
 } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  frontendCacheKeys,
+  subscribeCacheInvalidation,
+} from "@/services/frontend-cache";
 import { FollowApi } from "@/services/follow.service";
 import { getSemantic, paletteIcon } from "@/styles/colors";
 
@@ -101,13 +105,13 @@ export default function FriendScreen() {
           }
           break;
         case "bestfriends":
-          const bffData = await FollowApi.getCloseFriends(profile.id);
+          const bffData = await FollowApi.getCloseFriends();
           setCloseFriends(bffData.closeFriends);
           break;
       }
 
       // Always fetch stats
-      const statsData = await FollowApi.getStats(profile.id);
+      const statsData = await FollowApi.getStats();
       setStats(statsData);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -119,6 +123,29 @@ export default function FriendScreen() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const unsubscribe = [
+      subscribeCacheInvalidation(frontendCacheKeys.pendingFollowRequests, fetchData),
+      subscribeCacheInvalidation(frontendCacheKeys.sentFollowRequests, fetchData),
+      subscribeCacheInvalidation(
+        frontendCacheKeys.pendingCloseFriendRequests,
+        fetchData
+      ),
+      subscribeCacheInvalidation(frontendCacheKeys.friends(profile.id), fetchData),
+      subscribeCacheInvalidation(frontendCacheKeys.closeFriends, fetchData),
+      subscribeCacheInvalidation(
+        frontendCacheKeys.followStats(profile.id),
+        fetchData
+      ),
+    ];
+
+    return () => {
+      unsubscribe.forEach((dispose) => dispose());
+    };
+  }, [fetchData, profile?.id]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -209,6 +236,7 @@ export default function FriendScreen() {
         renderItem={({ item }) => (
           <FriendCard
             user={item.user}
+            isFriend={true}
             isCloseFriend={item.isCloseFriend}
             onPress={() => {
               /* Navigate to profile */
@@ -313,6 +341,7 @@ export default function FriendScreen() {
         renderItem={({ item }) => (
           <FriendCard
             user={item.user}
+            isFriend={true}
             isCloseFriend={true}
             onPress={() => {
               /* Navigate to profile */
