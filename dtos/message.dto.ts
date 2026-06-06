@@ -7,11 +7,8 @@ export enum MessageContentType {
   TEXT = "text",
   IMAGE = "image",
   VIDEO = "video",
-  /** Alias của VOICE (BE: voice). Giữ AUDIO cho backward compat. */
   AUDIO = "audio",
-  VOICE = "voice",
   FILE = "file",
-  SYSTEM = "system",
 }
 
 export enum ConversationType {

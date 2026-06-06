@@ -511,6 +511,15 @@ export default function ChatScreen() {
           setConversations(next);
           setFilteredConversations(next);
         }}
+        onCategoryChange={(conversationId, category) => {
+          const updateCategory = (list: ChatConversationDto[]) =>
+            list.map((item) =>
+              item.id === conversationId ? { ...item, category } : item
+            );
+
+          setConversations(updateCategory);
+          setFilteredConversations(updateCategory);
+        }}
         onOpenSearch={() => setSearchVisible(true)}
       />
 

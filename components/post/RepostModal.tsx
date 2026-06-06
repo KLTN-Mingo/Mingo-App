@@ -15,6 +15,12 @@ import { paletteIcon } from "@/constants/designTokens";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import type { PostResponseDto, RepostSuccessDto } from "@/dtos";
 import { ShareApiError } from "@/dtos";
+import { FollowApi } from "@/services/follow.service";
+import {
+  frontendCacheKeys,
+  invalidateCacheKeys,
+} from "@/services/frontend-cache";
+import { isPostPermissionDeniedError } from "@/services/post-permission";
 import { shareService } from "@/services/share.service";
 
 interface RepostModalProps {
@@ -56,6 +62,27 @@ export function RepostModal({
       onClose();
     } catch (e) {
       console.error("[repost-modal] failed", e);
+      if (isPostPermissionDeniedError(e)) {
+        invalidateCacheKeys([
+          frontendCacheKeys.postDetail(post.id),
+          frontendCacheKeys.feedPosts,
+          frontendCacheKeys.savedPosts,
+          frontendCacheKeys.relationship(post.userId),
+          frontendCacheKeys.followStats(post.userId),
+          frontendCacheKeys.userPosts(post.userId),
+        ]);
+        try {
+          await FollowApi.getRelationshipStatus(post.userId);
+        } catch {
+          // best-effort refresh
+        }
+        Alert.alert(
+          "KhÃ´ng cÃ²n quyá»n xem",
+          "Báº¡n khÃ´ng cÃ²n quyá»n xem bÃ i viáº¿t nÃ y."
+        );
+        onClose();
+        return;
+      }
       const err = e as ShareApiError;
       const code = err.code;
       // Theo bảng error trong guide §3.

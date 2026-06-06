@@ -13,9 +13,10 @@ import {
 import { ChatListItem, FriendOnlineList } from "@/components/chat";
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
+import { SearchBarInput } from "@/components/shared/ui/search-bar";
 import { ActionInput, AppModal, Avatar, Button, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
-import { ConversationType } from "@/dtos";
+import { ChatConversationDto, ConversationType } from "@/dtos";
 import { useChatList } from "@/hooks/use-chat-list";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useFriendsOnline } from "@/hooks/use-friends-online";
@@ -23,11 +24,28 @@ import { messageService } from "@/services/message.service";
 import { getSemantic } from "@/styles/colors";
 
 type ChatTab = "all" | "unread" | "groups";
+type GroupCategoryKey =
+  | "friends"
+  | "family"
+  | "work"
+  | "other"
+  | "uncategorized";
 
 const CHAT_TABS: { key: ChatTab; label: string }[] = [
   { key: "all", label: "All" },
   { key: "unread", label: "Unread" },
   { key: "groups", label: "Groups" },
+];
+
+const GROUP_CATEGORIES: {
+  key: GroupCategoryKey;
+  label: string;
+}[] = [
+  { key: "friends", label: "Friends" },
+  { key: "family", label: "Family" },
+  { key: "work", label: "Work" },
+  { key: "other", label: "Other" },
+  { key: "uncategorized", label: "Uncategorized" },
 ];
 
 export default function ChatListScreen() {
@@ -61,19 +79,51 @@ export default function ChatListScreen() {
 
   const tabbedConversations = useMemo(() => {
     if (activeTab === "unread") {
-      return filteredConversations.filter((item) => (item.unreadCount ?? 0) > 0);
+      return filteredConversations.filter(
+        (item) => (item.unreadCount ?? 0) > 0
+      );
     }
+
     if (activeTab === "groups") {
       return filteredConversations.filter(
         (item) => item.type === ConversationType.GROUP
       );
     }
+
     return filteredConversations;
   }, [activeTab, filteredConversations]);
 
+  const groupedConversations = useMemo(() => {
+    const groups = filteredConversations.filter(
+      (item) => item.type === ConversationType.GROUP
+    );
+    const sections = new Map<GroupCategoryKey, ChatConversationDto[]>(
+      GROUP_CATEGORIES.map(({ key }) => [key, []])
+    );
+
+    groups.forEach((conversation) => {
+      const rawCategory = conversation.category?.trim().toLowerCase();
+      const category = GROUP_CATEGORIES.some(
+        ({ key }) => key !== "uncategorized" && key === rawCategory
+      )
+        ? (rawCategory as Exclude<GroupCategoryKey, "uncategorized">)
+        : "uncategorized";
+
+      sections.get(category)?.push(conversation);
+    });
+
+    return GROUP_CATEGORIES.map(({ key, label }) => ({
+      key,
+      label,
+      conversations: sections.get(key) ?? [],
+    })).filter((section) => section.conversations.length > 0);
+  }, [filteredConversations]);
+
   const filteredFriends = useMemo(() => {
     const query = friendSearch.trim().toLowerCase();
+
     if (!query) return friends;
+
     return friends.filter((friend) =>
       (friend.name ?? "").toLowerCase().includes(query)
     );
@@ -98,6 +148,7 @@ export default function ChatListScreen() {
 
   const closeGroupModal = () => {
     if (creatingGroup) return;
+
     setGroupModalVisible(false);
     setGroupName("");
     setFriendSearch("");
@@ -106,14 +157,20 @@ export default function ChatListScreen() {
 
   const handleCreateGroup = async () => {
     const name = groupName.trim();
+
     if (!profile?.id) {
-      Alert.alert("Create group", "Please sign in again before creating a group.");
+      Alert.alert(
+        "Create group",
+        "Please sign in again before creating a group."
+      );
       return;
     }
+
     if (!name) {
       Alert.alert("Create group", "Enter a group name first.");
       return;
     }
+
     if (selectedMemberIds.length === 0) {
       Alert.alert("Create group", "Choose at least one friend.");
       return;
@@ -121,11 +178,13 @@ export default function ChatListScreen() {
 
     try {
       setCreatingGroup(true);
+
       const result = await messageService.createGroup(profile.id, {
         groupName: name,
         membersIds: selectedMemberIds,
         category: "other",
       });
+
       await refetch();
       closeGroupModal();
 
@@ -133,7 +192,10 @@ export default function ChatListScreen() {
         (result as any)?.box?._id ??
         (result as any)?.box?.id ??
         (result as any)?.boxId;
-      if (boxId) router.push(`/chat/${boxId}`);
+
+      if (boxId) {
+        router.push(`/chat/${boxId}`);
+      }
     } catch (err: any) {
       Alert.alert(
         "Create group",
@@ -159,6 +221,7 @@ export default function ChatListScreen() {
         >
           Messages
         </Text>
+
         <TouchableOpacity
           className="w-9 h-9 rounded-full items-center justify-center bg-component-light dark:bg-component-dark"
           activeOpacity={0.7}
@@ -169,24 +232,18 @@ export default function ChatListScreen() {
       </View>
 
       <View className="px-1 py-1 flex-1">
-        <ActionInput
-          surface="component"
+        <SearchBarInput
           placeholder="search"
           value={searchText}
           onChangeText={handleSearchChange}
           returnKeyType="search"
-          className="rounded-full"
-          leftIcon={
-            <Ionicons
-              name="search-outline"
-              size={20}
-              color={semantic.textMuted}
-            />
-          }
         />
 
         <View className="mt-3">
-          <FriendOnlineList friends={friends.slice(0, 12)} isLoading={friendsLoading} />
+          <FriendOnlineList
+            friends={friends.slice(0, 12)}
+            isLoading={friendsLoading}
+          />
         </View>
 
         <View className="flex-row items-center gap-2 mt-4 mb-1">
@@ -223,33 +280,78 @@ export default function ChatListScreen() {
           })}
         </View>
 
-        <FlatList
-          data={tabbedConversations}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <ChatListItem conversation={item} currentUserId={profile?.id} />
-          )}
-          contentContainerStyle={{
-            paddingTop: 10,
-            paddingBottom: 12,
-          }}
-          style={{ flex: 1 }}
-          ItemSeparatorComponent={() => <View className="h-2" />}
-          ListEmptyComponent={
-            <EmptyState
-              title={
-                activeTab === "unread"
-                  ? "No unread conversations"
-                  : activeTab === "groups"
-                    ? "No group conversations yet"
+        {activeTab === "groups" ? (
+          <FlatList
+            data={groupedConversations}
+            keyExtractor={(item) => item.key}
+            renderItem={({ item, index }) => (
+              <View
+                className={`pt-3 ${
+                  index < groupedConversations.length - 1
+                    ? "pb-4 border-b border-border-light dark:border-border-dark"
+                    : "pb-2"
+                }`}
+              >
+                <Text
+                  className="mb-2 uppercase text-text-muted-light dark:text-text-muted-dark"
+                  style={{
+                    fontFamily: "Montserrat-SemiBold",
+                    fontSize: 12,
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {item.label} ({item.conversations.length})
+                </Text>
+
+                <View className="gap-2">
+                  {item.conversations.map((conversation) => (
+                    <ChatListItem
+                      key={conversation.id}
+                      conversation={conversation}
+                      currentUserId={profile?.id}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+            contentContainerStyle={{
+              paddingBottom: 12,
+            }}
+            style={{ flex: 1 }}
+            ListEmptyComponent={
+              <EmptyState title="No group conversations yet" />
+            }
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          />
+        ) : (
+          <FlatList
+            data={tabbedConversations}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <ChatListItem conversation={item} currentUserId={profile?.id} />
+            )}
+            contentContainerStyle={{
+              paddingTop: 10,
+              paddingBottom: 12,
+            }}
+            style={{ flex: 1 }}
+            ItemSeparatorComponent={() => <View className="h-2" />}
+            ListEmptyComponent={
+              <EmptyState
+                title={
+                  activeTab === "unread"
+                    ? "No unread conversations"
                     : "No conversations yet"
-              }
-            />
-          }
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        />
+                }
+              />
+            }
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          />
+        )}
       </View>
 
       <AppModal
@@ -264,6 +366,7 @@ export default function ChatListScreen() {
           >
             New group
           </Text>
+
           <Text
             className="text-text-muted-light dark:text-text-muted-dark"
             style={{ fontSize: 13 }}
@@ -318,6 +421,7 @@ export default function ChatListScreen() {
               }
               renderItem={({ item }) => {
                 const selected = selectedMemberIds.includes(item.id);
+
                 return (
                   <TouchableOpacity
                     activeOpacity={0.75}
@@ -330,6 +434,7 @@ export default function ChatListScreen() {
                         fallback={item.name?.charAt(0)?.toUpperCase() ?? "?"}
                         size="md"
                       />
+
                       <View
                         style={{
                           position: "absolute",
@@ -346,6 +451,7 @@ export default function ChatListScreen() {
                         }}
                       />
                     </View>
+
                     <View className="flex-1 ml-3">
                       <Text
                         className="text-text-light dark:text-text-dark"
@@ -354,6 +460,7 @@ export default function ChatListScreen() {
                       >
                         {item.name}
                       </Text>
+
                       <Text
                         className="text-text-muted-light dark:text-text-muted-dark"
                         style={{ fontSize: 12 }}
@@ -361,6 +468,7 @@ export default function ChatListScreen() {
                         {item.onlineStatus ? "Online" : "Offline"}
                       </Text>
                     </View>
+
                     <Ionicons
                       name={selected ? "checkmark-circle" : "ellipse-outline"}
                       size={24}
@@ -382,6 +490,7 @@ export default function ChatListScreen() {
           >
             Cancel
           </Button>
+
           <Button
             className="flex-1"
             onPress={handleCreateGroup}

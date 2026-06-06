@@ -8,6 +8,7 @@ import type {
   SendDMShareSuccessDto,
 } from "@/dtos";
 import { ShareApiError } from "@/dtos";
+import { ApiError } from "@/services/api-error";
 import { apiRequest } from "@/services/api-client";
 
 /** Theo guide §5: validate FE trước khi call. */
@@ -112,6 +113,10 @@ class ShareService {
    */
   private toShareError(e: unknown, fallback: string): ShareApiError {
     if (e instanceof ShareApiError) return e;
+    if (e instanceof ApiError) {
+      const code = e.code ?? this.guessCodeFromMessage(e.message, e.status);
+      return new ShareApiError(e.message || fallback, code);
+    }
     if (e instanceof Error) {
       const code = this.guessCodeFromMessage(e.message);
       return new ShareApiError(e.message || fallback, code);
@@ -119,8 +124,11 @@ class ShareService {
     return new ShareApiError(fallback);
   }
 
-  private guessCodeFromMessage(msg: string): string | undefined {
+  private guessCodeFromMessage(msg: string, status?: number): string | undefined {
     const m = msg.toUpperCase();
+    if (status === 403) {
+      return "POST_VISIBILITY_FORBIDDEN";
+    }
     if (m.includes("REPOST_DUPLICATED") || m.includes("ĐÃ REPOST")) {
       return "REPOST_DUPLICATED";
     }
@@ -134,6 +142,9 @@ class ShareService {
     }
     if (m.includes("SHARE_RATE_LIMIT_EXCEEDED")) {
       return "SHARE_RATE_LIMIT_EXCEEDED";
+    }
+    if (m.includes("POST_VISIBILITY_FORBIDDEN")) {
+      return "POST_VISIBILITY_FORBIDDEN";
     }
     if (m.includes("POST_NOT_FOUND")) return "POST_NOT_FOUND";
     if (m.includes("UNAUTHORIZED")) return "UNAUTHORIZED";

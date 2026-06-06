@@ -20,9 +20,20 @@ import {
   ThreeDotsIcon,
 } from "@/components/shared/icons/Icons";
 import { Avatar, Text } from "@/components/ui";
-import { CultureTermDto, PostResponseDto, UserMinimalDto } from "@/dtos";
+import {
+  CultureTermDto,
+  PostResponseDto,
+  RelationshipStatusDto,
+  UserMinimalDto,
+} from "@/dtos";
+import { getFollowActionState } from "@/services/follow-contract";
 import { FollowApi } from "@/services/follow.service";
+import {
+  frontendCacheKeys,
+  invalidateCacheKeys,
+} from "@/services/frontend-cache";
 import { postService } from "@/services/post.service";
+import { isPostPermissionDeniedError } from "@/services/post-permission";
 import { colors, paletteIcon, statusColors } from "@/styles/colors";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -88,7 +99,10 @@ export function PostCard({
   const [savesCount, setSavesCount] = useState(post.savesCount ?? 0);
   const [saveLoading, setSaveLoading] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [followRequested, setFollowRequested] = useState(false);
+  const [relationship, setRelationship] = useState<RelationshipStatusDto | null>(
+    null
+  );
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const effectiveCultureTerms =
     Array.isArray(cultureTerms) && cultureTerms.length > 0
       ? cultureTerms
@@ -102,6 +116,58 @@ export function PostCard({
     setIsSaved(post.isSaved ?? false);
     setSavesCount(post.savesCount ?? 0);
   }, [post.id, post.isSaved, post.savesCount]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadRelationship = async () => {
+      if (
+        !currentUser?.id ||
+        !post.userId ||
+        currentUser.id === post.userId ||
+        !recommendationSource
+      ) {
+        if (active) {
+          setRelationship(null);
+        }
+        return;
+      }
+
+      try {
+        const nextRelationship = await FollowApi.getRelationshipStatus(post.userId);
+        if (active) {
+          setRelationship(nextRelationship);
+        }
+      } catch {
+        if (active) {
+          setRelationship(null);
+        }
+      }
+    };
+
+    void loadRelationship();
+
+    return () => {
+      active = false;
+    };
+  }, [currentUser?.id, post.id, post.userId, recommendationSource]);
+
+  const handlePostPermissionDenied = async () => {
+    setPermissionDenied(true);
+    invalidateCacheKeys([
+      frontendCacheKeys.postDetail(post.id),
+      frontendCacheKeys.feedPosts,
+      frontendCacheKeys.savedPosts,
+      frontendCacheKeys.relationship(post.userId),
+      frontendCacheKeys.followStats(post.userId),
+      frontendCacheKeys.userPosts(post.userId),
+    ]);
+    try {
+      await FollowApi.getRelationshipStatus(post.userId);
+    } catch {
+      // best-effort refresh
+    }
+  };
 
   const handleLike = async () => {
     if (likeLoading) return;
@@ -124,6 +190,9 @@ export function PostCard({
       // Revert on error
       setIsLiked(!newIsLiked);
       setLikesCount((prev) => (newIsLiked ? prev - 1 : prev + 1));
+      if (isPostPermissionDeniedError(error)) {
+        await handlePostPermissionDenied();
+      }
       console.error("Like error:", error);
     } finally {
       setLikeLoading(false);
@@ -148,6 +217,9 @@ export function PostCard({
     } catch (error) {
       setSharesCount((prev) => Math.max(0, prev - 1));
       onShareChange?.(post.id, Math.max(0, optimistic - 1));
+      if (isPostPermissionDeniedError(error)) {
+        await handlePostPermissionDenied();
+      }
       console.error("Share error:", error);
     } finally {
       setShareLoading(false);
@@ -176,6 +248,9 @@ export function PostCard({
       setIsSaved(prevSaved);
       setSavesCount(prevCount);
       onSaveChange?.(post.id, prevSaved, prevCount);
+      if (isPostPermissionDeniedError(error)) {
+        await handlePostPermissionDenied();
+      }
       console.error("Save post error:", error);
     } finally {
       setSaveLoading(false);
@@ -244,17 +319,26 @@ export function PostCard({
     !isOwnPost &&
     Boolean(recommendationSource);
 
+  const followAction = getFollowActionState(relationship);
+
   const handleFollowFromPost = async () => {
-    if (!canFollowFromPost || followLoading || followRequested) return;
+    if (!canFollowFromPost || followLoading || !post.userId) return;
 
     setFollowLoading(true);
     try {
-      await FollowApi.sendFollowRequest(post.userId, {
-        postId: post.id,
-        source: recommendationSource,
-        deviceType: "web",
-      });
-      setFollowRequested(true);
+      if (followAction.action === "unfollow") {
+        await FollowApi.unfollow(post.userId);
+      } else if (followAction.action === "cancel_request") {
+        await FollowApi.cancelRequest(post.userId);
+      } else {
+        await FollowApi.sendFollowRequest(post.userId, {
+          postId: post.id,
+          source: recommendationSource,
+          deviceType: "web",
+        });
+      }
+      const nextRelationship = await FollowApi.getRelationshipStatus(post.userId);
+      setRelationship(nextRelationship);
     } catch (error) {
       const msg =
         error instanceof Error ? error.message : "Cannot send follow request";
@@ -263,6 +347,10 @@ export function PostCard({
       setFollowLoading(false);
     }
   };
+
+  if (permissionDenied) {
+    return null;
+  }
 
   return (
     <View style={cardShadowStyle} className="rounded-[10px]">
@@ -302,11 +390,11 @@ export function PostCard({
           {canFollowFromPost ? (
             <TouchableOpacity
               onPress={handleFollowFromPost}
-              disabled={followLoading || followRequested}
+              disabled={followLoading}
               className="mr-2 px-3 py-1.5 rounded-full bg-primary dark:bg-primary-light"
             >
               <Text className="text-xs font-semibold text-white">
-                {followRequested ? "Sent" : followLoading ? "..." : "Follow"}
+                {followLoading ? "..." : followAction.label}
               </Text>
             </TouchableOpacity>
           ) : null}

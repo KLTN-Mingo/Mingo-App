@@ -1,49 +1,56 @@
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
-import { ScreenContainer } from '@/components/containers/ScreenContainer';
-import { FriendCard } from '@/components/friend/FriendCard';
-import { FriendRequestCard } from '@/components/friend/FriendRequestCard';
-import { SearchIcon } from '@/components/shared/icons/Icons';
-import { EmptyState } from '@/components/shared/ui/EmptyState';
-import { FriendListSkeleton, FriendRequestListSkeleton } from '@/components/skeleton';
-import { ActionInput, Button, Tab, Text } from '@/components/ui';
-import { useAuth } from '@/context/AuthContext';
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
+import { FriendCard } from "@/components/friend/FriendCard";
+import { FriendRequestCard } from "@/components/friend/FriendRequestCard";
+import { SearchIcon } from "@/components/shared/icons/Icons";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
+import {
+  FriendListSkeleton,
+  FriendRequestListSkeleton,
+} from "@/components/skeleton";
+import { ActionInput, Button, Tab, Text } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
 import {
   CloseFriendDto,
   CloseFriendRequestDto,
   FollowRequestDto,
   FollowStatsDto,
   FriendDto,
-} from '@/dtos';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { FollowApi } from '@/services/follow.service';
-import { getSemantic, paletteIcon } from '@/styles/colors';
+} from "@/dtos";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  frontendCacheKeys,
+  subscribeCacheInvalidation,
+} from "@/services/frontend-cache";
+import { FollowApi } from "@/services/follow.service";
+import { getSemantic, paletteIcon } from "@/styles/colors";
 
 type TabType =
-  | 'requests'
-  | 'sent'
-  | 'closeRequests'
-  | 'friends'
-  | 'bestfriends';
+  | "requests"
+  | "sent"
+  | "closeRequests"
+  | "friends"
+  | "bestfriends";
 
 const TABS: { key: TabType; label: string }[] = [
-  { key: 'requests', label: 'Requests' },
-  { key: 'sent', label: 'Sent' },
-  { key: 'closeRequests', label: 'Close requests' },
-  { key: 'friends', label: 'Friends' },
-  { key: 'bestfriends', label: 'Best friends' },
+  { key: "requests", label: "Requests" },
+  { key: "sent", label: "Sent" },
+  { key: "closeRequests", label: "Close requests" },
+  { key: "friends", label: "Friends" },
+  { key: "bestfriends", label: "Best friends" },
 ];
 
 export default function FriendScreen() {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
 
   const theme = {
     icon: paletteIcon[colorScheme],
@@ -53,14 +60,16 @@ export default function FriendScreen() {
   const { profile } = useAuth();
   // const colorScheme = useColorScheme() ?? 'light';
   const semantic = getSemantic(colorScheme);
-  const [activeTab, setActiveTab] = useState<TabType>('requests');
+  const [activeTab, setActiveTab] = useState<TabType>("requests");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Data states - using DTOs
   const [requests, setRequests] = useState<FollowRequestDto[]>([]);
   const [sentRequests, setSentRequests] = useState<FollowRequestDto[]>([]);
-  const [closeFriendRequests, setCloseFriendRequests] = useState<CloseFriendRequestDto[]>([]);
+  const [closeFriendRequests, setCloseFriendRequests] = useState<
+    CloseFriendRequestDto[]
+  >([]);
   const [friends, setFriends] = useState<FriendDto[]>([]);
   const [closeFriends, setCloseFriends] = useState<CloseFriendDto[]>([]);
   const [stats, setStats] = useState<FollowStatsDto | null>(null);
@@ -76,35 +85,36 @@ export default function FriendScreen() {
     setLoading(true);
     try {
       switch (activeTab) {
-        case 'requests':
+        case "requests":
           const reqData = await FollowApi.getPendingRequests();
           setRequests(reqData.requests);
           break;
-        case 'friends':
+        case "friends":
           const friendsData = await FollowApi.getFriends(profile.id);
           setFriends(friendsData.friends);
           break;
-        case 'sent':
+        case "sent":
           const sentData = await FollowApi.getSentRequests();
           setSentRequests(sentData.requests);
           break;
-        case 'closeRequests':
+        case "closeRequests":
           if (FollowApi.getPendingCloseFriendRequests) {
-            const closeReqData = await FollowApi.getPendingCloseFriendRequests();
+            const closeReqData =
+              await FollowApi.getPendingCloseFriendRequests();
             setCloseFriendRequests(closeReqData.requests);
           }
           break;
-        case 'bestfriends':
-          const bffData = await FollowApi.getCloseFriends(profile.id);
+        case "bestfriends":
+          const bffData = await FollowApi.getCloseFriends();
           setCloseFriends(bffData.closeFriends);
           break;
       }
 
       // Always fetch stats
-      const statsData = await FollowApi.getStats(profile.id);
+      const statsData = await FollowApi.getStats();
       setStats(statsData);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -113,6 +123,29 @@ export default function FriendScreen() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const unsubscribe = [
+      subscribeCacheInvalidation(frontendCacheKeys.pendingFollowRequests, fetchData),
+      subscribeCacheInvalidation(frontendCacheKeys.sentFollowRequests, fetchData),
+      subscribeCacheInvalidation(
+        frontendCacheKeys.pendingCloseFriendRequests,
+        fetchData
+      ),
+      subscribeCacheInvalidation(frontendCacheKeys.friends(profile.id), fetchData),
+      subscribeCacheInvalidation(frontendCacheKeys.closeFriends, fetchData),
+      subscribeCacheInvalidation(
+        frontendCacheKeys.followStats(profile.id),
+        fetchData
+      ),
+    ];
+
+    return () => {
+      unsubscribe.forEach((dispose) => dispose());
+    };
+  }, [fetchData, profile?.id]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -124,41 +157,41 @@ export default function FriendScreen() {
   const handleAcceptRequest = async (requestId: string) => {
     try {
       await FollowApi.respondToRequest(requestId, true);
-      setRequests(prev => prev.filter(r => r.id !== requestId));
+      setRequests((prev) => prev.filter((r) => r.id !== requestId));
       fetchData(); // Refresh stats
     } catch (error) {
-      console.error('Error accepting request:', error);
+      console.error("Error accepting request:", error);
     }
   };
 
   const handleDeclineRequest = async (requestId: string) => {
     try {
       await FollowApi.respondToRequest(requestId, false);
-      setRequests(prev => prev.filter(r => r.id !== requestId));
+      setRequests((prev) => prev.filter((r) => r.id !== requestId));
     } catch (error) {
-      console.error('Error declining request:', error);
+      console.error("Error declining request:", error);
     }
   };
 
   // Render content based on active tab
   const renderContent = () => {
     if (loading && !refreshing) {
-      if (activeTab === 'requests') {
+      if (activeTab === "requests") {
         return <FriendRequestListSkeleton count={3} />;
       }
       return <FriendListSkeleton count={5} />;
     }
 
     switch (activeTab) {
-      case 'requests':
+      case "requests":
         return renderRequests();
-      case 'friends':
+      case "friends":
         return renderFriends();
-      case 'sent':
+      case "sent":
         return renderSentRequests();
-      case 'closeRequests':
+      case "closeRequests":
         return renderCloseRequests();
-      case 'bestfriends':
+      case "bestfriends":
         return renderCloseFriends();
       default:
         return null;
@@ -167,7 +200,7 @@ export default function FriendScreen() {
 
   const renderRequests = () => {
     if (requests.length === 0) {
-      return renderEmptyState('No pending requests');
+      return renderEmptyState("No pending requests");
     }
 
     return (
@@ -193,7 +226,7 @@ export default function FriendScreen() {
 
   const renderFriends = () => {
     if (friends.length === 0) {
-      return renderEmptyState('No friends yet');
+      return renderEmptyState("No friends yet");
     }
 
     return (
@@ -203,8 +236,11 @@ export default function FriendScreen() {
         renderItem={({ item }) => (
           <FriendCard
             user={item.user}
+            isFriend={true}
             isCloseFriend={item.isCloseFriend}
-            onPress={() => {/* Navigate to profile */ }}
+            onPress={() => {
+              /* Navigate to profile */
+            }}
           />
         )}
         refreshControl={
@@ -236,9 +272,7 @@ export default function FriendScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View className="flex-row items-center justify-between px-4 py-4 bg-surface-muted-light dark:bg-surface-muted-dark rounded-[10px] mb-3">
-            <Text className="flex-1 mr-3">
-              {item.user.name || "Unknown"}
-            </Text>
+            <Text className="flex-1 mr-3">{item.user.name || "Unknown"}</Text>
             <Button
               variant="outline"
               size="sm"
@@ -248,13 +282,18 @@ export default function FriendScreen() {
             </Button>
           </View>
         )}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         showsVerticalScrollIndicator={false}
       />
     );
   };
 
-  const handleCloseFriendResponse = async (requestId: string, accept: boolean) => {
+  const handleCloseFriendResponse = async (
+    requestId: string,
+    accept: boolean
+  ) => {
     try {
       if (!FollowApi.respondCloseFriendRequest) return;
       await FollowApi.respondCloseFriendRequest(requestId, accept);
@@ -282,7 +321,9 @@ export default function FriendScreen() {
             onDecline={(id) => handleCloseFriendResponse(id, false)}
           />
         )}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         showsVerticalScrollIndicator={false}
       />
     );
@@ -290,7 +331,7 @@ export default function FriendScreen() {
 
   const renderCloseFriends = () => {
     if (closeFriends.length === 0) {
-      return renderEmptyState('No best friends yet');
+      return renderEmptyState("No best friends yet");
     }
 
     return (
@@ -300,8 +341,11 @@ export default function FriendScreen() {
         renderItem={({ item }) => (
           <FriendCard
             user={item.user}
+            isFriend={true}
             isCloseFriend={true}
-            onPress={() => {/* Navigate to profile */ }}
+            onPress={() => {
+              /* Navigate to profile */
+            }}
           />
         )}
         refreshControl={
@@ -312,9 +356,7 @@ export default function FriendScreen() {
     );
   };
 
-  const renderEmptyState = (message: string) => (
-    <EmptyState title={message} />
-  );
+  const renderEmptyState = (message: string) => <EmptyState title={message} />;
 
   return (
     // <View className="flex-1 bg-background-light dark:bg-background-dark">
@@ -324,13 +366,13 @@ export default function FriendScreen() {
         <View className="flex-row justify-between items-center">
           <Text
             className="text-title-light dark:text-title-dark leading-[32px]"
-            style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 24 }}
+            style={{ fontFamily: "Montserrat-SemiBold", fontSize: 24 }}
           >
             Friends
           </Text>
           <View className="flex-row gap-4">
             <TouchableOpacity
-              onPress={() => router.push('/add-friend')}
+              onPress={() => router.push("/add-friend")}
               className=""
             >
               <SearchIcon size={24} color={theme.icon} />
@@ -365,9 +407,9 @@ export default function FriendScreen() {
               isActive={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
               badge={
-                tab.key === 'requests'
+                tab.key === "requests"
                   ? stats?.pendingFollowRequestsCount
-                  : tab.key === 'closeRequests'
+                  : tab.key === "closeRequests"
                     ? stats?.pendingCloseFriendRequestsCount
                     : undefined
               }
@@ -377,9 +419,7 @@ export default function FriendScreen() {
       </View>
 
       {/* Content */}
-      <View className="flex-1">
-        {renderContent()}
-      </View>
+      <View className="flex-1">{renderContent()}</View>
     </ScreenContainer>
     // </View>
   );

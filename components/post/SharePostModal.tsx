@@ -21,14 +21,19 @@ import { Avatar, Button, Text, TextArea } from "@/components/ui";
 import { paletteIcon } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import type { FriendDto } from "@/dtos";
+import type { FriendDto, PostResponseDto } from "@/dtos";
 import { ShareApiError } from "@/dtos";
 import { FollowApi } from "@/services/follow.service";
+import {
+  frontendCacheKeys,
+  invalidateCacheKeys,
+} from "@/services/frontend-cache";
+import { isPostPermissionDeniedError } from "@/services/post-permission";
 import { shareService } from "@/services/share.service";
 
 interface SharePostModalProps {
   visible: boolean;
-  postId: string | null;
+  post: PostResponseDto | null;
   /** Callback khi share thành công — parent có thể bump `sharesCount`. */
   onShared?: (info: { postId: string; sentCount: number }) => void;
   onClose: () => void;
@@ -39,7 +44,7 @@ const MAX_MESSAGE_LEN = 2000;
 
 export function SharePostModal({
   visible,
-  postId,
+  post,
   onShared,
   onClose,
 }: SharePostModalProps) {
@@ -104,7 +109,7 @@ export function SharePostModal({
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!postId) return;
+    if (!post?.id) return;
     if (submitting) return;
     if (selectedIds.length === 0) {
       Alert.alert("Chưa chọn ai", "Vui lòng chọn ít nhất 1 người nhận");
@@ -114,14 +119,35 @@ export function SharePostModal({
     setSubmitting(true);
     try {
       const r = await shareService.sendDMShare({
-        postId,
+        postId: post.id,
         recipientIds: selectedIds,
         message: message.trim() || undefined,
       });
-      onShared?.({ postId, sentCount: r.sentCount });
+      onShared?.({ postId: post.id, sentCount: r.sentCount });
       onClose();
     } catch (e) {
       console.error("[share-modal] dm share failed", e);
+      if (isPostPermissionDeniedError(e)) {
+        invalidateCacheKeys([
+          frontendCacheKeys.postDetail(post.id),
+          frontendCacheKeys.feedPosts,
+          frontendCacheKeys.savedPosts,
+          frontendCacheKeys.relationship(post.userId),
+          frontendCacheKeys.followStats(post.userId),
+          frontendCacheKeys.userPosts(post.userId),
+        ]);
+        try {
+          await FollowApi.getRelationshipStatus(post.userId);
+        } catch {
+          // best-effort refresh
+        }
+        Alert.alert(
+          "KhÃ´ng cÃ²n quyá»n xem",
+          "Báº¡n khÃ´ng cÃ²n quyá»n xem bÃ i viáº¿t nÃ y."
+        );
+        onClose();
+        return;
+      }
       const err = e as ShareApiError;
       const code = err.code;
       // Theo bảng error trong guide §3.
@@ -149,7 +175,7 @@ export function SharePostModal({
     } finally {
       setSubmitting(false);
     }
-  }, [postId, selectedIds, message, submitting, onShared, onClose, loadFriends]);
+  }, [post, selectedIds, message, submitting, onShared, onClose, loadFriends]);
 
   return (
     <Modal

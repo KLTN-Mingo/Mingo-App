@@ -35,10 +35,7 @@ export function ActionInput({
   const { colorScheme } = useTheme();
   const sem = getSemantic(colorScheme === "dark" ? "dark" : "light");
   const isAuth = variant === "auth";
-  const rowBg =
-    surface === "component"
-      ? "bg-component-light dark:bg-component-dark"
-      : "bg-input-light dark:bg-input-dark";
+  const rowBg = "bg-surface-light dark:bg-surface-dark";
 
   const rowClass = isAuth
     ? `flex-row items-center w-full px-4 rounded-xl border border-border-light dark:border-border-dark bg-transparent ${className}`
