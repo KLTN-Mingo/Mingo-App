@@ -126,7 +126,7 @@ export default function SignUpScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text
-            className="text-center text-title-light dark:text-title-dark mb-2 text-[34px] leading-[44px] font-bold py-0.5"
+            className="text-center text-title-light dark:text-title-dark mb-2 text-[30px] leading-[44px] font-bold py-0.5"
             style={{ fontFamily: "Montserrat-Bold" }}
           >
             Sign up

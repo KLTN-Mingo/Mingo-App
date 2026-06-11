@@ -191,18 +191,31 @@ function normalizeFollowers(raw: unknown): PaginatedFollowersDto {
 
 function normalizeFollowing(raw: unknown): PaginatedFollowingDto {
   const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  let following = pickArray(o, ["following", "data", "items"]) as any[];
-  if (following.length && !following[0]?.following) {
-    following = following.map((row: any) => ({
-      id: row.id ?? `${row.followingId ?? row.id}`,
-      following: asUserMinimal(row.following ?? row),
-      followStatus: row.followStatus ?? FollowStatus.ACCEPTED,
-      closeFriendStatus: row.closeFriendStatus ?? CloseFriendStatus.NONE,
-      followedAt: row.followedAt ?? row.createdAt ?? new Date().toISOString(),
-      isFollower: Boolean(row.isFollower),
-      relationshipType: row.relationshipType ?? RelationshipType.FOLLOWING,
-    }));
-  }
+  const following = pickArray(o, ["following", "data", "items"])
+    .map((row: any) => {
+      const userSource =
+        row?.following ??
+        row?.user ??
+        (row?.followingId && typeof row.followingId === "object"
+          ? row.followingId
+          : row);
+      const user = asUserMinimal(userSource);
+      if (!user.id) return null;
+
+      return {
+        id: row?.id ?? row?._id ?? `${user.id}`,
+        following: user,
+        followStatus: row?.followStatus ?? row?.status ?? FollowStatus.ACCEPTED,
+        closeFriendStatus:
+          row?.closeFriendStatus ?? CloseFriendStatus.NONE,
+        followedAt:
+          row?.followedAt ?? row?.createdAt ?? new Date().toISOString(),
+        isFollower: Boolean(row?.isFollower),
+        relationshipType:
+          row?.relationshipType ?? RelationshipType.FOLLOWING,
+      };
+    })
+    .filter(Boolean) as PaginatedFollowingDto["following"];
   return { following, pagination: pickPagination(o) };
 }
 
@@ -290,7 +303,7 @@ export const FollowApi = {
   ) => {
     const cacheKey = frontendCacheKeys.following(userId);
     const cached = getCachedValue<PaginatedFollowingDto>(cacheKey);
-    if (cached && status === undefined) return cached;
+    if (cached && status === undefined) return normalizeFollowing(cached);
     const raw = await fetchFollow<unknown>(
       buildFollowCollectionPath("following", { userId, page, limit, status })
     );

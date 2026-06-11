@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
@@ -183,7 +184,36 @@ export default function CreatePostScreen() {
     });
   };
 
+  const appendDocumentAssets = (assets: DocumentPicker.DocumentPickerAsset[]) => {
+    const next: PickedAsset[] = assets.map((a) => ({
+      localUri: a.uri,
+      mediaType: "video",
+      mimeType: a.mimeType ?? "video/mp4",
+      fileName: a.name ?? null,
+    }));
+    setPendingMedia((prev) => {
+      const merged = [...prev, ...next];
+      return merged.slice(0, 10);
+    });
+  };
+
   const pickMedia = async (kind: "image" | "video" | "mixed") => {
+    if (Platform.OS === "ios" && kind === "video") {
+      try {
+        const result = await DocumentPicker.getDocumentAsync({
+          type: "video/*",
+          copyToCacheDirectory: true,
+          multiple: false,
+        });
+        if (result.canceled || !result.assets?.length) return;
+        appendDocumentAssets(result.assets);
+      } catch (err) {
+        console.error("[create-post] document video pick failed", err);
+        Alert.alert("Lỗi chọn media", "Không thể chọn video từ Files.");
+      }
+      return;
+    }
+
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       Alert.alert(
@@ -193,22 +223,98 @@ export default function CreatePostScreen() {
       return;
     }
 
-    const mediaTypes =
+    const mediaTypes: ImagePicker.MediaType[] =
       kind === "image"
-        ? ImagePicker.MediaTypeOptions.Images
+        ? ["images"]
         : kind === "video"
-          ? ImagePicker.MediaTypeOptions.Videos
-          : ImagePicker.MediaTypeOptions.All;
+          ? ["videos"]
+          : ["images", "videos"];
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes,
-      allowsMultipleSelection: true,
-      selectionLimit: Math.max(1, 10 - pendingMedia.length),
-      quality: 0.85,
-    });
+    const allowsMultipleSelection = kind !== "video";
+    const selectionLimit = allowsMultipleSelection
+      ? Math.max(1, 10 - pendingMedia.length)
+      : 1;
+    const launchPicker = (
+      preferredAssetRepresentationMode?: ImagePicker.UIImagePickerPreferredAssetRepresentationMode
+    ) =>
+      ImagePicker.launchImageLibraryAsync({
+        mediaTypes,
+        allowsMultipleSelection,
+        selectionLimit,
+        quality: kind === "video" ? 1 : 0.85,
+        preferredAssetRepresentationMode,
+        videoExportPreset:
+          kind !== "image" && Platform.OS === "ios"
+            ? ImagePicker.VideoExportPreset.Passthrough
+            : undefined,
+      });
 
-    if (result.canceled || !result.assets?.length) return;
-    appendAssets(result.assets);
+    try {
+      const result = await launchPicker(
+        Platform.OS !== "ios"
+          ? undefined
+          : kind === "image"
+            ? ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible
+            : kind === "video"
+              ? ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current
+              : ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Automatic
+      );
+
+      if (result.canceled || !result.assets?.length) return;
+      appendAssets(result.assets);
+    } catch (err: unknown) {
+      console.error("[create-post] pickMedia failed", err);
+      // iOS PHPhotosErrorDomain often means asset not available locally (iCloud)
+      const msg = err instanceof Error ? err.message : String(err);
+      if (
+        Platform.OS === "ios" &&
+        kind !== "image" &&
+        msg.includes("PHPhotosErrorDomain")
+      ) {
+        try {
+          const retryResult = await launchPicker(
+            ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Automatic
+          );
+          if (retryResult.canceled || !retryResult.assets?.length) return;
+          appendAssets(retryResult.assets);
+          return;
+        } catch (retryErr) {
+          console.error("[create-post] pickMedia retry failed", retryErr);
+          try {
+            const fallbackResult = await DocumentPicker.getDocumentAsync({
+              type: "video/*",
+              copyToCacheDirectory: true,
+              multiple: allowsMultipleSelection,
+            });
+            if (fallbackResult.canceled || !fallbackResult.assets?.length) return;
+            appendDocumentAssets(fallbackResult.assets);
+            return;
+          } catch (documentErr) {
+            console.error("[create-post] document picker fallback failed", documentErr);
+          }
+        }
+      }
+      if (msg.includes("PHPhotosErrorDomain")) {
+        const limitedAccessNote =
+          perm.accessPrivileges === "limited"
+            ? " App hiện chỉ được xem một phần thư viện Ảnh. Hãy cấp thêm quyền cho video này hoặc cho phép full access trong Settings > Photos."
+            : "";
+        if (limitedAccessNote) {
+          Alert.alert(
+            "KhÃ´ng thá»ƒ chá»n media",
+            "iOS chÆ°a táº£i Ä‘Æ°á»£c áº£nh hoáº·c video nÃ y. HÃ£y má»Ÿ media trong á»©ng dá»¥ng áº¢nh Ä‘á»ƒ táº£i tá»« iCloud, sau Ä‘Ã³ thá»­ láº¡i." +
+              limitedAccessNote
+          );
+          return;
+        }
+        Alert.alert(
+          "Không thể chọn media",
+          "iOS chưa tải được ảnh hoặc video này. Hãy mở media trong ứng dụng Ảnh để tải từ iCloud, sau đó thử lại."
+        );
+        return;
+      }
+      Alert.alert("Lỗi chọn media", "Không thể mở thư viện ảnh.");
+    }
   };
 
   const handleAddMedia = () => {
@@ -322,7 +428,10 @@ export default function CreatePostScreen() {
   }
 
   return (
-    <ScreenContainer horizontalPadding="default">
+    <ScreenContainer
+      horizontalPadding="default"
+      style={{ paddingTop: Platform.OS === "ios" ? 8 : 4 }}
+    >
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}

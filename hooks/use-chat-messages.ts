@@ -100,6 +100,22 @@ export function useChatMessages(
             id: data.id,
             conversationId: data.boxId,
             senderId: data.createBy,
+            sender:
+              typeof data.createName === "string" ||
+              typeof data.createAvatar === "string"
+                ? {
+                    id: data.createBy,
+                    name:
+                      typeof data.createName === "string"
+                        ? data.createName
+                        : undefined,
+                    avatar:
+                      typeof data.createAvatar === "string"
+                        ? data.createAvatar
+                        : undefined,
+                    verified: false,
+                  }
+                : undefined,
             content: data.text ?? "",
             createdAt: data.createAt,
             isRevoked: data.flag === false,

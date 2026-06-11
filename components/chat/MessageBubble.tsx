@@ -25,6 +25,7 @@ const bubbleColors = {
 interface MessageBubbleProps {
   message: MessageResponseDto;
   isOwn: boolean;
+  showSenderName?: boolean;
   showDateSeparator?: boolean;
   dateLabel?: string;
   otherAvatarUrl?: string | null;
@@ -298,6 +299,7 @@ function MessageContent({
 export function MessageBubble({
   message,
   isOwn,
+  showSenderName,
   showDateSeparator,
   dateLabel,
   otherAvatarUrl,
@@ -311,6 +313,8 @@ export function MessageBubble({
   const ownBubbleBg = isDark ? bubbleColors.ownDark : bubbleColors.own;
   const textColorOwn = "#FFFFFF";
   const textColorOther = isDark ? "#FAFAFA" : "#1E2021";
+  const senderName = message.sender?.name?.trim();
+  const avatarUri = message.sender?.avatar ?? otherAvatarUrl ?? null;
 
   return (
     <View
@@ -328,8 +332,8 @@ export function MessageBubble({
       <View style={styles.row}>
         {!isOwn && (
           <View style={styles.avatarWrap}>
-            {otherAvatarUrl ? (
-              <Image source={{ uri: otherAvatarUrl }} style={styles.avatar} />
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.avatar} />
             ) : (
               <View
                 style={[styles.avatar, { backgroundColor: otherBubbleBg }]}
@@ -362,6 +366,11 @@ export function MessageBubble({
             </Text>
           ) : (
             <>
+              {!isOwn && showSenderName && senderName ? (
+                <Text style={[styles.senderName, { color: bubbleColors.dateMuted }]}>
+                  {senderName}
+                </Text>
+              ) : null}
               <MessageContent
                 message={message}
                 isOwn={isOwn}
@@ -437,6 +446,11 @@ const styles = StyleSheet.create({
   bubbleText: {
     fontSize: 14,
     fontFamily: "Montserrat-Regular",
+  },
+  senderName: {
+    fontSize: 12,
+    fontFamily: "Montserrat-SemiBold",
+    marginBottom: 6,
   },
   unsentText: {
     fontStyle: "italic",

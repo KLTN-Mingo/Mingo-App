@@ -413,10 +413,10 @@ export function PostCard({
               <CultureHighlightedText
                 text={post.contentText}
                 terms={effectiveCultureTerms}
-                baseTextClassName="text-[27px] leading-[27px] text-text-light dark:text-text-dark"
+                baseTextClassName="text-[16px] leading-[23px] text-text-light dark:text-text-dark"
               />
             ) : (
-              <Text className="text-[27px] leading-[27px] text-text-light dark:text-text-dark">
+              <Text className="text-[16px] leading-[23px] text-text-light dark:text-text-dark">
                 {post.contentText}
               </Text>
             )}
@@ -496,7 +496,7 @@ export function PostCard({
               filled={isLiked}
             />
             {likesCount > 0 && (
-              <Text className="text-[17px] text-text-light dark:text-text-dark">
+              <Text className="text-[15px] text-text-light dark:text-text-dark">
                 {likesCount}
               </Text>
             )}
@@ -509,7 +509,7 @@ export function PostCard({
           >
             <CommentIcon size={23} color={theme.icon} />
             {post.commentsCount > 0 && (
-              <Text className="text-[17px] text-text-light dark:text-text-dark">
+              <Text className="text-[15px] text-text-light dark:text-text-dark">
                 {post.commentsCount}
               </Text>
             )}
@@ -523,7 +523,7 @@ export function PostCard({
           >
             <ShareIcon size={22} color={theme.icon} />
             {sharesCount > 0 && (
-              <Text className="text-[17px] text-text-light dark:text-text-dark">
+              <Text className="text-[15px] text-text-light dark:text-text-dark">
                 {sharesCount}
               </Text>
             )}
@@ -561,7 +561,7 @@ export function PostCard({
             {/* <LocationPinIcon size={22} color={semantic.textMuted} /> */}
             <Text
               variant="muted"
-              className="flex-1 text-[16px] h-[20px] text-text-muted-light dark:text-text-muted-dark"
+              className="flex-1 text-[14px] h-[18px] text-text-muted-light dark:text-text-muted-dark"
             >
               Write comment...
             </Text>

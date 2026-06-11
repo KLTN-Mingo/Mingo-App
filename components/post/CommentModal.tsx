@@ -6,17 +6,19 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  Pressable,
   StatusBar,
   TextInput,
   TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { SafeModalSheet } from "@/components/containers/SafeLayout";
 import { CommentComposer } from "@/components/post/CommentComposer";
 import { CommentThreadItem } from "@/components/post/CommentThreadItem";
-import { Icon, ScreenHeader, Text } from "@/components/ui";
+import { Icon, Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
 import { CommentResponseDto } from "@/dtos";
@@ -52,6 +54,7 @@ export function CommentModal({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = isDark ? paletteDark : paletteLight;
+  const insets = useSafeAreaInsets();
 
   const [comments, setComments] = useState<CommentWithReplies[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,9 +70,16 @@ export function CommentModal({
     originalCommentId: string;
   } | null>(null);
   const inputRef = useRef<TextInput>(null);
+  const isFetchingRef = useRef(false);
+  const lastFetchAtRef = useRef<number | null>(null);
 
   const fetchComments = useCallback(async () => {
     if (!postId) return;
+    const now = Date.now();
+    if (isFetchingRef.current) return;
+    if (lastFetchAtRef.current && now - lastFetchAtRef.current < 2000) return;
+    isFetchingRef.current = true;
+    lastFetchAtRef.current = now;
     setLoading(true);
     try {
       const data = await commentService.getComments(postId);
@@ -78,6 +88,7 @@ export function CommentModal({
       console.error("[comment] load failed", err);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   }, [postId]);
 
@@ -349,6 +360,7 @@ export function CommentModal({
           setEditingCommentId(null);
           setEditCommentDraft("");
         }}
+        showModerationStatus={Boolean(isOwner)}
       />
     );
   };
@@ -407,87 +419,107 @@ export function CommentModal({
     <Modal
       visible={!!postId}
       animationType="slide"
-      presentationStyle="pageSheet"
+      transparent
       onRequestClose={onClose}
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
-      <SafeAreaView
-        className="flex-1"
-        style={{ backgroundColor: colors.background }}
-        edges={["top"]}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
+        className="flex-1 justify-end bg-black/40"
       >
-        <ScreenHeader
-          title="Comments"
-          rightSlot={
-            <TouchableOpacity onPress={onClose} className="p-2">
-              <Icon name="xmark" size={20} color={colors.textPrimary} />
-            </TouchableOpacity>
-          }
-        />
-
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        <Pressable className="flex-1" onPress={onClose} />
+        <SafeModalSheet
+          minHeight="72%"
+          className="rounded-t-4xl bg-sheet-light px-0 pb-0 pt-0 dark:bg-sheet-dark"
         >
-          {loading ? (
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator color={colors.textMuted} />
-            </View>
-          ) : (
-            <FlatList
-              data={comments}
-              keyExtractor={(item) => item.id}
-              renderItem={renderComment}
-              ListEmptyComponent={
-                <View className="flex-1 items-center justify-center py-20">
-                  <Icon name="bubble.left" size={40} color={colors.textMuted} />
-                  <Text className="mt-3" style={{ color: colors.textMuted }}>
-                    No comments yet
-                  </Text>
-                </View>
-              }
-              contentContainerStyle={{ paddingBottom: 16 }}
-            />
-          )}
-
-          {replyingTo ? (
-            <View
-              className="flex-row items-center px-4 py-2"
-              style={{
-                backgroundColor: colors.surfaceMuted,
-                borderTopWidth: 1,
-                borderTopColor: colors.border,
-              }}
-            >
-              <Text className="text-xs flex-1" style={{ color: colors.textMuted }}>
-                Replying to{" "}
+          <SafeAreaView
+            className="flex-1"
+            style={{ backgroundColor: colors.background }}
+            edges={["bottom"]}
+          >
+            <View className="px-4 pt-3 pb-2">
+              <View className="mb-3 self-center h-1 w-12 rounded-full bg-border-light dark:bg-border-dark" />
+              <View className="flex-row items-center">
                 <Text
-                  className="font-semibold"
+                  className="flex-1 text-lg font-semibold"
                   style={{ color: colors.textPrimary }}
                 >
-                  {replyingTo.name}
+                  Comments
                 </Text>
-              </Text>
-              <TouchableOpacity onPress={() => setReplyingTo(null)}>
-                <Icon name="xmark" size={14} color={colors.textMuted} />
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={onClose}
+                  className="h-9 w-9 items-center justify-center rounded-full"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Icon name="xmark" size={18} color={colors.textPrimary} />
+                </TouchableOpacity>
+              </View>
             </View>
-          ) : null}
 
-          <CommentComposer
-            colors={colors}
-            avatarUri={profile?.avatar}
-            avatarFallback={profile?.name}
-            value={commentText}
-            onChangeText={setCommentText}
-            onSubmit={handleSubmit}
-            submitting={submitting}
-            inputRef={inputRef}
-            placeholder="Write comment..."
-          />
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+            {loading ? (
+              <View className="flex-1 items-center justify-center">
+                <ActivityIndicator color={colors.textMuted} />
+              </View>
+            ) : (
+              <FlatList
+                data={comments}
+                keyExtractor={(item) => item.id}
+                renderItem={renderComment}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                  <View className="flex-1 items-center justify-center py-24">
+                    <Icon name="bubble.left" size={40} color={colors.textMuted} />
+                    <Text className="mt-3" style={{ color: colors.textMuted }}>
+                      No comments yet
+                    </Text>
+                  </View>
+                }
+                contentContainerStyle={{
+                  paddingTop: 4,
+                  paddingBottom: 12,
+                  flexGrow: 1,
+                }}
+              />
+            )}
+
+            {replyingTo ? (
+              <View
+                className="mx-4 mb-1 flex-row items-center rounded-2xl px-3 py-2"
+                style={{ backgroundColor: colors.surfaceMuted }}
+              >
+                <Text className="flex-1 text-xs" style={{ color: colors.textMuted }}>
+                  Replying to{" "}
+                  <Text
+                    className="font-semibold"
+                    style={{ color: colors.textPrimary }}
+                  >
+                    {replyingTo.name}
+                  </Text>
+                </Text>
+                <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                  <Icon name="xmark" size={14} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
+            <View style={{ paddingBottom: Math.max(insets.bottom, 10) }}>
+              <CommentComposer
+                colors={colors}
+                avatarUri={profile?.avatar}
+                avatarFallback={profile?.name}
+                value={commentText}
+                onChangeText={setCommentText}
+                onSubmit={handleSubmit}
+                submitting={submitting}
+                inputRef={inputRef}
+                placeholder="Write comment..."
+              />
+            </View>
+          </SafeAreaView>
+        </SafeModalSheet>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

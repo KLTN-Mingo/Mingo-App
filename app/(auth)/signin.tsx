@@ -22,7 +22,7 @@ import { paletteIcon } from "@/styles/colors";
 import { validateAuthFields } from "@/utils/authValidation";
 
 /** h-48 + bo 12px (`rounded-md` trong tailwind.config) */
-const AUTH_BTN = "h-12 min-h-[48px] max-h-[48px] rounded-md py-0";
+export const AUTH_BTN = "h-12 min-h-[48px] max-h-[48px] rounded-md py-0";
 
 export default function SignInScreen() {
   const { login, setProfile } = useAuth();
@@ -125,7 +125,7 @@ export default function SignInScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text
-            className="text-center text-title-light dark:text-title-dark mb-3 text-[34px] leading-[44px] font-bold py-0.5"
+            className="text-center text-title-light dark:text-title-dark mb-3 text-[30px] leading-[44px] font-bold py-0.5"
             style={{ fontFamily: "Montserrat-Bold" }}
           >
             Welcome Back!

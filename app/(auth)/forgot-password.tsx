@@ -12,6 +12,7 @@ import { SafeScreenView } from "@/components/containers/SafeLayout";
 import { ActionInput, BackButton, Button, Text } from "@/components/ui";
 import { authService } from "@/services/auth.service";
 import { validateAuthFields } from "@/utils/authValidation";
+import { AUTH_BTN } from "./signin";
 
 export default function ForgotPasswordScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -75,7 +76,7 @@ export default function ForgotPasswordScreen() {
           {/* Title */}
           <Text
             variant="title"
-            className="text-title-light dark:text-title-dark text-[34px] leading-[44px] font-bold text-center mb-4"
+            className="text-title-light dark:text-title-dark text-[30px] leading-[44px] font-bold text-center mb-4"
           >
             Forgot Password
           </Text>
@@ -86,7 +87,7 @@ export default function ForgotPasswordScreen() {
           </Text>
 
           {/* Form */}
-          <View className="gap-4">
+          <View className="gap-4 px-4">
             <ActionInput
               label="Phone Number"
               isRequired
@@ -101,7 +102,15 @@ export default function ForgotPasswordScreen() {
               error={error}
             />
 
-            <Button onPress={handleSubmit} loading={loading} className="mt-4">
+            {/* <Button onPress={handleSubmit} loading={loading} className="mt-4">
+              Send Reset Code
+            </Button> */}
+            <Button
+              onPress={handleSubmit}
+              loading={loading}
+              size="lg"
+              className={`${AUTH_BTN} mt-1`}
+            >
               Send Reset Code
             </Button>
           </View>

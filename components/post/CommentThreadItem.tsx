@@ -3,7 +3,7 @@ import { TextInput, TouchableOpacity, View } from "react-native";
 
 import { Avatar, Text } from "@/components/ui";
 import type { paletteDark, paletteLight } from "@/constants/designTokens";
-import { CommentResponseDto } from "@/dtos";
+import { CommentModerationStatus, CommentResponseDto } from "@/dtos";
 
 type Palette = typeof paletteLight | typeof paletteDark;
 
@@ -21,6 +21,42 @@ export interface CommentThreadItemProps {
   onSaveEdit?: () => void;
   onCancelEdit?: () => void;
   onDelete?: () => void;
+  showModerationStatus?: boolean;
+}
+
+function getModerationLabel(comment: CommentResponseDto): {
+  label: string;
+  backgroundColor: string;
+  color: string;
+} | null {
+  if (
+    comment.isHidden ||
+    comment.moderationStatus === CommentModerationStatus.REJECTED
+  ) {
+    return {
+      label: "Bình luận bị ẩn vì vi phạm",
+      backgroundColor: "#FFEEEE",
+      color: "#8A1C1C",
+    };
+  }
+
+  if (comment.moderationStatus === CommentModerationStatus.PENDING) {
+    return {
+      label: "Đang chờ kiểm duyệt",
+      backgroundColor: "#FFF7E0",
+      color: "#7A5A0C",
+    };
+  }
+
+  if (comment.moderationStatus === CommentModerationStatus.FLAGGED) {
+    return {
+      label: "Bình luận đang được xem xét",
+      backgroundColor: "#FFF7E0",
+      color: "#7A5A0C",
+    };
+  }
+
+  return null;
 }
 
 /** Một dòng comment / reply — khớp mock: bubble xám, meta time · Like · Reply */
@@ -37,10 +73,14 @@ export function CommentThreadItem({
   onSaveEdit,
   onCancelEdit,
   onDelete,
+  showModerationStatus = false,
 }: CommentThreadItemProps) {
   const authorName = comment.user?.name ?? "Unknown";
   const likeLabel =
     comment.likesCount > 0 ? `Like ${comment.likesCount}` : "Like";
+  const moderation = showModerationStatus
+    ? getModerationLabel(comment)
+    : null;
 
   return (
     <View className="flex-row px-4 py-2">
@@ -74,6 +114,20 @@ export function CommentThreadItem({
             </>
           ) : null}
         </View>
+
+        {moderation ? (
+          <View
+            className="mb-1.5 self-start rounded-xl px-2.5 py-1.5"
+            style={{ backgroundColor: moderation.backgroundColor }}
+          >
+            <Text
+              className="text-xs font-semibold"
+              style={{ color: moderation.color }}
+            >
+              {moderation.label}
+            </Text>
+          </View>
+        ) : null}
 
         {isEditing ? (
           <TextInput

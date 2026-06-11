@@ -1,11 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  FlatList,
-  Modal,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, Modal, TouchableOpacity, View } from "react-native";
 
 import { SafeModalSheet } from "@/components/containers/SafeLayout";
 import { CancelIcon } from "@/components/shared/icons/Icons";
@@ -73,8 +68,7 @@ export function LocationPickerModal({
     []
   );
   const locationOptions = useMemo<LocationOption[]>(
-    () =>
-      locationQuery.trim().length > 0 ? suggestions : popularSuggestions,
+    () => (locationQuery.trim().length > 0 ? suggestions : popularSuggestions),
     [locationQuery, popularSuggestions, suggestions]
   );
 
@@ -127,9 +121,9 @@ export function LocationPickerModal({
             />
           </View>
 
-	          <Text variant="muted" className="mb-3 text-xs">
+          {/* <Text variant="muted" className="mb-3 text-xs">
 	            Gợi ý lấy từ dữ liệu địa chỉ Việt Nam trong app.
-	          </Text>
+	          </Text> */}
 
           {locationQuery.trim().length > 0 ? (
             <Text className="mb-2 text-xs text-text-muted-light dark:text-text-muted-dark">
@@ -137,28 +131,32 @@ export function LocationPickerModal({
             </Text>
           ) : null}
 
-	          {initialValue ? (
-	            <View className="mb-3 flex-row items-center rounded-full bg-input-light dark:bg-input-dark px-3 py-2">
-	              <Ionicons name="location-outline" size={18} color={mutedIconColor} />
-	              <Text
-	                numberOfLines={1}
-	                className="ml-2 flex-1 text-sm text-text-light dark:text-text-dark"
-	              >
-	                {initialValue}
-	              </Text>
-	              <TouchableOpacity
-	                onPress={handleClear}
-	                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-	                activeOpacity={0.7}
-	              >
-	                <Ionicons
-	                  name="close-circle"
-	                  size={20}
-	                  color={mutedIconColor}
-	                />
-	              </TouchableOpacity>
-	            </View>
-	          ) : null}
+          {initialValue ? (
+            <View className="mb-3 flex-row items-center rounded-full bg-input-light dark:bg-input-dark px-3 py-2">
+              <Ionicons
+                name="location-outline"
+                size={18}
+                color={mutedIconColor}
+              />
+              <Text
+                numberOfLines={1}
+                className="ml-2 flex-1 text-sm text-text-light dark:text-text-dark"
+              >
+                {initialValue}
+              </Text>
+              <TouchableOpacity
+                onPress={handleClear}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={mutedIconColor}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           <FlatList
             data={locationOptions}
@@ -168,7 +166,11 @@ export function LocationPickerModal({
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
               <View className="py-8 items-center">
-                <Ionicons name="location-outline" size={28} color={mutedIconColor} />
+                <Ionicons
+                  name="location-outline"
+                  size={28}
+                  color={mutedIconColor}
+                />
                 <Text variant="muted" className="mt-2 text-sm text-center">
                   {locationQuery.trim().length > 0
                     ? "No locations match your search"

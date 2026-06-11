@@ -17,12 +17,13 @@ import {
   FriendListSkeleton,
   FriendRequestListSkeleton,
 } from "@/components/skeleton";
-import { ActionInput, Button, Tab, Text } from "@/components/ui";
+import { ActionInput, Tab, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import {
   CloseFriendDto,
   CloseFriendRequestDto,
   FollowRequestDto,
+  FollowingDto,
   FollowStatsDto,
   FriendDto,
 } from "@/dtos";
@@ -66,12 +67,13 @@ export default function FriendScreen() {
 
   // Data states - using DTOs
   const [requests, setRequests] = useState<FollowRequestDto[]>([]);
-  const [sentRequests, setSentRequests] = useState<FollowRequestDto[]>([]);
+  const [sentRequests, setSentRequests] = useState<FollowingDto[]>([]);
   const [closeFriendRequests, setCloseFriendRequests] = useState<
     CloseFriendRequestDto[]
   >([]);
   const [friends, setFriends] = useState<FriendDto[]>([]);
   const [closeFriends, setCloseFriends] = useState<CloseFriendDto[]>([]);
+  const [unfollowingId, setUnfollowingId] = useState<string | null>(null);
   const [stats, setStats] = useState<FollowStatsDto | null>(null);
 
   // Loading states
@@ -94,8 +96,20 @@ export default function FriendScreen() {
           setFriends(friendsData.friends);
           break;
         case "sent":
-          const sentData = await FollowApi.getSentRequests();
-          setSentRequests(sentData.requests);
+          const [sentData, sentFriends, sentCloseFriends] = await Promise.all([
+            FollowApi.getFollowing(profile.id),
+            FollowApi.getFriends(profile.id),
+            FollowApi.getCloseFriends(),
+          ]);
+          const excludedIds = new Set([
+            ...sentFriends.friends.map((item) => item.user.id),
+            ...sentCloseFriends.closeFriends.map((item) => item.user.id),
+          ]);
+          setSentRequests(
+            sentData.following.filter(
+              (item) => item.following && !excludedIds.has(item.following.id)
+            )
+          );
           break;
         case "closeRequests":
           if (FollowApi.getPendingCloseFriendRequests) {
@@ -129,7 +143,7 @@ export default function FriendScreen() {
 
     const unsubscribe = [
       subscribeCacheInvalidation(frontendCacheKeys.pendingFollowRequests, fetchData),
-      subscribeCacheInvalidation(frontendCacheKeys.sentFollowRequests, fetchData),
+      subscribeCacheInvalidation(frontendCacheKeys.following(profile.id), fetchData),
       subscribeCacheInvalidation(
         frontendCacheKeys.pendingCloseFriendRequests,
         fetchData
@@ -238,9 +252,7 @@ export default function FriendScreen() {
             user={item.user}
             isFriend={true}
             isCloseFriend={item.isCloseFriend}
-            onPress={() => {
-              /* Navigate to profile */
-            }}
+            onPress={() => router.push(`/profile/${item.user.id}` as never)}
           />
         )}
         refreshControl={
@@ -251,37 +263,45 @@ export default function FriendScreen() {
     );
   };
 
-  const handleCancelRequest = async (targetUserId: string) => {
+  const handleUnfollow = async (targetUserId: string) => {
+    if (unfollowingId) return;
+    setUnfollowingId(targetUserId);
     try {
-      if (!FollowApi.cancelRequest) return;
-      await FollowApi.cancelRequest(targetUserId);
-      setSentRequests((prev) => prev.filter((r) => r.user.id !== targetUserId));
+      await FollowApi.unfollow(targetUserId);
+      setSentRequests((prev) =>
+        prev.filter((r) => r.following.id !== targetUserId)
+      );
     } catch (error) {
-      console.error("Error canceling request:", error);
+      console.error("Error unfollowing user:", error);
+    } finally {
+      setUnfollowingId(null);
     }
   };
 
   const renderSentRequests = () => {
     if (sentRequests.length === 0) {
-      return renderEmptyState("No sent requests");
+      return renderEmptyState("No sent follows");
     }
 
     return (
       <FlatList
         data={sentRequests}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View className="flex-row items-center justify-between px-4 py-4 bg-surface-muted-light dark:bg-surface-muted-dark rounded-[10px] mb-3">
-            <Text className="flex-1 mr-3">{item.user.name || "Unknown"}</Text>
-            <Button
-              variant="outline"
-              size="sm"
-              onPress={() => handleCancelRequest(item.user.id)}
-            >
-              Cancel
-            </Button>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          if (!item.following) return null;
+
+          return (
+            <FriendCard
+              user={item.following}
+              onPress={() =>
+                router.push(`/profile/${item.following.id}` as never)
+              }
+              actionLabel="Hủy theo dõi"
+              actionLoading={unfollowingId === item.following.id}
+              onActionPress={() => handleUnfollow(item.following.id)}
+            />
+          );
+        }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -343,9 +363,7 @@ export default function FriendScreen() {
             user={item.user}
             isFriend={true}
             isCloseFriend={true}
-            onPress={() => {
-              /* Navigate to profile */
-            }}
+            onPress={() => router.push(`/profile/${item.user.id}` as never)}
           />
         )}
         refreshControl={

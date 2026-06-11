@@ -1,18 +1,22 @@
 import { formatDistanceToNow } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
   FlatList,
   Image,
+  KeyboardAvoidingView,
+  Platform,
+  TextInput,
   TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 
+import { CommentComposer } from "@/components/post/CommentComposer";
 import { CultureHighlightedText } from "@/components/post/CultureHighlightedText";
 import { ModerationBanner } from "@/components/post/ModerationBanner";
 import { CommentThreadItem } from "@/components/post/CommentThreadItem";
@@ -57,10 +61,11 @@ type CommentTreeNode = CommentResponseDto & {
 
 export default function PostDetailScreen() {
   const { id, source, tab } = useLocalSearchParams<{
-    id: string;
+    id: string | string[];
     source?: string;
     tab?: FeedTab;
   }>();
+  const postId = Array.isArray(id) ? id[0] : id;
   const { profile } = useAuth();
   const colorScheme = useColorScheme();
   const themeColors =
@@ -75,8 +80,11 @@ export default function PostDetailScreen() {
   const [accessDenied, setAccessDenied] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentDraft, setEditCommentDraft] = useState("");
+  const [commentText, setCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
   const [expandedReplyIds, setExpandedReplyIds] = useState<Record<string, boolean>>({});
   const [loadingReplyIds, setLoadingReplyIds] = useState<Record<string, boolean>>({});
+  const commentInputRef = useRef<TextInput>(null);
   const feedTab: FeedTab | undefined =
     tab === "explore" || tab === "friends"
       ? tab
@@ -118,9 +126,19 @@ export default function PostDetailScreen() {
     },
   });
 
+  const postRef = useRef<PostResponseDto | null>(post);
+  useEffect(() => {
+    postRef.current = post;
+  }, [post]);
+
+  const isFetchingPostRef = useRef(false);
+  const isFetchingCommentsRef = useRef(false);
+  const lastCommentsFetchAtRef = useRef<number | null>(null);
+  const lastFetchedPostIdRef = useRef<string | null>(null);
+
   const handlePostPermissionDenied = useCallback(
     async (targetPost?: PostResponseDto | null) => {
-      const activePost = targetPost ?? post;
+      const activePost = targetPost ?? postRef.current;
       if (!activePost) return;
 
       invalidateCacheKeys([
@@ -141,41 +159,58 @@ export default function PostDetailScreen() {
       setAccessDenied(true);
       setPost(null);
     },
-    [post]
+    []
   );
 
   const fetchPost = useCallback(async () => {
-    if (!id) return;
+    if (!postId) return;
+    if (isFetchingPostRef.current) return;
+    if (lastFetchedPostIdRef.current === postId) return;
+    isFetchingPostRef.current = true;
+    lastFetchedPostIdRef.current = postId;
     try {
-      const data = await postService.getPostById(id);
+      const data = await postService.getPostById(postId);
       setAccessDenied(false);
       setPost(data);
     } catch (err) {
+      lastFetchedPostIdRef.current = null;
       if (isPostPermissionDeniedError(err)) {
         await handlePostPermissionDenied();
       }
       console.warn("Cannot load post:", err);
     } finally {
       setLoadingPost(false);
+      isFetchingPostRef.current = false;
     }
-  }, [handlePostPermissionDenied, id]);
+  }, [handlePostPermissionDenied, postId]);
 
   const fetchComments = useCallback(async () => {
-    if (!id) return;
+    if (!postId) return;
+    const now = Date.now();
+    if (isFetchingCommentsRef.current) return;
+    if (lastCommentsFetchAtRef.current && now - lastCommentsFetchAtRef.current < 2000)
+      return;
+    isFetchingCommentsRef.current = true;
+    lastCommentsFetchAtRef.current = now;
     try {
-      const data = await commentService.getComments(id);
+      const data = await commentService.getComments(postId);
       setComments(data.comments);
     } catch (err) {
       console.warn("Cannot load comments:", err);
     } finally {
       setLoadingComments(false);
+      isFetchingCommentsRef.current = false;
     }
-  }, [id]);
+  }, [postId]);
 
   useEffect(() => {
+    lastFetchedPostIdRef.current = null;
+    lastCommentsFetchAtRef.current = null;
+    setLoadingPost(true);
+    setLoadingComments(true);
     fetchPost();
     fetchComments();
-  }, [fetchPost, fetchComments]);
+  }, [postId, fetchPost, fetchComments]);
 
   const buildCommentTree = useCallback((items: CommentResponseDto[]): CommentTreeNode[] => {
     const map = new Map<string, CommentTreeNode>();
@@ -237,6 +272,29 @@ export default function PostDetailScreen() {
             : c
         )
       );
+    }
+  };
+
+  const handleSubmitComment = async () => {
+    const contentText = commentText.trim();
+    if (!postId || !contentText || submittingComment) return;
+
+    setSubmittingComment(true);
+    try {
+      const created = await commentService.createComment(postId, {
+        contentText,
+      });
+      setComments((prev) => [created, ...prev]);
+      setPost((prev) =>
+        prev ? { ...prev, commentsCount: prev.commentsCount + 1 } : prev
+      );
+      setCommentText("");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Không thể gửi bình luận";
+      Alert.alert("Bình luận không thành công", message);
+    } finally {
+      setSubmittingComment(false);
     }
   };
 
@@ -328,7 +386,7 @@ export default function PostDetailScreen() {
   };
 
   const handleDeleteComment = async (comment: CommentResponseDto) => {
-    if (!id) return;
+    if (!postId) return;
     try {
       await commentService.deleteComment(comment.id);
       setComments((prev) => prev.filter((c) => c.id !== comment.id));
@@ -526,6 +584,7 @@ export default function PostDetailScreen() {
             onDelete={isOwner ? () => handleDeleteComment(item) : undefined}
             onSaveEdit={() => handleSaveEditComment(item.id)}
             onCancelEdit={handleCancelEditComment}
+            showModerationStatus={Boolean(isOwner)}
           />
         </View>
         {hasReplies ? (
@@ -792,23 +851,44 @@ export default function PostDetailScreen() {
         </Text>
       </View>
 
-      <FlatList
-        data={commentTree}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => renderCommentNode(item)}
-        ListHeaderComponent={<ListHeader />}
-        style={{ backgroundColor: semantic.background }}
-        ListEmptyComponent={
-          loadingComments ? (
-            <View className="py-8 items-center">
-              <ActivityIndicator color={colors.primary[100]} />
-            </View>
-          ) : (
-            <EmptyState title="No comments yet" />
-          )
-        }
-        contentContainerStyle={{ paddingBottom: 24 }}
-      />
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
+      >
+        <FlatList
+          data={commentTree}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => renderCommentNode(item)}
+          ListHeaderComponent={<ListHeader />}
+          style={{ backgroundColor: semantic.background }}
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={
+            loadingComments ? (
+              <View className="py-8 items-center">
+                <ActivityIndicator color={colors.primary[100]} />
+              </View>
+            ) : (
+              <EmptyState title="No comments yet" />
+            )
+          }
+          contentContainerStyle={{ paddingBottom: 24 }}
+        />
+
+        {currentUser?.id && post ? (
+          <CommentComposer
+            colors={themeColors}
+            avatarUri={currentUser.avatar}
+            avatarFallback={currentUser.name}
+            value={commentText}
+            onChangeText={setCommentText}
+            onSubmit={handleSubmitComment}
+            submitting={submittingComment}
+            inputRef={commentInputRef}
+            placeholder="Write comment..."
+          />
+        ) : null}
+      </KeyboardAvoidingView>
 
       {share.modals}
       {report.modal}

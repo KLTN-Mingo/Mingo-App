@@ -7,6 +7,8 @@ import {
   ShareResponseDto,
   UpdatePostRequestDto,
 } from "@/dtos";
+import * as FileSystem from 'expo-file-system/legacy';
+import { Platform } from 'react-native';
 import { PaginationDto } from "@/dtos/common.dto";
 import { apiMultipartRequest, apiRequest } from "@/services/api-client";
 
@@ -175,6 +177,7 @@ class PostService {
   ): Promise<unknown> {
     if (assets.length === 0) return undefined;
 
+    // Backend hiện tại dùng multer field "files"; append lặp lại cho nhiều media.
     const fileField =
       process.env.EXPO_PUBLIC_POST_MEDIA_FIELD?.trim() || "files";
 
@@ -191,10 +194,25 @@ class PostService {
     }
     form.append("orderIndex", String(options?.orderIndex ?? 0));
 
-    return apiMultipartRequest<unknown>(
-      `/posts/${encodeURIComponent(postId)}/media`,
-      form
-    );
+    try {
+      console.log("[postService.uploadPostMedia] uploading", {
+        postId,
+        files: assets.map((a) => ({ fileName: a.fileName, mimeType: a.mimeType })),
+      });
+      const res = await apiMultipartRequest<unknown>(
+        `/posts/${encodeURIComponent(postId)}/media`,
+        form
+      );
+      console.log("[postService.uploadPostMedia] upload success", { postId });
+      return res;
+    } catch (err) {
+      console.error("[postService.uploadPostMedia] upload failed", {
+        postId,
+        error: err,
+        assets,
+      });
+      throw err;
+    }
   }
 
   /** Tạo bài rồi upload file local (RN) theo luồng hai bước của Mingo API. */
@@ -221,7 +239,27 @@ class PostService {
 
     const created = await this.createPost(body);
     if (hasMedia) {
-      await this.uploadPostMedia(created.id, localAssets);
+      // On Android, expo-image-picker may return content:// URIs which are not directly
+      // readable by fetch in some environments. Copy such URIs to a cache file first.
+      const normalizedAssets: { uri: string; fileName: string; mimeType: string }[] = [];
+      for (const a of localAssets) {
+        let uriToUse = a.uri;
+        try {
+          if (Platform.OS === 'android' && uriToUse.startsWith('content://')) {
+            const dest = `${FileSystem.cacheDirectory}${a.fileName ?? 'upload.tmp'}`;
+            try {
+              await FileSystem.copyAsync({ from: uriToUse, to: dest });
+              uriToUse = dest;
+            } catch (copyErr) {
+              console.warn('[postService] copy content uri failed, will try original uri', { uri: uriToUse, err: copyErr });
+            }
+          }
+        } catch (e) {
+          console.warn('[postService] normalize asset uri failed', { asset: a, err: e });
+        }
+        normalizedAssets.push({ uri: uriToUse, fileName: a.fileName, mimeType: a.mimeType });
+      }
+      await this.uploadPostMedia(created.id, normalizedAssets);
     }
     return this.getPostById(created.id);
   }
