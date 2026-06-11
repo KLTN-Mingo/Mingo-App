@@ -1,10 +1,10 @@
-import { TouchableOpacity, View } from 'react-native';
-import { router } from 'expo-router';
+import { router } from "expo-router";
+import { TouchableOpacity, View } from "react-native";
 
-import { Avatar, Icon, Text } from '@/components/ui';
-import { UserMinimalDto } from '@/dtos';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { paletteIcon } from '@/styles/colors';
+import { Avatar, Button, Icon, Text } from "@/components/ui";
+import { UserMinimalDto } from "@/dtos";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { paletteIcon } from "@/styles/colors";
 
 interface FriendCardProps {
   user: UserMinimalDto;
@@ -12,6 +12,9 @@ interface FriendCardProps {
   isCloseFriend?: boolean;
   onPress?: () => void;
   onMorePress?: () => void;
+  actionLabel?: string;
+  onActionPress?: () => void;
+  actionLoading?: boolean;
 }
 
 export function FriendCard({
@@ -20,8 +23,11 @@ export function FriendCard({
   isCloseFriend = false,
   onPress,
   onMorePress,
+  actionLabel,
+  onActionPress,
+  actionLoading = false,
 }: FriendCardProps) {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const verifiedIconColor = paletteIcon[colorScheme];
   const moreIconColor = paletteIcon.lightMuted;
   const handleUserPress = () => {
@@ -46,7 +52,7 @@ export function FriendCard({
       style={cardShadowStyle}
     >
       <TouchableOpacity
-        onPress={handleUserPress}
+        onPress={onPress ?? handleUserPress}
         activeOpacity={0.7}
         className="flex-row items-center flex-1"
       >
@@ -68,7 +74,7 @@ export function FriendCard({
         <View className="flex-1 ml-3">
           <View className="flex-row items-center">
             <Text className="font-bold text-text-light dark:text-text-dark">
-              {user.name || 'Unknown'}
+              {user.name || "Unknown"}
             </Text>
             {user.verified && (
               <Icon
@@ -80,18 +86,33 @@ export function FriendCard({
             )}
           </View>
           {isFriend && !isCloseFriend ? (
-            <Text variant="muted" className="text-xs">Friend</Text>
+            <Text variant="muted" className="text-xs">
+              Friend
+            </Text>
           ) : null}
           {isCloseFriend && (
-            <Text variant="muted" className="text-xs">Best friend</Text>
+            <Text variant="muted" className="text-xs">
+              Best friend
+            </Text>
           )}
         </View>
       </TouchableOpacity>
 
-      {/* More Button */}
-      <TouchableOpacity onPress={onMorePress} className="p-2">
-        <Icon name="ellipsis" size={20} color={moreIconColor} />
-      </TouchableOpacity>
+      {actionLabel && onActionPress ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onPress={onActionPress}
+          loading={actionLoading}
+          disabled={actionLoading}
+        >
+          {actionLabel}
+        </Button>
+      ) : onMorePress ? (
+        <TouchableOpacity onPress={onMorePress} className="p-2">
+          <Icon name="ellipsis" size={20} color={moreIconColor} />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }

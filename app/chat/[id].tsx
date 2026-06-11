@@ -590,6 +590,7 @@ export default function ChatScreen() {
                 <MessageBubble
                   message={item}
                   isOwn={item.senderId === currentUserId}
+                  showSenderName={isGroup}
                   showDateSeparator={showDateSeparator}
                   dateLabel={formatDateLabel(item.createdAt)}
                   otherAvatarUrl={conversation?.avatarUrl}

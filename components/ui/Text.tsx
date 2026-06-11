@@ -1,4 +1,5 @@
 import { Text as RNText, type TextProps } from 'react-native';
+import { twMerge } from "tailwind-merge";
 
 type TextVariant = 'default' | 'title' | 'subtitle' | 'semibold' | 'link' | 'muted' | 'small';
 
@@ -20,7 +21,7 @@ const variantClasses: Record<TextVariant, string> = {
 export function Text({ variant = 'default', className = '', ...props }: CustomTextProps) {
   return (
     <RNText 
-      className={`${variantClasses[variant]} ${className}`} 
+      className={twMerge(variantClasses[variant], className)}
       {...props} 
     />
   );

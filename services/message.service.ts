@@ -638,10 +638,27 @@ class MessageServiceClass {
   private mapMessageToDto(
     msg: MessageResponse | GroupMessageResponse
   ): MessageResponseDto {
+    const groupMsg = msg as Partial<GroupMessageResponse>;
+    const senderName =
+      typeof groupMsg.createName === "string" ? groupMsg.createName : undefined;
+    const senderAvatar =
+      typeof groupMsg.createAvatar === "string"
+        ? groupMsg.createAvatar
+        : undefined;
+
     return {
       id: msg.id,
       conversationId: msg.boxId,
       senderId: msg.createBy,
+      sender:
+        senderName || senderAvatar
+          ? {
+              id: msg.createBy,
+              name: senderName,
+              avatar: senderAvatar,
+              verified: false,
+            }
+          : undefined,
       content: msg.text ?? "",
       createdAt: msg.createAt,
       isRevoked: msg.flag === false,
