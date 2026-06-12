@@ -10,9 +10,8 @@ import {
 } from "react-native";
 
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
-import { ArrowLeftIcon } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
-import { Avatar, Button, ScreenHeader, Text } from "@/components/ui";
+import { Avatar, BackHeader, Button, Text } from "@/components/ui";
 import { PaginatedBlockedUsersDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { FollowApi } from "@/services/follow.service";
@@ -80,14 +79,7 @@ export default function BlockedUsersScreen() {
 
   return (
     <ScreenContainer horizontalPadding="none">
-      <ScreenHeader
-        title="Người bị chặn"
-        leftSlot={
-          <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
-            <ArrowLeftIcon size={24} color={iconColor} />
-          </TouchableOpacity>
-        }
-      />
+      <BackHeader title="Người bị chặn" className="px-4" />
 
       {loading ? (
         <View className="flex-1 items-center justify-center">

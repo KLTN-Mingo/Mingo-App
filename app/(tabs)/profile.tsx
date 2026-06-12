@@ -431,9 +431,13 @@ export default function ProfileScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
+          contentContainerStyle={{
+            gap: 16,
+            paddingHorizontal: 20,
+            paddingBottom: 32,
+          }}
         >
-        <View className="px-4 gap-4">
+        <View className="gap-4">
         {/* Error banner */}
         {profileError && (
           <TouchableOpacity
@@ -521,7 +525,7 @@ export default function ProfileScreen() {
         />
         </View>
 
-        <View className="min-h-[200px] px-1">{renderTabContent()}</View>
+        <View className="min-h-[200px]">{renderTabContent()}</View>
       </ScrollView>
 
       {/* Modal chỉnh sửa hồ sơ */}

@@ -3,8 +3,7 @@ import { Alert, Modal, StatusBar, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { SafeScreenView } from "@/components/containers/SafeLayout";
-import { ArrowLeftIcon } from "@/components/shared/icons/Icons";
-import { ActionInput, Button, ScreenHeader, Text } from "@/components/ui";
+import { ActionInput, BackHeader, Button, Text } from "@/components/ui";
 import { authService } from "@/services/auth.service";
 import { getSemantic } from "@/styles/colors";
 import {
@@ -112,13 +111,10 @@ export function ChangePasswordModal({ visible, onRequestClose }: Props) {
     <Modal visible={visible} animationType="slide" onRequestClose={resetAndClose}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <SafeScreenView style={{ backgroundColor: semantic.background }}>
-        <ScreenHeader
+        <BackHeader
           title="Change Password"
-          leftSlot={
-            <TouchableOpacity onPress={resetAndClose} className="p-2 -ml-2">
-              <ArrowLeftIcon size={24} color={semantic.text} />
-            </TouchableOpacity>
-          }
+          onBackPress={resetAndClose}
+          className="px-4"
         />
 
         <View className="px-5 pt-4 gap-4">

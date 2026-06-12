@@ -4,15 +4,13 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
-  TouchableOpacity,
   View,
 } from "react-native";
 
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { PostCard } from "@/components/post/PostCard";
-import { ArrowIcon } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
-import { Text } from "@/components/ui";
+import { BackHeader, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import {
   PaginationDto,
@@ -110,14 +108,8 @@ export default function HashtagPostsScreen() {
 
   return (
     <ScreenContainer horizontalPadding="none">
-      <View className="flex-row items-center px-4 pt-3 pb-2 gap-3">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <ArrowIcon size={24} color={iconColor} />
-        </TouchableOpacity>
-        <View className="flex-1">
+      <BackHeader className="px-4 pt-3 pb-2">
+        <View>
           <Text
             className="text-lg font-semibold text-text-light dark:text-text-dark"
             numberOfLines={1}
@@ -130,7 +122,7 @@ export default function HashtagPostsScreen() {
             </Text>
           ) : null}
         </View>
-      </View>
+      </BackHeader>
 
       {loading ? (
         <View className="flex-1 items-center justify-center">

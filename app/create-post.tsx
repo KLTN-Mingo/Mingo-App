@@ -18,12 +18,8 @@ import {
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { LocationPickerModal } from "@/components/post/LocationPickerModal";
 import { TagFriendsModal } from "@/components/post/TagFriendsModal";
-import {
-  ArrowIcon,
-  ImageIcon,
-  VideoIcon,
-} from "@/components/shared/icons/Icons";
-import { Avatar, Button, Text } from "@/components/ui";
+import { ImageIcon, VideoIcon } from "@/components/shared/icons/Icons";
+import { Avatar, BackHeader, Button, Text } from "@/components/ui";
 import { TextArea } from "@/components/ui/TextArea";
 import { getSemantic } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
@@ -184,7 +180,9 @@ export default function CreatePostScreen() {
     });
   };
 
-  const appendDocumentAssets = (assets: DocumentPicker.DocumentPickerAsset[]) => {
+  const appendDocumentAssets = (
+    assets: DocumentPicker.DocumentPickerAsset[]
+  ) => {
     const next: PickedAsset[] = assets.map((a) => ({
       localUri: a.uri,
       mediaType: "video",
@@ -254,10 +252,13 @@ export default function CreatePostScreen() {
         Platform.OS !== "ios"
           ? undefined
           : kind === "image"
-            ? ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible
+            ? ImagePicker.UIImagePickerPreferredAssetRepresentationMode
+                .Compatible
             : kind === "video"
-              ? ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current
-              : ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Automatic
+              ? ImagePicker.UIImagePickerPreferredAssetRepresentationMode
+                  .Current
+              : ImagePicker.UIImagePickerPreferredAssetRepresentationMode
+                  .Automatic
       );
 
       if (result.canceled || !result.assets?.length) return;
@@ -286,11 +287,15 @@ export default function CreatePostScreen() {
               copyToCacheDirectory: true,
               multiple: allowsMultipleSelection,
             });
-            if (fallbackResult.canceled || !fallbackResult.assets?.length) return;
+            if (fallbackResult.canceled || !fallbackResult.assets?.length)
+              return;
             appendDocumentAssets(fallbackResult.assets);
             return;
           } catch (documentErr) {
-            console.error("[create-post] document picker fallback failed", documentErr);
+            console.error(
+              "[create-post] document picker fallback failed",
+              documentErr
+            );
           }
         }
       }
@@ -437,22 +442,14 @@ export default function CreatePostScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
-        <View className="flex-row items-center">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className=" mr-2"
-            disabled={submitting}
-          >
-            <ArrowIcon size={35} color={sem.title} />
-          </TouchableOpacity>
-          <Text className="text-xl font-semibold leading-[28px] text-title-light dark:text-title-dark flex-1">
-            {isEdit ? "Sửa bài viết" : "Tạo bài viết"}
-          </Text>
-        </View>
+        <BackHeader
+          title={isEdit ? "Sửa bài viết" : "Tạo bài viết"}
+          disabled={submitting}
+        />
 
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 40, paddingTop: 12 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* User row */}
@@ -628,7 +625,7 @@ export default function CreatePostScreen() {
 
           {/* Visibility */}
           <View className="mt-3">
-            <Text className="mb-2 text-sm font-medium text-text-light dark:text-text-dark">
+            <Text className="mb-2 text-sm font-medium text-title-light dark:text-title-dark">
               Ai có thể xem?
             </Text>
             <View className="flex-row flex-wrap gap-2">

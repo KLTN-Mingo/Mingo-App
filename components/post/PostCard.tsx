@@ -32,8 +32,8 @@ import {
   frontendCacheKeys,
   invalidateCacheKeys,
 } from "@/services/frontend-cache";
-import { postService } from "@/services/post.service";
 import { isPostPermissionDeniedError } from "@/services/post-permission";
+import { postService } from "@/services/post.service";
 import { colors, paletteIcon, statusColors } from "@/styles/colors";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -84,9 +84,9 @@ export function PostCard({
       ? {
           shadowColor: "#000000",
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 17.5,
-          elevation: 4,
+          shadowOpacity: 0.05,
+          shadowRadius: 14,
+          elevation: 3,
         }
       : undefined;
 
@@ -99,9 +99,8 @@ export function PostCard({
   const [savesCount, setSavesCount] = useState(post.savesCount ?? 0);
   const [saveLoading, setSaveLoading] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [relationship, setRelationship] = useState<RelationshipStatusDto | null>(
-    null
-  );
+  const [relationship, setRelationship] =
+    useState<RelationshipStatusDto | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const effectiveCultureTerms =
     Array.isArray(cultureTerms) && cultureTerms.length > 0
@@ -134,7 +133,9 @@ export function PostCard({
       }
 
       try {
-        const nextRelationship = await FollowApi.getRelationshipStatus(post.userId);
+        const nextRelationship = await FollowApi.getRelationshipStatus(
+          post.userId
+        );
         if (active) {
           setRelationship(nextRelationship);
         }
@@ -337,7 +338,9 @@ export function PostCard({
           deviceType: "web",
         });
       }
-      const nextRelationship = await FollowApi.getRelationshipStatus(post.userId);
+      const nextRelationship = await FollowApi.getRelationshipStatus(
+        post.userId
+      );
       setRelationship(nextRelationship);
     } catch (error) {
       const msg =
@@ -353,8 +356,8 @@ export function PostCard({
   }
 
   return (
-    <View style={cardShadowStyle} className="rounded-[10px]">
-      <View className="p-4 overflow-hidden rounded-[10px] bg-white dark:bg-surface-dark gap-4">
+    <View style={cardShadowStyle} className="rounded-[20px]">
+      <View className="p-4 overflow-hidden rounded-[20px] bg-white dark:bg-surface-dark gap-4">
         {isOwnPost ? (
           <ModerationBanner
             status={post.moderationStatus}
@@ -401,7 +404,7 @@ export function PostCard({
 
           {onMorePress && currentUser?.id ? (
             <TouchableOpacity onPress={() => onMorePress(post)} className="p-2">
-              <ThreeDotsIcon size={20} color={theme.icon} />
+              <ThreeDotsIcon size={16} color={theme.icon} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -439,19 +442,6 @@ export function PostCard({
                 </Text>
               </View>
             )}
-            {/* {firstMusicTag && (
-            <View className="max-w-[70%] flex-row items-center">
-              <Text className="text-xs text-text-muted-dark">-</Text>
-              <MusicIcon size={14} color={colors.dark[300]} />
-              <Text
-                className="text-xs text-text-muted-dark"
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {firstMusicTag}
-              </Text>
-            </View>
-          )} */}
           </View>
         )}
 

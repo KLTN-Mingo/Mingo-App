@@ -79,14 +79,14 @@ export function FriendOnlineList({
   return (
     <View>
       <Text
-        className="text-text-muted-light dark:text-text-muted-dark"
+        className="text-title-light dark:text-title-dark"
         style={{
-          fontSize: 13,
-          fontWeight: "600",
+          fontSize: 14,
+          fontWeight: "800",
           paddingHorizontal: 4,
           paddingTop: 8,
           paddingBottom: 8,
-          textTransform: "uppercase",
+          // textTransform: "uppercase",
           letterSpacing: 0.5,
         }}
       >

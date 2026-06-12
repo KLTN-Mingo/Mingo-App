@@ -3,7 +3,6 @@ import { Modal, StatusBar, TouchableOpacity, useColorScheme, View } from "react-
 
 import {
   ActivityIcon,
-  ArrowLeftIcon,
   LockIcon,
   LogoutIcon,
   MoonIcon,
@@ -12,7 +11,7 @@ import {
   SunIcon,
 } from "@/components/shared/icons/Icons";
 import { SafeScreenView } from "@/components/containers/SafeLayout";
-import { ScreenHeader, Text } from "@/components/ui";
+import { BackHeader, Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
 
 export type ProfileSettingsModalProps = {
@@ -82,13 +81,10 @@ export function ProfileSettingsModal({
     <Modal visible={visible} animationType="slide" onRequestClose={onRequestClose}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <SafeScreenView style={{ backgroundColor: palette.background }}>
-        <ScreenHeader
+        <BackHeader
           title="Settings"
-          leftSlot={
-            <TouchableOpacity onPress={onRequestClose} className="p-2 -ml-2">
-              <ArrowLeftIcon size={24} color={palette.textPrimary} />
-            </TouchableOpacity>
-          }
+          onBackPress={onRequestClose}
+          className="px-4"
         />
 
         <View className="">

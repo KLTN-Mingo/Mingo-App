@@ -28,9 +28,7 @@ function getSenderName(
   senderId: string | undefined
 ): string {
   if (!senderId) return "";
-  const participant = conversation.participants?.find(
-    (p) => p.id === senderId
-  );
+  const participant = conversation.participants?.find((p) => p.id === senderId);
   return participant?.name ?? "";
 }
 
@@ -86,7 +84,7 @@ export function ChatListItem({
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={() => router.push(`/chat/${conversation.id}`)}
-      className="flex-row items-center rounded-2xl bg-component-light px-4 py-3 dark:bg-component-dark"
+      className="flex-row items-center rounded-2xl py-3"
     >
       <View className="relative">
         <Avatar

@@ -9,7 +9,8 @@ import {
   View,
 } from "react-native";
 
-import { Avatar, Text } from "@/components/ui";
+import { Avatar } from "@/components/ui";
+import { Text } from "@/components/ui/Text";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
 import { PostResponseDto } from "@/dtos";
 import { postService } from "@/services/post.service";
@@ -28,14 +29,6 @@ export function TrendingPostsRow() {
 
   const [posts, setPosts] = useState<PostResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const cardShadowStyle = {
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: isDark ? 0.25 : 0.08,
-    shadowRadius: 17.5,
-    elevation: 4,
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -82,7 +75,7 @@ export function TrendingPostsRow() {
         </Text>
 
         <View className="px-2 py-0.5 rounded-full bg-primary/10">
-          <Text className="text-xs font-semibold" style={{ color: "#2E8B7B" }}>
+          <Text className="text-xs font-semibold text-title-light">
             🔥 Trending
           </Text>
         </View>
@@ -104,12 +97,8 @@ export function TrendingPostsRow() {
               {
                 width: ITEM_WIDTH,
                 borderRadius: 16,
-                // backgroundColor: isDark
-                //   ? colors.surfaceMuted
-                //   : colors.surfaceMuted,
                 borderColor: isDark ? colors.surfaceMuted : colors.surfaceMuted,
               },
-              // cardShadowStyle,
             ]}
           >
             <TouchableOpacity
@@ -132,7 +121,11 @@ export function TrendingPostsRow() {
                   }}
                   className="items-center justify-center px-3"
                 >
-                  <Text numberOfLines={4} style={{ color: colors.textPrimary }}>
+                  <Text
+                    className="text-[16px] leading-[23px]"
+                    numberOfLines={4}
+                    style={{ color: colors.textPrimary }}
+                  >
                     {item.contentText || "Bài viết không có nội dung"}
                   </Text>
                 </View>
@@ -149,14 +142,14 @@ export function TrendingPostsRow() {
                   />
 
                   <Text
-                    className="ml-2 flex-1 text-sm font-semibold text-text-light dark:text-text-dark"
+                    className="ml-2 flex-1 text-base font-semibold text-text-light dark:text-text-dark"
                     numberOfLines={1}
                   >
                     {item.user?.name || "User"}
                   </Text>
                 </View>
 
-                <Text variant="muted" className="text-xs">
+                <Text variant="default" className="text-xs mt-2">
                   {item.likesCount} likes · {item.commentsCount} comments
                 </Text>
               </View>

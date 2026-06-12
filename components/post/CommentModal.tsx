@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -13,12 +14,13 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SafeModalSheet } from "@/components/containers/SafeLayout";
 import { CommentComposer } from "@/components/post/CommentComposer";
 import { CommentThreadItem } from "@/components/post/CommentThreadItem";
-import { Icon, Text } from "@/components/ui";
+import { EmptyState } from "@/components/shared/ui/EmptyState";
+import { BackHeader, Icon, Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
 import { CommentResponseDto } from "@/dtos";
@@ -54,9 +56,9 @@ export function CommentModal({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = isDark ? paletteDark : paletteLight;
-  const insets = useSafeAreaInsets();
 
   const [comments, setComments] = useState<CommentWithReplies[]>([]);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingReplies, setLoadingReplies] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
@@ -72,6 +74,24 @@ export function CommentModal({
   const inputRef = useRef<TextInput>(null);
   const isFetchingRef = useRef(false);
   const lastFetchAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSubscription = Keyboard.addListener(showEvent, () =>
+      setKeyboardVisible(true)
+    );
+    const hideSubscription = Keyboard.addListener(hideEvent, () =>
+      setKeyboardVisible(false)
+    );
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const fetchComments = useCallback(async () => {
     if (!postId) return;
@@ -424,13 +444,15 @@ export function CommentModal({
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
         className="flex-1 justify-end bg-black/40"
       >
         <Pressable className="flex-1" onPress={onClose} />
         <SafeModalSheet
-          minHeight="72%"
+          minHeight={
+            keyboardVisible && Platform.OS === "android" ? "100%" : "72%"
+          }
           className="rounded-t-4xl bg-sheet-light px-0 pb-0 pt-0 dark:bg-sheet-dark"
         >
           <SafeAreaView
@@ -440,21 +462,7 @@ export function CommentModal({
           >
             <View className="px-4 pt-3 pb-2">
               <View className="mb-3 self-center h-1 w-12 rounded-full bg-border-light dark:bg-border-dark" />
-              <View className="flex-row items-center">
-                <Text
-                  className="flex-1 text-lg font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Comments
-                </Text>
-                <TouchableOpacity
-                  onPress={onClose}
-                  className="h-9 w-9 items-center justify-center rounded-full"
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Icon name="xmark" size={18} color={colors.textPrimary} />
-                </TouchableOpacity>
-              </View>
+              <BackHeader title="Comments" onBackPress={onClose} />
             </View>
 
             {loading ? (
@@ -467,15 +475,11 @@ export function CommentModal({
                 keyExtractor={(item) => item.id}
                 renderItem={renderComment}
                 keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                  <View className="flex-1 items-center justify-center py-24">
-                    <Icon name="bubble.left" size={40} color={colors.textMuted} />
-                    <Text className="mt-3" style={{ color: colors.textMuted }}>
-                      No comments yet
-                    </Text>
-                  </View>
+                keyboardDismissMode={
+                  Platform.OS === "ios" ? "interactive" : "on-drag"
                 }
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={<EmptyState title="No comments yet" />}
                 contentContainerStyle={{
                   paddingTop: 4,
                   paddingBottom: 12,
@@ -504,7 +508,7 @@ export function CommentModal({
               </View>
             ) : null}
 
-            <View style={{ paddingBottom: Math.max(insets.bottom, 10) }}>
+            <View className="pb-2">
               <CommentComposer
                 colors={colors}
                 avatarUri={profile?.avatar}

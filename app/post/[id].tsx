@@ -21,7 +21,6 @@ import { CultureHighlightedText } from "@/components/post/CultureHighlightedText
 import { ModerationBanner } from "@/components/post/ModerationBanner";
 import { CommentThreadItem } from "@/components/post/CommentThreadItem";
 import {
-  ArrowIcon,
   CommentIcon,
   LikeIcon,
   LocationIcon,
@@ -30,7 +29,7 @@ import {
   ThreeDotsIcon,
 } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
-import { Avatar, Text } from "@/components/ui";
+import { Avatar, BackHeader, Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
 import {
   CommentResponseDto,
@@ -715,10 +714,10 @@ export default function PostDetailScreen() {
               <CultureHighlightedText
                 text={post.contentText}
                 terms={effectiveCultureTerms}
-                baseTextClassName="text-[27px] leading-[31px] text-text-light dark:text-text-dark"
+                baseTextClassName="text-[16px] leading-[23px] text-text-light dark:text-text-dark"
               />
             ) : (
-              <Text className="text-[27px] leading-[31px] text-text-light dark:text-text-dark">
+              <Text className="text-[16px] leading-[23px] text-text-light dark:text-text-dark">
                 {post.contentText}
               </Text>
             )}
@@ -819,16 +818,16 @@ export default function PostDetailScreen() {
           ) : null}
         </View>
 
-        <View className="pt-1">
-          <Text
-            className="font-semibold text-text-light dark:text-text-dark"
-            style={{ fontSize: 16 }}
-          >
-            {post.commentsCount > 0
-              ? `${post.commentsCount} comments`
-              : "No comments yet"}
-          </Text>
-        </View>
+        {post.commentsCount > 0 ? (
+          <View className="pt-1">
+            <Text
+              className="font-semibold text-text-light dark:text-text-dark"
+              style={{ fontSize: 16 }}
+            >
+              {`${post.commentsCount} comments`}
+            </Text>
+          </View>
+        ) : null}
       </View>
     );
   };
@@ -838,22 +837,11 @@ export default function PostDetailScreen() {
       horizontalPadding="default"
       style={{ paddingBottom: 0, backgroundColor: semantic.background }}
     >
-      <View className="flex-row items-center">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="mr-2"
-          activeOpacity={0.75}
-        >
-          <ArrowIcon size={35} color={semantic.title} />
-        </TouchableOpacity>
-        <Text className="text-xl font-semibold leading-[28px] text-title-light dark:text-title-dark flex-1">
-          Post
-        </Text>
-      </View>
+      <BackHeader title="Comments" />
 
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
         <FlatList
@@ -863,6 +851,7 @@ export default function PostDetailScreen() {
           ListHeaderComponent={<ListHeader />}
           style={{ backgroundColor: semantic.background }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
           ListEmptyComponent={
             loadingComments ? (
               <View className="py-8 items-center">
