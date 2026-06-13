@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -11,12 +11,11 @@ import {
 import { InfoChat, MessageBubble, MessageInput } from "@/components/chat";
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import {
-  ArrowIcon,
   CallIcon,
   InfoIcon,
   VideoCallIcon,
 } from "@/components/shared/icons/Icons";
-import { Avatar, Text } from "@/components/ui";
+import { Avatar, BackHeader, Text } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useCall } from "@/context/CallContext";
 import { useChatContext } from "@/context/ChatContext";
@@ -57,7 +56,6 @@ function formatDateLabel(dateStr: string): string {
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const { profile } = useAuth();
   const {
     conversations,
@@ -362,14 +360,28 @@ export default function ChatScreen() {
       style={{ backgroundColor: semantic.background }}
     >
       {/* Header: back Arrow (accent), avatar 45x45, name — match old chats/[id].tsx */}
-      <View
+      <BackHeader
+        className="px-3 py-2.5"
+        rightSlot={
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <TouchableOpacity onPress={handleAudioCall}>
+              <CallIcon size={28} color={iconColor} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleVideoCall}>
+              <VideoCallIcon size={30} color={iconColor} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setInfoModalVisible(true)}>
+              <InfoIcon size={30} color={iconColor} />
+            </TouchableOpacity>
+          </View>
+        }
         style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingHorizontal: 12,
-          paddingTop: 10,
-          paddingBottom: 10,
           backgroundColor: semantic.background,
           borderTopWidth: 0,
           borderBottomWidth: 0,
@@ -379,27 +391,7 @@ export default function ChatScreen() {
           elevation: 0,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={{
-              width: 36,
-              height: 36,
-              alignItems: "center",
-              justifyContent: "center",
-              marginRight: 8,
-            }}
-            // hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <ArrowIcon size={24} color={semantic.primary} />
-          </TouchableOpacity>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
+        <View className="flex-row items-center gap-2">
             <Avatar
               source={
                 conversation?.avatarUrl
@@ -437,26 +429,8 @@ export default function ChatScreen() {
                     : "Không hoạt động"}
               </Text>
             </View>
-          </View>
         </View>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <TouchableOpacity onPress={handleAudioCall}>
-            <CallIcon size={28} color={iconColor} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleVideoCall}>
-            <VideoCallIcon size={30} color={iconColor} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setInfoModalVisible(true)}>
-            <InfoIcon size={30} color={iconColor} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      </BackHeader>
 
       {searchVisible && (
         <View

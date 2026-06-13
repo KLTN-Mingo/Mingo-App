@@ -19,6 +19,7 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfo } from "@/components/profile/ProfileInfo";
 import { ProfileRepostsList } from "@/components/profile/ProfileRepostsList";
 import { ProfileSettingsModal } from "@/components/profile/ProfileSettingsModal";
+import { TwoFactorSettingsModal } from "@/components/profile/TwoFactorSettingsModal";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { ChangePasswordModal } from "@/components/profile/ChangePasswordModal";
 import {
@@ -56,6 +57,7 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [changePasswordVisible, setChangePasswordVisible] = useState(false);
+  const [twoFactorVisible, setTwoFactorVisible] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
   const [bioModalVisible, setBioModalVisible] = useState(false);
@@ -85,6 +87,7 @@ export default function ProfileScreen() {
       if (profile) {
         setUserProfile({
           id: profile.id,
+          email: profile.email,
           phoneNumber: profile.phoneNumber,
           name: profile.name,
           avatar: profile.avatar,
@@ -431,9 +434,13 @@ export default function ProfileScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
+          contentContainerStyle={{
+            gap: 16,
+            paddingHorizontal: 20,
+            paddingBottom: 32,
+          }}
         >
-        <View className="px-4 gap-4">
+        <View className="gap-4">
         {/* Error banner */}
         {profileError && (
           <TouchableOpacity
@@ -521,7 +528,7 @@ export default function ProfileScreen() {
         />
         </View>
 
-        <View className="min-h-[200px] px-1">{renderTabContent()}</View>
+        <View className="min-h-[200px]">{renderTabContent()}</View>
       </ScrollView>
 
       {/* Modal chỉnh sửa hồ sơ */}
@@ -539,6 +546,10 @@ export default function ProfileScreen() {
         onOpenAccountSettings={() => {
           setSettingsVisible(false);
           setChangePasswordVisible(true);
+        }}
+        onOpenTwoFactorSettings={() => {
+          setSettingsVisible(false);
+          setTwoFactorVisible(true);
         }}
         onOpenBlockedUsers={() => {
           setSettingsVisible(false);
@@ -575,6 +586,17 @@ export default function ProfileScreen() {
       <ChangePasswordModal
         visible={changePasswordVisible}
         onRequestClose={() => setChangePasswordVisible(false)}
+      />
+
+      <TwoFactorSettingsModal
+        visible={twoFactorVisible}
+        enabled={Boolean(userProfile.twoFactorEnabled)}
+        onRequestClose={() => setTwoFactorVisible(false)}
+        onChanged={(enabled) => {
+          setUserProfile((prev) =>
+            prev ? { ...prev, twoFactorEnabled: enabled } : prev
+          );
+        }}
       />
 
       <CommentModal

@@ -2,10 +2,24 @@ import { statusColors } from "@/styles/colors";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 const SearchIcon = ({ size = 24, color }) => {
   return (
-    <Svg width={size} height={size} viewBox="0 0 256 256" fill="none">
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M229.66 218.34l-50.07-50.06a88.11 88.11 0 1 0-11.31 11.31l50.06 50.07a8 8 0 0 0 11.32-11.32M40 112a72 72 0 1 1 72 72a72.08 72.08 0 0 1-72-72"
-        fill={color}
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M11.2754 2.71423C16.003 2.71423 19.8364 6.54661 19.8364 11.2752C19.8364 16.0038 16.003 19.8361 11.2754 19.8361C6.54686 19.8361 2.71448 16.0038 2.71448 11.2752C2.71448 6.54661 6.54686 2.71423 11.2754 2.71423Z"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M19.899 18.4875C20.678 18.4875 21.3095 19.1199 21.3095 19.898C21.3095 20.678 20.678 21.3095 19.899 21.3095C19.1199 21.3095 18.4875 20.678 18.4875 19.898C18.4875 19.1199 19.1199 18.4875 19.899 18.4875Z"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );

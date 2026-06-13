@@ -8,6 +8,7 @@ export interface LoginRequestDto {
 }
 
 export interface RegisterRequestDto {
+  email?: string;
   phoneNumber: string;
   password: string;
   name?: string;
@@ -32,6 +33,7 @@ export interface ChangePasswordRequestDto {
 
 export interface AuthUserDto {
   id: string;
+  email?: string;
   phoneNumber: string;
   name?: string;
   avatar?: string;

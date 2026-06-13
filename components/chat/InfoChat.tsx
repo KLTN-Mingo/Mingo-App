@@ -1191,7 +1191,7 @@ import {
   TrashIcon,
   UserIcon,
 } from "@/components/shared/icons/Icons";
-import { Avatar } from "@/components/ui";
+import { Avatar, BackHeader } from "@/components/ui";
 import { chatTheme } from "@/constants/chatTheme";
 import { useAuth } from "@/context/AuthContext";
 import type { ChatConversationDto } from "@/dtos";
@@ -1635,31 +1635,11 @@ export function InfoChat({
             paddingBottom: 40,
           }}
         >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 16,
-              marginBottom: 24,
-            }}
-          >
-            <TouchableOpacity
-              onPress={onClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <ArrowIcon size={30} color={chatTheme.accent} />
-            </TouchableOpacity>
-            <Text
-              style={{
-                color: textColor,
-                fontSize: 20,
-                fontWeight: "600",
-                marginLeft: 10,
-              }}
-            >
-              Chat info
-            </Text>
-          </View>
+          <BackHeader
+            title="Chat info"
+            onBackPress={onClose}
+            className="mb-6 px-4"
+          />
 
           <View style={{ alignItems: "center", marginBottom: 20, paddingHorizontal: 16 }}>
             <Avatar

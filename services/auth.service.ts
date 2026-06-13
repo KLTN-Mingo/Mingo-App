@@ -7,7 +7,12 @@ import {
   LoginRequestDto,
   RefreshTokenResponseDto,
   RegisterRequestDto,
+  TwoFactorSetupResponseDto,
 } from "@/dtos";
+import {
+  buildRegisterVerificationEndpoint,
+  buildRegisterVerificationPayload,
+} from "@/services/auth-register-verification";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
 
@@ -98,6 +103,66 @@ class AuthService {
     await AsyncStorage.setItem("user", JSON.stringify(response.user));
 
     return response;
+  }
+
+  async sendRegisterEmailOtp(payload: {
+    email: string;
+  }): Promise<{ expiresInMinutes: number }> {
+    return this.request(
+      buildRegisterVerificationEndpoint("email", "send"),
+      {
+        method: "POST",
+        body: JSON.stringify(
+          buildRegisterVerificationPayload("email", payload.email)
+        ),
+      }
+    );
+  }
+
+  async verifyRegisterEmailOtp(payload: {
+    email: string;
+    code: string;
+  }): Promise<{ verified: true }> {
+    return this.request(
+      buildRegisterVerificationEndpoint("email", "verify"),
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ...buildRegisterVerificationPayload("email", payload.email),
+          code: payload.code.trim(),
+        }),
+      }
+    );
+  }
+
+  async sendRegisterPhoneOtp(payload: {
+    phoneNumber: string;
+  }): Promise<{ expiresInMinutes: number }> {
+    return this.request(
+      buildRegisterVerificationEndpoint("phone", "send"),
+      {
+        method: "POST",
+        body: JSON.stringify(
+          buildRegisterVerificationPayload("phone", payload.phoneNumber)
+        ),
+      }
+    );
+  }
+
+  async verifyRegisterPhoneOtp(payload: {
+    phoneNumber: string;
+    code: string;
+  }): Promise<{ verified: true }> {
+    return this.request(
+      buildRegisterVerificationEndpoint("phone", "verify"),
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ...buildRegisterVerificationPayload("phone", payload.phoneNumber),
+          code: payload.code.trim(),
+        }),
+      }
+    );
   }
 
   async login(payload: LoginRequestDto): Promise<AuthResponseDto> {
@@ -247,7 +312,7 @@ class AuthService {
     return response;
   }
 
-  async setup2FA(): Promise<{ secret: string; qrCode: string }> {
+  async setup2FA(): Promise<TwoFactorSetupResponseDto & { qrCode?: string }> {
     const token = await AsyncStorage.getItem("accessToken");
     return this.request("/2fa/setup", {
       method: "POST",

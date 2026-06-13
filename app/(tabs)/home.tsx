@@ -370,14 +370,13 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer horizontalPadding="none">
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
         className=""
         ListHeaderComponent={
           <View className="gap-5 mb-5">
-            {/* Header: logo + thông báo */}
             <View className="flex-row items-center justify-between">
               <Text style={{ fontFamily: "Montserrat-SemiBold", fontSize: 24 }}>
                 <Text
@@ -400,7 +399,7 @@ export default function HomeScreen() {
                 <NotificationIcon size={24} color={semantic.text} />
                 {Boolean(notificationCount?.unread) &&
                   notificationCount!.unread > 0 && (
-                    <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full px-1 bg-primary dark:bg-primary-light border border-white dark:border-background-dark items-center justify-center">
+                    <View className="absolute top-0 right-0 min-w-[16px] h-4 rounded-full px-1 bg-primary dark:bg-primary-light border border-white dark:border-background-dark items-center justify-center">
                       <Text className="text-[10px] leading-[10px] text-white font-semibold">
                         {notificationCount!.unread > 99
                           ? "99+"
@@ -472,7 +471,11 @@ export default function HomeScreen() {
             </View>
           ) : null
         }
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingHorizontal: 20,
+          paddingBottom: 120,
+        }}
         showsVerticalScrollIndicator={false}
       />
 

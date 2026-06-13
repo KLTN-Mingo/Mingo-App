@@ -14,10 +14,10 @@ import {
   ActionDatePicker,
   ActionInput,
   ActionSelectPicker,
+  BackHeader,
   Button,
   Text,
 } from "@/components/ui";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { RELATIONSHIP_OPTIONS } from "@/constants/editProfileOptions";
 import {
   PRESET_HOBBIES,
@@ -245,7 +245,7 @@ export default function EditProfileScreen() {
 
   return (
     <ScreenContainer className="gap-4">
-      <PageHeader title="Edit Profile" />
+      <BackHeader title="Edit Profile" />
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color={paletteIcon.lightMuted} />

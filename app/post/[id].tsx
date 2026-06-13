@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { formatDistanceToNow } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState, useRef } from "react";
@@ -21,7 +22,6 @@ import { CultureHighlightedText } from "@/components/post/CultureHighlightedText
 import { ModerationBanner } from "@/components/post/ModerationBanner";
 import { CommentThreadItem } from "@/components/post/CommentThreadItem";
 import {
-  ArrowIcon,
   CommentIcon,
   LikeIcon,
   LocationIcon,
@@ -30,7 +30,7 @@ import {
   ThreeDotsIcon,
 } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
-import { Avatar, Text } from "@/components/ui";
+import { Avatar, BackHeader, Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
 import {
   CommentResponseDto,
@@ -44,6 +44,7 @@ import { useReport } from "@/hooks/use-report";
 import { useAuth } from "@/context/AuthContext";
 import { useSharePost } from "@/hooks/use-share-post";
 import { commentService } from "@/services/comment.service";
+import { getReplyTarget, ReplyTarget } from "@/services/comment-reply-target";
 import { FollowApi } from "@/services/follow.service";
 import {
   frontendCacheKeys,
@@ -81,6 +82,7 @@ export default function PostDetailScreen() {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentDraft, setEditCommentDraft] = useState("");
   const [commentText, setCommentText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<ReplyTarget | null>(null);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [expandedReplyIds, setExpandedReplyIds] = useState<Record<string, boolean>>({});
   const [loadingReplyIds, setLoadingReplyIds] = useState<Record<string, boolean>>({});
@@ -281,10 +283,29 @@ export default function PostDetailScreen() {
 
     setSubmittingComment(true);
     try {
-      const created = await commentService.createComment(postId, {
-        contentText,
-      });
-      setComments((prev) => [created, ...prev]);
+      if (replyingTo) {
+        const created = await commentService.createReply(
+          postId,
+          replyingTo.id,
+          {
+            contentText,
+            parentCommentId: replyingTo.id,
+            originalCommentId: replyingTo.originalCommentId,
+          }
+        );
+        setComments((prev) => [...prev, created]);
+        setExpandedReplyIds((prev) => ({
+          ...prev,
+          [replyingTo.originalCommentId]: true,
+          [replyingTo.id]: true,
+        }));
+        setReplyingTo(null);
+      } else {
+        const created = await commentService.createComment(postId, {
+          contentText,
+        });
+        setComments((prev) => [created, ...prev]);
+      }
       setPost((prev) =>
         prev ? { ...prev, commentsCount: prev.commentsCount + 1 } : prev
       );
@@ -296,6 +317,15 @@ export default function PostDetailScreen() {
     } finally {
       setSubmittingComment(false);
     }
+  };
+
+  const handleReplyComment = (comment: CommentResponseDto) => {
+    setReplyingTo(getReplyTarget(comment));
+    setEditingCommentId(null);
+    setEditCommentDraft("");
+    requestAnimationFrame(() => {
+      commentInputRef.current?.focus();
+    });
   };
 
   const handlePostMorePress = (p: PostResponseDto) => {
@@ -396,6 +426,12 @@ export default function PostDetailScreen() {
       if (editingCommentId === comment.id) {
         setEditingCommentId(null);
         setEditCommentDraft("");
+      }
+      if (
+        replyingTo?.id === comment.id ||
+        replyingTo?.originalCommentId === comment.id
+      ) {
+        setReplyingTo(null);
       }
     } catch (error) {
       console.warn("Cannot delete comment:", error);
@@ -579,7 +615,7 @@ export default function PostDetailScreen() {
             editDraft={editCommentDraft}
             onEditDraftChange={setEditCommentDraft}
             onLike={() => handleLikeComment(item)}
-            onReply={() => undefined}
+            onReply={() => handleReplyComment(item)}
             mentionName={parentName}
             onDelete={isOwner ? () => handleDeleteComment(item) : undefined}
             onSaveEdit={() => handleSaveEditComment(item.id)}
@@ -715,10 +751,10 @@ export default function PostDetailScreen() {
               <CultureHighlightedText
                 text={post.contentText}
                 terms={effectiveCultureTerms}
-                baseTextClassName="text-[27px] leading-[31px] text-text-light dark:text-text-dark"
+                baseTextClassName="text-[16px] leading-[23px] text-text-light dark:text-text-dark"
               />
             ) : (
-              <Text className="text-[27px] leading-[31px] text-text-light dark:text-text-dark">
+              <Text className="text-[16px] leading-[23px] text-text-light dark:text-text-dark">
                 {post.contentText}
               </Text>
             )}
@@ -819,16 +855,16 @@ export default function PostDetailScreen() {
           ) : null}
         </View>
 
-        <View className="pt-1">
-          <Text
-            className="font-semibold text-text-light dark:text-text-dark"
-            style={{ fontSize: 16 }}
-          >
-            {post.commentsCount > 0
-              ? `${post.commentsCount} comments`
-              : "No comments yet"}
-          </Text>
-        </View>
+        {post.commentsCount > 0 ? (
+          <View className="pt-1">
+            <Text
+              className="font-semibold text-text-light dark:text-text-dark"
+              style={{ fontSize: 16 }}
+            >
+              {`${post.commentsCount} comments`}
+            </Text>
+          </View>
+        ) : null}
       </View>
     );
   };
@@ -838,22 +874,11 @@ export default function PostDetailScreen() {
       horizontalPadding="default"
       style={{ paddingBottom: 0, backgroundColor: semantic.background }}
     >
-      <View className="flex-row items-center">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="mr-2"
-          activeOpacity={0.75}
-        >
-          <ArrowIcon size={35} color={semantic.title} />
-        </TouchableOpacity>
-        <Text className="text-xl font-semibold leading-[28px] text-title-light dark:text-title-dark flex-1">
-          Post
-        </Text>
-      </View>
+      <BackHeader title="Comments" />
 
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
         <FlatList
@@ -863,6 +888,7 @@ export default function PostDetailScreen() {
           ListHeaderComponent={<ListHeader />}
           style={{ backgroundColor: semantic.background }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
           ListEmptyComponent={
             loadingComments ? (
               <View className="py-8 items-center">
@@ -876,17 +902,46 @@ export default function PostDetailScreen() {
         />
 
         {currentUser?.id && post ? (
-          <CommentComposer
-            colors={themeColors}
-            avatarUri={currentUser.avatar}
-            avatarFallback={currentUser.name}
-            value={commentText}
-            onChangeText={setCommentText}
-            onSubmit={handleSubmitComment}
-            submitting={submittingComment}
-            inputRef={commentInputRef}
-            placeholder="Write comment..."
-          />
+          <View style={{ backgroundColor: themeColors.background }}>
+            {replyingTo ? (
+              <View
+                className="mx-4 mb-1 flex-row items-center rounded-2xl px-3 py-2"
+                style={{ backgroundColor: themeColors.surfaceMuted }}
+              >
+                <Text
+                  className="flex-1 text-xs"
+                  style={{ color: themeColors.textMuted }}
+                >
+                  Replying to{" "}
+                  <Text
+                    className="font-semibold"
+                    style={{ color: themeColors.textPrimary }}
+                  >
+                    {replyingTo.name}
+                  </Text>
+                </Text>
+                <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                  <Ionicons
+                    name="close"
+                    size={16}
+                    color={themeColors.textMuted}
+                  />
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
+            <CommentComposer
+              colors={themeColors}
+              avatarUri={currentUser.avatar}
+              avatarFallback={currentUser.name}
+              value={commentText}
+              onChangeText={setCommentText}
+              onSubmit={handleSubmitComment}
+              submitting={submittingComment}
+              inputRef={commentInputRef}
+              placeholder={replyingTo ? "Write a reply..." : "Write comment..."}
+            />
+          </View>
         ) : null}
       </KeyboardAvoidingView>
 

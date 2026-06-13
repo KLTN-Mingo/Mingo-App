@@ -61,7 +61,7 @@ export function ActionSelectPicker({
   return (
     <View className="w-full">
       {label ? (
-        <Text className="mb-2 font-medium text-base text-text-light dark:text-text-dark">
+        <Text className="mb-2 font-medium text-sm text-text-light dark:text-text-dark">
           {label}
         </Text>
       ) : null}
@@ -178,7 +178,7 @@ export function ActionDatePicker({
   return (
     <View className="w-full">
       {label ? (
-        <Text className="mb-2 font-medium text-base text-text-light dark:text-text-dark">
+        <Text className="mb-2 font-medium text-sm text-text-light dark:text-text-dark">
           {label}
         </Text>
       ) : null}

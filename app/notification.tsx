@@ -10,18 +10,12 @@ import {
 
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { NotificationCard } from "@/components/notification";
-import {
-  CircleTickIcon,
-  TrashIcon,
-} from "@/components/shared/icons/Icons";
+import { TrashIcon } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { NotificationScreenSkeleton } from "@/components/skeleton";
-import { Tab, Text } from "@/components/ui";
+import { BackHeader, Tab, Text } from "@/components/ui";
 import { useNotification } from "@/context/NotificationContext";
-import {
-  NotificationResponseDto,
-  NotificationType,
-} from "@/dtos";
+import { NotificationResponseDto, NotificationType } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { notificationService } from "@/services/notification.service";
 import { colors, getSemantic, getStatusColor } from "@/styles/colors";
@@ -53,7 +47,9 @@ export default function NotificationScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [filteredNotifications, setFilteredNotifications] = useState<NotificationResponseDto[]>([]);
+  const [filteredNotifications, setFilteredNotifications] = useState<
+    NotificationResponseDto[]
+  >([]);
   const [localLoading, setLocalLoading] = useState(true);
 
   const fetchNotifications = useCallback(
@@ -88,7 +84,10 @@ export default function NotificationScreen() {
         if (result && result.notifications) {
           setFilteredNotifications(
             append
-              ? (prev: NotificationResponseDto[]) => [...prev, ...result.notifications]
+              ? (prev: NotificationResponseDto[]) => [
+                  ...prev,
+                  ...result.notifications,
+                ]
               : result.notifications
           );
           setPagination({
@@ -136,12 +135,15 @@ export default function NotificationScreen() {
     fetchNotifications(pagination.page + 1, true);
   };
 
-  const handleNotificationPress = async (notification: NotificationResponseDto) => {
+  const handleNotificationPress = async (
+    notification: NotificationResponseDto
+  ) => {
     // Mark as read
     await markAsRead(notification.id);
 
     // Navigate based on notification type
-    const { notificationType, postId, actor, entityId, entityType } = notification;
+    const { notificationType, postId, actor, entityId, entityType } =
+      notification;
 
     switch (notificationType) {
       case NotificationType.POST_LIKE:
@@ -169,7 +171,8 @@ export default function NotificationScreen() {
         break;
       case NotificationType.MESSAGE_NEW: {
         // Deep link tới chat — entityId thường là boxId hoặc conversationId.
-        const boxId = entityId ?? (entityType === "message" ? entityId : undefined);
+        const boxId =
+          entityId ?? (entityType === "message" ? entityId : undefined);
         if (boxId) router.push(`/chat/${boxId}` as any);
         else router.push("/chat" as any);
         break;
@@ -245,30 +248,10 @@ export default function NotificationScreen() {
       className="gap-4"
       style={{ backgroundColor: semantic.background }}
     >
-      <View className="flex-row items-center justify-between">
-        <Text
-          className="text-title-light dark:text-title-dark leading-[32px]"
-          style={{
-            fontFamily: "Montserrat-SemiBold",
-            fontSize: 24,
-          }}
-        >
-          Notifications
-        </Text>
-        <View className="flex-row items-center gap-2">
-          <TouchableOpacity
-            onPress={handleMarkAllAsRead}
-            className="w-9 h-9 rounded-full items-center justify-center bg-component-light dark:bg-component-dark"
-            disabled={count.unread === 0}
-            activeOpacity={0.72}
-          >
-            <CircleTickIcon
-              size={22}
-              color={
-                count.unread > 0 ? colors.primary.light : semantic.placeholder
-              }
-            />
-          </TouchableOpacity>
+      <BackHeader
+        title="Notifications"
+        titleClassName="leading-[32px]"
+        rightSlot={
           <TouchableOpacity
             onPress={handleDeleteAll}
             className="w-9 h-9 rounded-full items-center justify-center bg-component-light dark:bg-component-dark"
@@ -276,8 +259,8 @@ export default function NotificationScreen() {
           >
             <TrashIcon size={22} color={errorColor} />
           </TouchableOpacity>
-        </View>
-      </View>
+        }
+      />
 
       {count.unread > 0 && (
         <View className="self-start">

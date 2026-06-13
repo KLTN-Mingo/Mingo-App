@@ -8,13 +8,10 @@ import {
 } from "react-native";
 
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
-import {
-  ArrowIcon,
-  CancelIcon,
-} from "@/components/shared/icons/Icons";
+import { CancelIcon } from "@/components/shared/icons/Icons";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { SearchBarInput } from "@/components/shared/ui/search-bar";
-import { Avatar, Icon, Text } from "@/components/ui";
+import { Avatar, BackHeader, Icon, Text } from "@/components/ui";
 import { paletteIcon } from "@/constants/designTokens";
 import { useTheme } from "@/context/ThemeContext";
 import type {
@@ -268,14 +265,8 @@ export default function SearchScreen() {
 
   return (
     <ScreenContainer horizontalPadding="none">
-      {/* Header: nhập không gọi API; submit bằng keyboard Search hoặc nút search. */}
-      <View className="flex-row items-center px-4 pt-3 pb-2 gap-3">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <ArrowIcon size={24} color={iconColor} />
-        </TouchableOpacity>
+      {/* Header: typing is local; submit with the keyboard Search action. */}
+      <BackHeader className="px-4 pt-3 pb-2">
         <SearchBarInput
           placeholder="Enter key"
           value={query}
@@ -286,16 +277,7 @@ export default function SearchScreen() {
           returnKeyType="search"
           onSubmitEditing={runSearch}
         />
-        <TouchableOpacity
-          onPress={runSearch}
-          accessibilityRole="button"
-          accessibilityLabel="Tìm kiếm"
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          className="w-10 h-10 rounded-full items-center justify-center bg-surface-light dark:bg-surface-dark"
-        >
-          <Icon name="magnifyingglass" size={20} color={iconColor} />
-        </TouchableOpacity>
-      </View>
+      </BackHeader>
 
       {/* Loading */}
       {loading && (
@@ -332,7 +314,11 @@ export default function SearchScreen() {
               item={item}
               iconColor={mutedIconColor}
               onPress={() =>
-                handlePickUser({ id: item.id, name: item.name, avatar: item.avatar })
+                handlePickUser({
+                  id: item.id,
+                  name: item.name,
+                  avatar: item.avatar,
+                })
               }
               onRemove={() => history.remove(item.id)}
             />

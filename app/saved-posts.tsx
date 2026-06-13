@@ -11,19 +11,15 @@ import {
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { PostCard } from "@/components/post/PostCard";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
-import { Text } from "@/components/ui";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { BackHeader } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { PaginationDto, PostResponseDto, UserMinimalDto } from "@/dtos";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useSharePost } from "@/hooks/use-share-post";
 import { postService } from "@/services/post.service";
-import { colors, getSemantic } from "@/styles/colors";
+import { colors } from "@/styles/colors";
 
 export default function SavedPostsScreen() {
   const { profile } = useAuth();
-  const colorScheme = useColorScheme() ?? "light";
-  const semantic = getSemantic(colorScheme);
   const [posts, setPosts] = useState<PostResponseDto[]>([]);
   const [pagination, setPagination] = useState<PaginationDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -190,7 +186,7 @@ export default function SavedPostsScreen() {
 
   return (
       <ScreenContainer className="gap-4">
-        <PageHeader title="Saved" />
+        <BackHeader title="Saved" />
         {loading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator color={colors.primary[100]} />

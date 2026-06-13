@@ -35,6 +35,7 @@ export default function SignInScreen() {
         const u = await userService.getCurrentUser();
         setProfile({
           id: u.id,
+          email: u.email,
           phoneNumber: u.phoneNumber,
           name: u.name,
           avatar: u.avatar,

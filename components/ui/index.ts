@@ -10,6 +10,7 @@ export { Card } from './Card';
 // export { FilterPill } from './FilterPill';
 export { ActionInput } from './ActionInput';
 export { BackButton } from './BackButton';
+export { BackHeader } from './BackHeader';
 export { ActionDatePicker, ActionSelectPicker } from './ActionPicker';
 export { FriendRequestCard } from './FriendRequestCard';
 export { Icon } from './Icon';

@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -21,7 +20,7 @@ import { VideoIcon } from "@/components/shared/icons/Icons";
 import { EmptyStateScreen } from "@/components/shared/ui/empty-state-screen";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { ProfileSkeleton } from "@/components/skeleton";
-import { Button, Text } from "@/components/ui";
+import { BackHeader, Button, Text } from "@/components/ui";
 import { paletteIcon } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -39,13 +38,12 @@ import {
   frontendCacheKeys,
   subscribeCacheInvalidation,
 } from "@/services/frontend-cache";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useReport } from "@/hooks/use-report";
 import { useSharePost } from "@/hooks/use-share-post";
 import { FollowApi } from "@/services/follow.service";
 import { postService } from "@/services/post.service";
 import { userService } from "@/services/user.service";
-import { colors, getSemantic } from "@/styles/colors";
+import { colors } from "@/styles/colors";
 
 type TabKey = "posts" | "photos" | "videos" | "reposts";
 
@@ -53,8 +51,6 @@ export default function UserProfileDetailScreen() {
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { profile: me } = useAuth();
-  const colorScheme = useColorScheme() ?? "light";
-  const semantic = getSemantic(colorScheme);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [acting, setActing] = useState(false);
@@ -450,7 +446,7 @@ export default function UserProfileDetailScreen() {
   };
 
   return (
-    <ScreenContainer className="gap-6">
+    <ScreenContainer horizontalPadding="none" className="gap-6">
       <ScrollView
         refreshControl={
           <RefreshControl
@@ -461,25 +457,14 @@ export default function UserProfileDetailScreen() {
           />
         }
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
+        contentContainerStyle={{
+          gap: 16,
+          paddingHorizontal: 20,
+          paddingBottom: 32,
+        }}
       >
         {/* Header */}
-        <View className="flex-row items-center justify-between">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="p-1 -ml-1"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="arrow-back" size={24} color={semantic.text} />
-          </TouchableOpacity>
-          <Text
-            style={{ fontFamily: "Montserrat-Bold", fontSize: 18 }}
-            className="text-text-light dark:text-text-dark flex-1 ml-2"
-            numberOfLines={1}
-          >
-            {user.name || "Profile"}
-          </Text>
-        </View>
+        <BackHeader title={user.name || "Profile"} />
 
         {/* Avatar + cover */}
         <ProfileHeader user={user} isOwnProfile={isMine} />
@@ -585,7 +570,7 @@ export default function UserProfileDetailScreen() {
           onFriendPress={() => router.push("/(tabs)/friend" as never)}
         />
 
-        <View className="min-h-[200px] px-2">{renderTabContent()}</View>
+        <View className="min-h-[200px]">{renderTabContent()}</View>
       </ScrollView>
 
       <CommentModal

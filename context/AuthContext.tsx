@@ -84,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setProfile({
         id: currentUser.id,
+        email: currentUser.email,
         phoneNumber: currentUser.phoneNumber,
         name: currentUser.name,
         avatar: currentUser.avatar,
@@ -118,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       currentUser
         ? {
             id: currentUser.id,
+            email: currentUser.email,
             phoneNumber: currentUser.phoneNumber,
             name: currentUser.name,
             avatar: currentUser.avatar,

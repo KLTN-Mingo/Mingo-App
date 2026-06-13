@@ -11,7 +11,7 @@ import {
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { CallIcon, SearchIcon } from "@/components/shared/icons/Icons";
 import { SearchBarInput } from "@/components/shared/ui/search-bar";
-import { Avatar, BackButton } from "@/components/ui";
+import { Avatar, BackHeader } from "@/components/ui";
 import { Text } from "@/components/ui/Text";
 import { PublicUserDto, RelationshipStatusDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -97,7 +97,7 @@ export default function AddFriendScreen() {
 
   return (
     <ScreenContainer className="gap-4">
-      <BackButton className="-ml-4" />
+      <BackHeader title="Add Friend" />
 
       <SearchBarInput
         placeholder="Enter phone number"
