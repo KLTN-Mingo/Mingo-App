@@ -19,6 +19,7 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfo } from "@/components/profile/ProfileInfo";
 import { ProfileRepostsList } from "@/components/profile/ProfileRepostsList";
 import { ProfileSettingsModal } from "@/components/profile/ProfileSettingsModal";
+import { TwoFactorSettingsModal } from "@/components/profile/TwoFactorSettingsModal";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { ChangePasswordModal } from "@/components/profile/ChangePasswordModal";
 import {
@@ -56,6 +57,7 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [changePasswordVisible, setChangePasswordVisible] = useState(false);
+  const [twoFactorVisible, setTwoFactorVisible] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
   const [bioModalVisible, setBioModalVisible] = useState(false);
@@ -85,6 +87,7 @@ export default function ProfileScreen() {
       if (profile) {
         setUserProfile({
           id: profile.id,
+          email: profile.email,
           phoneNumber: profile.phoneNumber,
           name: profile.name,
           avatar: profile.avatar,
@@ -544,6 +547,10 @@ export default function ProfileScreen() {
           setSettingsVisible(false);
           setChangePasswordVisible(true);
         }}
+        onOpenTwoFactorSettings={() => {
+          setSettingsVisible(false);
+          setTwoFactorVisible(true);
+        }}
         onOpenBlockedUsers={() => {
           setSettingsVisible(false);
           router.push("/blocked-users" as any);
@@ -579,6 +586,17 @@ export default function ProfileScreen() {
       <ChangePasswordModal
         visible={changePasswordVisible}
         onRequestClose={() => setChangePasswordVisible(false)}
+      />
+
+      <TwoFactorSettingsModal
+        visible={twoFactorVisible}
+        enabled={Boolean(userProfile.twoFactorEnabled)}
+        onRequestClose={() => setTwoFactorVisible(false)}
+        onChanged={(enabled) => {
+          setUserProfile((prev) =>
+            prev ? { ...prev, twoFactorEnabled: enabled } : prev
+          );
+        }}
       />
 
       <CommentModal

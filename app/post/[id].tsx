@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { formatDistanceToNow } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState, useRef } from "react";
@@ -43,6 +44,7 @@ import { useReport } from "@/hooks/use-report";
 import { useAuth } from "@/context/AuthContext";
 import { useSharePost } from "@/hooks/use-share-post";
 import { commentService } from "@/services/comment.service";
+import { getReplyTarget, ReplyTarget } from "@/services/comment-reply-target";
 import { FollowApi } from "@/services/follow.service";
 import {
   frontendCacheKeys,
@@ -80,6 +82,7 @@ export default function PostDetailScreen() {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentDraft, setEditCommentDraft] = useState("");
   const [commentText, setCommentText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<ReplyTarget | null>(null);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [expandedReplyIds, setExpandedReplyIds] = useState<Record<string, boolean>>({});
   const [loadingReplyIds, setLoadingReplyIds] = useState<Record<string, boolean>>({});
@@ -280,10 +283,29 @@ export default function PostDetailScreen() {
 
     setSubmittingComment(true);
     try {
-      const created = await commentService.createComment(postId, {
-        contentText,
-      });
-      setComments((prev) => [created, ...prev]);
+      if (replyingTo) {
+        const created = await commentService.createReply(
+          postId,
+          replyingTo.id,
+          {
+            contentText,
+            parentCommentId: replyingTo.id,
+            originalCommentId: replyingTo.originalCommentId,
+          }
+        );
+        setComments((prev) => [...prev, created]);
+        setExpandedReplyIds((prev) => ({
+          ...prev,
+          [replyingTo.originalCommentId]: true,
+          [replyingTo.id]: true,
+        }));
+        setReplyingTo(null);
+      } else {
+        const created = await commentService.createComment(postId, {
+          contentText,
+        });
+        setComments((prev) => [created, ...prev]);
+      }
       setPost((prev) =>
         prev ? { ...prev, commentsCount: prev.commentsCount + 1 } : prev
       );
@@ -295,6 +317,15 @@ export default function PostDetailScreen() {
     } finally {
       setSubmittingComment(false);
     }
+  };
+
+  const handleReplyComment = (comment: CommentResponseDto) => {
+    setReplyingTo(getReplyTarget(comment));
+    setEditingCommentId(null);
+    setEditCommentDraft("");
+    requestAnimationFrame(() => {
+      commentInputRef.current?.focus();
+    });
   };
 
   const handlePostMorePress = (p: PostResponseDto) => {
@@ -395,6 +426,12 @@ export default function PostDetailScreen() {
       if (editingCommentId === comment.id) {
         setEditingCommentId(null);
         setEditCommentDraft("");
+      }
+      if (
+        replyingTo?.id === comment.id ||
+        replyingTo?.originalCommentId === comment.id
+      ) {
+        setReplyingTo(null);
       }
     } catch (error) {
       console.warn("Cannot delete comment:", error);
@@ -578,7 +615,7 @@ export default function PostDetailScreen() {
             editDraft={editCommentDraft}
             onEditDraftChange={setEditCommentDraft}
             onLike={() => handleLikeComment(item)}
-            onReply={() => undefined}
+            onReply={() => handleReplyComment(item)}
             mentionName={parentName}
             onDelete={isOwner ? () => handleDeleteComment(item) : undefined}
             onSaveEdit={() => handleSaveEditComment(item.id)}
@@ -865,17 +902,46 @@ export default function PostDetailScreen() {
         />
 
         {currentUser?.id && post ? (
-          <CommentComposer
-            colors={themeColors}
-            avatarUri={currentUser.avatar}
-            avatarFallback={currentUser.name}
-            value={commentText}
-            onChangeText={setCommentText}
-            onSubmit={handleSubmitComment}
-            submitting={submittingComment}
-            inputRef={commentInputRef}
-            placeholder="Write comment..."
-          />
+          <View style={{ backgroundColor: themeColors.background }}>
+            {replyingTo ? (
+              <View
+                className="mx-4 mb-1 flex-row items-center rounded-2xl px-3 py-2"
+                style={{ backgroundColor: themeColors.surfaceMuted }}
+              >
+                <Text
+                  className="flex-1 text-xs"
+                  style={{ color: themeColors.textMuted }}
+                >
+                  Replying to{" "}
+                  <Text
+                    className="font-semibold"
+                    style={{ color: themeColors.textPrimary }}
+                  >
+                    {replyingTo.name}
+                  </Text>
+                </Text>
+                <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                  <Ionicons
+                    name="close"
+                    size={16}
+                    color={themeColors.textMuted}
+                  />
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
+            <CommentComposer
+              colors={themeColors}
+              avatarUri={currentUser.avatar}
+              avatarFallback={currentUser.name}
+              value={commentText}
+              onChangeText={setCommentText}
+              onSubmit={handleSubmitComment}
+              submitting={submittingComment}
+              inputRef={commentInputRef}
+              placeholder={replyingTo ? "Write a reply..." : "Write comment..."}
+            />
+          </View>
         ) : null}
       </KeyboardAvoidingView>
 

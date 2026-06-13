@@ -10,8 +10,10 @@ import {
 
 import { SafeScreenView } from "@/components/containers/SafeLayout";
 import { ActionInput, BackButton, Button, Text } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
 import { authService } from "@/services/auth.service";
 import { validateAuthFields } from "@/utils/authValidation";
+import { profileFromCompletedTwoFactorLogin } from "@/utils/twoFactorLoginProfile";
 
 /**
  * Bước 2 khi login user đã bật 2FA.
@@ -23,6 +25,7 @@ import { validateAuthFields } from "@/utils/authValidation";
 export default function TwoFactorScreen() {
   const params = useLocalSearchParams<{ pendingToken?: string }>();
   const pendingToken = String(params.pendingToken ?? "");
+  const { setProfile } = useAuth();
 
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -44,11 +47,9 @@ export default function TwoFactorScreen() {
       return;
     }
     if (!pendingToken) {
-      Alert.alert(
-        "Phiên xác thực hết hạn",
-        "Vui lòng đăng nhập lại.",
-        [{ text: "OK", onPress: () => router.replace("/(auth)/signin") }]
-      );
+      Alert.alert("Phiên xác thực hết hạn", "Vui lòng đăng nhập lại.", [
+        { text: "OK", onPress: () => router.replace("/(auth)/signin") },
+      ]);
       return;
     }
     setLoading(true);
@@ -57,9 +58,11 @@ export default function TwoFactorScreen() {
         pendingToken,
         code: code.trim(),
       });
-      if (data?.accessToken) {
+      const nextProfile = profileFromCompletedTwoFactorLogin(data);
+      if (nextProfile) {
         // AuthContext sẽ rehydrate qua AsyncStorage trên màn signin? Đơn giản:
         // chuyển về tab chính, AuthContext listener đọc lại token.
+        setProfile(nextProfile);
         router.replace("/(tabs)/home" as never);
       } else {
         Alert.alert("Lỗi", "Không nhận được token");
@@ -86,10 +89,13 @@ export default function TwoFactorScreen() {
         <ScrollView
           contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
           keyboardShouldPersistTaps="handled"
-          className="px-6"
+          className="px-6 mb-40"
         >
-          <Text variant="title" className="text-center mb-4">
-            Xác thực 2 lớp
+          <Text
+            variant="title"
+            className="text-center mb-4 text-title-light dark:text-title-dark"
+          >
+            Two-Factor Authentication
           </Text>
 
           <Text variant="muted" className="text-center mb-10">

@@ -20,6 +20,7 @@ export type ProfileSettingsModalProps = {
   onEditProfile: () => void;
   onOpenSavedPosts: () => void;
   onOpenAccountSettings: () => void;
+  onOpenTwoFactorSettings: () => void;
   onOpenBlockedUsers?: () => void;
   themeToggleLabel: string;
   onToggleTheme: () => void;
@@ -64,6 +65,7 @@ export function ProfileSettingsModal({
   onEditProfile,
   onOpenSavedPosts,
   onOpenAccountSettings,
+  onOpenTwoFactorSettings,
   onOpenBlockedUsers,
   themeToggleLabel,
   onToggleTheme,
@@ -112,6 +114,12 @@ export function ProfileSettingsModal({
             icon={<LockIcon size={22} color={iconColor} />}
             label="Change Password"
             onPress={onOpenAccountSettings}
+          />
+
+          <MenuItem
+            icon={<LockIcon size={22} color={iconColor} />}
+            label="Two-Factor Authentication"
+            onPress={onOpenTwoFactorSettings}
           />
 
           <MenuItem

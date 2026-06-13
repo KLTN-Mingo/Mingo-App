@@ -58,6 +58,7 @@ export function SearchBarInput({
   containerClassName = "",
   className = "",
   rightElement,
+  style,
   ...inputProps
 }: SearchBarInputProps) {
   const colorScheme = useColorScheme() ?? "light";
@@ -73,6 +74,17 @@ export function SearchBarInput({
       <TextInput
         className={`flex-1 ml-2 font-regular text-base text-text-light dark:text-text-dark py-0 ${className}`}
         placeholderTextColor={sem.placeholder}
+        style={[
+          {
+            height: 22,
+            lineHeight: 20,
+            paddingTop: 0,
+            paddingBottom: 0,
+            textAlignVertical: "center",
+            includeFontPadding: false,
+          },
+          style,
+        ]}
         {...inputProps}
       />
 

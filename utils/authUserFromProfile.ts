@@ -3,6 +3,7 @@ import { AuthUserDto, UserProfileDto } from "@/dtos";
 export function authUserFromProfile(u: UserProfileDto): AuthUserDto {
   return {
     id: u.id,
+    email: u.email,
     phoneNumber: u.phoneNumber,
     name: u.name,
     avatar: u.avatar,

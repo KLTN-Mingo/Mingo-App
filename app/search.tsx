@@ -265,21 +265,8 @@ export default function SearchScreen() {
 
   return (
     <ScreenContainer horizontalPadding="none">
-      {/* Header: nhập không gọi API; submit bằng keyboard Search hoặc nút search. */}
-      <BackHeader
-        className="px-4 pt-3 pb-2"
-        rightSlot={
-          <TouchableOpacity
-            onPress={runSearch}
-            accessibilityRole="button"
-            accessibilityLabel="Tìm kiếm"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            className="w-10 h-10 rounded-full items-center justify-center bg-surface-light dark:bg-surface-dark"
-          >
-            <Icon name="magnifyingglass" size={20} color={iconColor} />
-          </TouchableOpacity>
-        }
-      >
+      {/* Header: typing is local; submit with the keyboard Search action. */}
+      <BackHeader className="px-4 pt-3 pb-2">
         <SearchBarInput
           placeholder="Enter key"
           value={query}
@@ -327,7 +314,11 @@ export default function SearchScreen() {
               item={item}
               iconColor={mutedIconColor}
               onPress={() =>
-                handlePickUser({ id: item.id, name: item.name, avatar: item.avatar })
+                handlePickUser({
+                  id: item.id,
+                  name: item.name,
+                  avatar: item.avatar,
+                })
               }
               onRemove={() => history.remove(item.id)}
             />
