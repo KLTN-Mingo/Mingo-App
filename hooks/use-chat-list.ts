@@ -94,7 +94,7 @@ export function useChatList() {
         });
 
         channel.bind("pusher:subscription_error", (err: any) => {
-          console.error("[useChatList] ❌ Lỗi kết nối Kênh:", err);
+          console.error("[useChatList] ❌ Error kết nối Kênh:", err);
         });
       } catch (err) {
         console.error("Pusher connection setup failure:", err);

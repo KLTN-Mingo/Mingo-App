@@ -55,7 +55,7 @@ async function registerForPushAsync(): Promise<string | null> {
 }
 
 /**
- * Đăng ký push token khi user login, deep-link khi tap notification.
+ * Post ký push token khi user login, deep-link khi tap notification.
  *
  * Cần build dev-client / production để chạy (Expo Go bị giới hạn từ SDK 53).
  * Behavior nhẹ nhàng: lỗi sẽ console.warn, không crash UX.

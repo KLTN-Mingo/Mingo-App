@@ -68,34 +68,34 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: "Trang chủ",
+          title: "Home",
           tabBarIcon: ({ color }) => <TabIcon SvgIcon={HomeIcon} color={color} />,
         }}
       />
       <Tabs.Screen
         name="friend"
         options={{
-          title: "Bạn bè",
+          title: "Friends",
           tabBarIcon: ({ color }) => <TabIcon SvgIcon={FriendIcon} color={color} />,
         }}
       />
       <Tabs.Screen
         name="post"
         options={{
-          title: "Đăng",
+          title: "Post",
         }}
       />
       <Tabs.Screen
         name="message"
         options={{
-          title: "Tin nhắn",
+          title: "Messages",
           tabBarIcon: ({ color }) => <TabIcon SvgIcon={MessageIcon} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Hồ sơ",
+          title: "Profile",
           tabBarIcon: ({ color }) => <TabIcon SvgIcon={ProfileIcon} color={color} />,
         }}
       />

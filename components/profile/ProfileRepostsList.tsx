@@ -17,18 +17,17 @@ import { useSharePost } from "@/hooks/use-share-post";
 import { shareService } from "@/services/share.service";
 
 interface ProfileRepostsListProps {
-  /** Chủ profile đang xem — list reposts của user này. */
   userId: string;
-  /** User đang đăng nhập — để PostCard biết save/like state. */
+  profileUser?: UserMinimalDto | null;
   currentUser?: UserMinimalDto | null;
 }
 
 const PAGE_LIMIT = 20;
-/** Cap chống vòng lặp BE trả `hasMore` sai. */
 const MAX_PAGES = 50;
 
 export function ProfileRepostsList({
   userId,
+  profileUser,
   currentUser,
 }: ProfileRepostsListProps) {
   const colorScheme = useColorScheme() ?? "light";
@@ -69,8 +68,6 @@ export function ProfileRepostsList({
     reload();
   }, [reload]);
 
-  // Realtime: khi user đang xem profile của chính mình & có người repost bài
-  // mình, hoặc chủ profile đăng repost mới → reload.
   useShareEvents(reload, { type: "repost" });
 
   if (loading) {
@@ -82,7 +79,7 @@ export function ProfileRepostsList({
   }
 
   if (items.length === 0) {
-    return <EmptyState title="Chưa có repost nào" />;
+    return <EmptyState title="No reposts yet" />;
   }
 
   return (
@@ -91,6 +88,7 @@ export function ProfileRepostsList({
         <RepostEntry
           key={it.repostId}
           repost={it}
+          profileUser={profileUser}
           currentUser={currentUser}
           onSharePress={share.openSheet}
           onUserPress={(uid) => router.push(`/profile/${uid}` as never)}
@@ -103,6 +101,7 @@ export function ProfileRepostsList({
 
 interface RepostEntryProps {
   repost: RepostItemDto;
+  profileUser?: UserMinimalDto | null;
   currentUser?: UserMinimalDto | null;
   onSharePress: (post: PostResponseDto) => void;
   onUserPress: (userId: string) => void;
@@ -110,34 +109,47 @@ interface RepostEntryProps {
 
 function RepostEntry({
   repost,
+  profileUser,
   currentUser,
   onSharePress,
   onUserPress,
 }: RepostEntryProps) {
+  const repostUser = profileUser ?? {
+    id: repost.authorId,
+    name: "User",
+    avatar: undefined,
+    verified: false,
+  };
+
   return (
-    <View className="gap-2">
-      {/* Comment quote nếu có (quote repost) */}
-      {repost.comment ? (
-        <View className="flex-row items-start gap-2 px-1">
+    <View className="relative pl-5">
+      <View className="absolute bottom-2 left-2 top-5 w-px bg-border-light dark:bg-border-dark" />
+
+      <View className="mb-2 flex-row items-start gap-3">
+        <View className="mt-2 h-2 w-2 rounded-full bg-primary" />
+        <View className="flex-1 min-w-0">
+          <Text className="text-xs font-semibold text-text-secondary-light dark:text-text-secondary-dark">
+            {repostUser.name || "User"} reposted
+          </Text>
+          {repost.comment ? (
+            <View className="mt-1 rounded-lg bg-surface-light dark:bg-surface-dark px-3 py-2">
+              <Text
+                className="text-sm text-text-light dark:text-text-dark"
+                numberOfLines={4}
+              >
+                {repost.comment}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        <View className="ml-2">
           <Avatar
-            source={
-              repost.post.user?.avatar
-                ? { uri: repost.post.user.avatar }
-                : undefined
-            }
-            fallback={repost.post.user?.name}
+            source={repostUser.avatar ? { uri: repostUser.avatar } : undefined}
+            fallback={repostUser.name}
             size="sm"
           />
-          <View className="flex-1 rounded-lg bg-surface-light dark:bg-surface-dark px-3 py-2">
-            <Text
-              className="text-sm text-text-light dark:text-text-dark"
-              numberOfLines={4}
-            >
-              {repost.comment}
-            </Text>
-          </View>
         </View>
-      ) : null}
+      </View>
 
       <PostCard
         post={repost.post}

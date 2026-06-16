@@ -425,7 +425,7 @@ export function PostCard({
             )}
             {showCultureAnalyzing ? (
               <Text variant="muted" className="mt-1 text-xs">
-                Đang phân tích văn hoá...
+                Analyzing cultural context...
               </Text>
             ) : null}
           </View>
@@ -524,7 +524,7 @@ export function PostCard({
               onPress={handleSave}
               className="flex-row items-center gap-3 ml-auto"
               disabled={saveLoading}
-              accessibilityLabel={isSaved ? "Bỏ lưu" : "Lưu bài"}
+              accessibilityLabel={isSaved ? "Unsave" : "Save post"}
             >
               <SaveIcon
                 size={22}

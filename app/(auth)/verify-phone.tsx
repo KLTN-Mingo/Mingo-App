@@ -31,7 +31,7 @@ export default function VerifyPhoneScreen() {
       { phoneNumber },
       {
         phoneNumber: {
-          label: "số điện thoại",
+          label: "phone number",
           rules: ["required", "phone"],
         },
       }
@@ -42,11 +42,11 @@ export default function VerifyPhoneScreen() {
       { phoneNumber, code },
       {
         phoneNumber: {
-          label: "số điện thoại",
+          label: "phone number",
           rules: ["required", "phone"],
         },
         code: {
-          label: "mã OTP",
+          label: "OTP code",
           rules: ["required", "otp"],
         },
       }
@@ -63,13 +63,13 @@ export default function VerifyPhoneScreen() {
     setResending(true);
     try {
       await authService.sendPhoneOtp();
-      Alert.alert("Đã gửi mã", "Vui lòng kiểm tra tin nhắn SMS.");
+      Alert.alert("Code sent", "Please check your SMS.");
       otpCooldown.startCooldown();
     } catch (err: unknown) {
       console.error("[auth] send phone otp failed", err);
       Alert.alert(
-        "Lỗi",
-        err instanceof Error ? err.message : "Không gửi được mã"
+        "Error",
+        err instanceof Error ? err.message : "Could not send code"
       );
     } finally {
       setResending(false);
@@ -90,14 +90,14 @@ export default function VerifyPhoneScreen() {
         phoneNumber: phoneNumber.trim(),
         code: code.trim(),
       });
-      Alert.alert("Thành công", "Số điện thoại đã được xác nhận.", [
+      Alert.alert("Success", "Phone number has been verified.", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (err: unknown) {
       console.error("[auth] verify phone failed", err);
       Alert.alert(
-        "Lỗi",
-        err instanceof Error ? err.message : "Mã không hợp lệ"
+        "Error",
+        err instanceof Error ? err.message : "Invalid code"
       );
     } finally {
       setLoading(false);
@@ -118,16 +118,16 @@ export default function VerifyPhoneScreen() {
           className="px-6"
         >
           <Text variant="title" className="text-center mb-4">
-            Xác nhận số điện thoại
+            Confirm phone number
           </Text>
 
           <Text variant="muted" className="text-center mb-10">
-            Chúng tôi sẽ gửi mã OTP qua tin nhắn SMS.
+            We will send an OTP code by SMS.
           </Text>
 
           <View className="gap-4">
             <ActionInput
-              label="Số điện thoại"
+              label="Phone number"
               isRequired
               variant="auth"
               placeholder="0123456789"
@@ -150,10 +150,10 @@ export default function VerifyPhoneScreen() {
             </Button>
 
             <ActionInput
-              label="Mã OTP"
+              label="OTP code"
               isRequired
               variant="auth"
-              placeholder="6 chữ số"
+              placeholder="6 digits"
               value={code}
               onChangeText={(t) => {
                 setCode(t);
@@ -165,7 +165,7 @@ export default function VerifyPhoneScreen() {
             />
 
             <Button onPress={handleVerify} loading={loading} className="mt-2">
-              Xác nhận
+              Confirm
             </Button>
           </View>
         </ScrollView>

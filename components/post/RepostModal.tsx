@@ -77,8 +77,8 @@ export function RepostModal({
           // best-effort refresh
         }
         Alert.alert(
-          "KhÃ´ng cÃ²n quyá»n xem",
-          "Báº¡n khÃ´ng cÃ²n quyá»n xem bÃ i viáº¿t nÃ y."
+          "No longer available",
+          "You no longer have access to this post."
         );
         onClose();
         return;
@@ -87,25 +87,25 @@ export function RepostModal({
       const code = err.code;
       // Theo bảng error trong guide §3.
       if (code === "REPOST_DUPLICATED") {
-        Alert.alert("Đã repost rồi", "Bạn đã repost bài viết này trước đó");
+        Alert.alert("Already reposted", "You have already reposted this post");
         // Treat as success (state-wise) — đóng modal.
         onClose();
       } else if (code === "REPOST_OWN_POST_FORBIDDEN") {
         Alert.alert(
-          "Không thể repost",
-          "Bạn không thể repost bài của chính mình"
+          "Cannot repost",
+          "You cannot repost your own post"
         );
         onClose();
       } else if (code === "POST_NOT_FOUND") {
-        Alert.alert("Bài viết không tồn tại", "Bài này có thể đã bị xoá");
+        Alert.alert("Post not found", "This post may have been deleted");
         onClose();
       } else if (code === "SHARE_RATE_LIMIT_EXCEEDED") {
         Alert.alert(
-          "Quá nhanh",
-          "Bạn đã chia sẻ quá nhiều, vui lòng thử lại sau"
+          "Too fast",
+          "You have shared too much. Please try again later"
         );
       } else {
-        Alert.alert("Lỗi", err?.message ?? "Không repost được bài viết");
+        Alert.alert("Error", err?.message ?? "Could not repost post");
       }
     } finally {
       setSubmitting(false);
@@ -126,7 +126,7 @@ export function RepostModal({
         <SafeModalSheet>
           <View className="flex-row items-center mb-3">
             <Text className="flex-1 text-base font-semibold text-text-light dark:text-text-dark">
-              Repost bài viết
+              Repost posts
             </Text>
             <TouchableOpacity
               onPress={onClose}
@@ -159,7 +159,7 @@ export function RepostModal({
           )}
 
           <TextArea
-            placeholder="Thêm nhận xét của bạn (tuỳ chọn)..."
+            placeholder="Add a comment (optional)..."
             value={comment}
             onChangeText={setComment}
             maxLength={MAX_COMMENT_LEN}

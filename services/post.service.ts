@@ -408,7 +408,7 @@ class PostService {
     return this.normalizePaginatedPosts(raw, page, limit);
   }
 
-  /** GET /api/posts?hashtag=tag — bài viết theo hashtag. */
+  /** GET /api/posts?hashtag=tag — posts theo hashtag. */
   async getPostsByHashtag(
     tag: string,
     page = 1,

@@ -20,7 +20,7 @@ import { VideoIcon } from "@/components/shared/icons/Icons";
 import { EmptyStateScreen } from "@/components/shared/ui/empty-state-screen";
 import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { ProfileSkeleton } from "@/components/skeleton";
-import { BackHeader, Button, Text } from "@/components/ui";
+import { BackHeader, Button, Icon, Text } from "@/components/ui";
 import { paletteIcon } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -39,18 +39,86 @@ import {
   subscribeCacheInvalidation,
 } from "@/services/frontend-cache";
 import { useReport } from "@/hooks/use-report";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useSharePost } from "@/hooks/use-share-post";
 import { FollowApi } from "@/services/follow.service";
+import { messageService } from "@/services/message.service";
 import { postService } from "@/services/post.service";
 import { userService } from "@/services/user.service";
 import { colors } from "@/styles/colors";
 
 type TabKey = "posts" | "photos" | "videos" | "reposts";
 
+type RelationshipViewState =
+  | "friend"
+  | "close_friend"
+  | "stranger"
+  | "follower"
+  | "following"
+  | "pending";
+
+function getRelationshipViewState(
+  relationship: RelationshipStatusDto | null
+): RelationshipViewState {
+  if (relationship?.isCloseFriend) return "close_friend";
+  if (relationship?.isFriend) return "friend";
+  if (relationship?.followerStatus === FollowStatus.PENDING) return "follower";
+  if (relationship?.followStatus === FollowStatus.PENDING) return "pending";
+  if (relationship?.isFollowing) return "following";
+  return "stranger";
+}
+
+function getRelationshipBadge(state: RelationshipViewState): {
+  label: string;
+  backgroundColor: string;
+  color: string;
+} {
+  switch (state) {
+    case "close_friend":
+      return {
+        label: "Close friend",
+        backgroundColor: "#FEF3C7",
+        color: "#92400E",
+      };
+    case "friend":
+      return {
+        label: "Friend",
+        backgroundColor: "#E8EDEB",
+        color: "#475852",
+      };
+    case "follower":
+      return {
+        label: "Follower",
+        backgroundColor: "#DBEAFE",
+        color: "#1D4ED8",
+      };
+    case "following":
+      return {
+        label: "Following",
+        backgroundColor: "#ECFDF5",
+        color: "#047857",
+      };
+    case "pending":
+      return {
+        label: "Request sent",
+        backgroundColor: "#F3F4F6",
+        color: "#4B5563",
+      };
+    case "stranger":
+    default:
+      return {
+        label: "Not connected",
+        backgroundColor: "#FEE2E2",
+        color: "#B91C1C",
+      };
+  }
+}
+
 export default function UserProfileDetailScreen() {
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { profile: me } = useAuth();
+  const colorScheme = useColorScheme() ?? "light";
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [acting, setActing] = useState(false);
@@ -191,14 +259,14 @@ export default function UserProfileDetailScreen() {
         await FollowApi.removeCloseFriend(id);
       } else if (relationship?.closeFriendStatus === CloseFriendStatus.PENDING) {
         Alert.alert(
-          "Bạn thân",
-          "Yêu cầu bạn thân đang chờ phản hồi."
+          "Close friends",
+          "Close friend request is pending."
         );
         return;
       } else if (!relationship?.isFriend) {
         Alert.alert(
-          "Bạn thân",
-          "Chỉ có thể thêm bạn thân khi cả hai đã theo dõi nhau."
+          "Close friends",
+          "You can add close friends only after both people follow each other."
         );
       } else {
         await FollowApi.sendCloseFriendRequest(id);
@@ -232,6 +300,43 @@ export default function UserProfileDetailScreen() {
     }
   };
 
+  const handleMessageUser = async () => {
+    if (!id || isMine || acting) return;
+    setActing(true);
+    try {
+      const { boxId } = await messageService.getOrCreateDirectBox(id);
+      router.push(`/chat/${boxId}` as never);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Cannot open chat";
+      Alert.alert("Error", msg);
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const handleUnfriendUser = () => {
+    if (!id || isMine || acting) return;
+    Alert.alert("Unfriend this user?", "This will remove the friendship.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Unfriend",
+        style: "destructive",
+        onPress: async () => {
+          setActing(true);
+          try {
+            await FollowApi.unfollow(id);
+            await fetchData();
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Cannot unfriend";
+            Alert.alert("Error", msg);
+          } finally {
+            setActing(false);
+          }
+        },
+      },
+    ]);
+  };
+
   const handleBlockUser = () => {
     if (!id || isMine) return;
     Alert.alert(
@@ -263,8 +368,37 @@ export default function UserProfileDetailScreen() {
     report.openReport({
       entityType: ReportEntityType.USER,
       entityId: id,
-      entityLabel: user?.name ?? "người dùng này",
+      entityLabel: user?.name ?? "this user",
     });
+  };
+
+  const handleUserMenuPress = () => {
+    if (!id || isMine) return;
+    const relationState = getRelationshipViewState(relationship);
+    const canUnfriend =
+      relationState === "friend" || relationState === "close_friend";
+    Alert.alert(user?.name ?? "User", undefined, [
+      ...(canUnfriend
+        ? [
+            {
+              text: "Unfriend",
+              style: "destructive" as const,
+              onPress: handleUnfriendUser,
+            },
+          ]
+        : []),
+      {
+        text: "Report user",
+        style: "destructive",
+        onPress: handleReportUser,
+      },
+      {
+        text: "Block user",
+        style: "destructive",
+        onPress: handleBlockUser,
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const handleEditProfile = () => {
@@ -311,12 +445,14 @@ export default function UserProfileDetailScreen() {
   };
 
   const followActionState = getFollowActionState(relationship);
+  const relationshipViewState = getRelationshipViewState(relationship);
+  const relationshipBadge = getRelationshipBadge(relationshipViewState);
   const closeFriendLabel =
     relationship?.closeFriendStatus === CloseFriendStatus.ACCEPTED
-      ? "Bạn thân"
+      ? "Close friends"
       : relationship?.closeFriendStatus === CloseFriendStatus.PENDING
-        ? "Đang chờ bạn thân"
-        : "Thêm bạn thân";
+        ? "Close friend pending"
+        : "Add close friend";
 
   if (loading) return <ProfileSkeleton />;
   if (!user) {
@@ -437,7 +573,16 @@ export default function UserProfileDetailScreen() {
 
       case "reposts":
         return (
-          <ProfileRepostsList userId={user.id} currentUser={userMinimal} />
+          <ProfileRepostsList
+            userId={user.id}
+            profileUser={{
+              id: user.id,
+              name: user.name,
+              avatar: user.avatar,
+              verified: user.verified,
+            }}
+            currentUser={userMinimal}
+          />
         );
 
       default:
@@ -464,7 +609,23 @@ export default function UserProfileDetailScreen() {
         }}
       >
         {/* Header */}
-        <BackHeader title={user.name || "Profile"} />
+        <BackHeader
+          title={user.name || "Profile"}
+          rightSlot={
+            !isMine ? (
+              <TouchableOpacity
+                onPress={handleUserMenuPress}
+                activeOpacity={0.75}
+                className="p-2 -mr-2"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="User options"
+              >
+                <Icon name="ellipsis" size={22} color={paletteIcon[colorScheme]} />
+              </TouchableOpacity>
+            ) : null
+          }
+        />
 
         {/* Avatar + cover */}
         <ProfileHeader user={user} isOwnProfile={isMine} />
@@ -491,74 +652,105 @@ export default function UserProfileDetailScreen() {
           </Button>
         ) : (
           <View className="gap-2">
-            {relationship?.followerStatus === FollowStatus.PENDING ? (
+            <View className="flex-row items-center">
+              <View
+                className="rounded-full px-3 py-1.5"
+                style={{
+                  backgroundColor: relationshipBadge.backgroundColor,
+                }}
+              >
+                <Text
+                  className="text-xs font-semibold"
+                  style={{ color: relationshipBadge.color }}
+                >
+                  {relationshipBadge.label}
+                </Text>
+              </View>
+            </View>
+
+            {relationshipViewState === "friend" ? (
               <View className="flex-row gap-2">
                 <Button
-                  variant="primary"
-                  onPress={() => handleIncomingFollowResponse(true)}
-                  disabled={acting}
+                  variant="outline"
+                  onPress={handleCloseFriendAction}
+                  disabled={
+                    acting ||
+                    relationship?.closeFriendStatus === CloseFriendStatus.PENDING
+                  }
                   className="flex-1"
                 >
-                  Chấp nhận
+                  {closeFriendLabel}
                 </Button>
                 <Button
-                  variant="outline"
-                  onPress={() => handleIncomingFollowResponse(false)}
+                  variant="primary"
+                  onPress={handleMessageUser}
                   disabled={acting}
                   className="flex-1"
                 >
-                  Từ chối
+                  Message
                 </Button>
               </View>
             ) : null}
-            <View className="flex-row gap-2">
+
+            {relationshipViewState === "close_friend" ? (
               <Button
-                variant={
-                  followActionState.action === "follow" ? "primary" : "outline"
-                }
+                variant="primary"
+                onPress={handleMessageUser}
+                disabled={acting}
+              >
+                Message
+              </Button>
+            ) : null}
+
+            {relationshipViewState === "stranger" ? (
+              <View className="flex-row gap-2">
+                <Button
+                  variant="primary"
+                  onPress={handleFollowAction}
+                  disabled={acting}
+                  className="flex-1"
+                >
+                  Follow
+                </Button>
+                <Button
+                  variant="outline"
+                  onPress={handleBlockUser}
+                  disabled={acting}
+                  className="flex-1"
+                >
+                  Block
+                </Button>
+              </View>
+            ) : null}
+
+            {relationshipViewState === "follower" ? (
+              <Button
+                variant="primary"
+                onPress={() => handleIncomingFollowResponse(true)}
+                disabled={acting}
+              >
+                Accept
+              </Button>
+            ) : null}
+
+            {relationshipViewState === "following" ? (
+              <Button
+                variant="outline"
                 onPress={handleFollowAction}
                 disabled={acting}
-                className="flex-1"
+              >
+                Unfollow
+              </Button>
+            ) : null}
+
+            {relationshipViewState === "pending" ? (
+              <Button
+                variant="outline"
+                onPress={handleFollowAction}
+                disabled={acting}
               >
                 {followActionState.label}
               </Button>
-              <Button
-                variant="outline"
-                onPress={handleCloseFriendAction}
-                disabled={
-                  acting ||
-                  (!relationship?.isFriend &&
-                    relationship?.closeFriendStatus !== CloseFriendStatus.ACCEPTED)
-                }
-                className="flex-1"
-              >
-                {closeFriendLabel}
-              </Button>
-            </View>
-            <View className="flex-row gap-2">
-              <Button
-                variant="outline"
-                onPress={handleBlockUser}
-                disabled={acting}
-                className="flex-1"
-              >
-                Block user
-              </Button>
-              <Button
-                variant="outline"
-                onPress={handleReportUser}
-                disabled={acting}
-                className="flex-1"
-              >
-                Report
-              </Button>
-            </View>
-            {relationship ? (
-              <View className="p-3 rounded-lg bg-surface-muted-light dark:bg-surface-muted-dark">
-                <Text variant="muted">
-                  Relationship: {relationship.relationshipType}
-                </Text>
-              </View>
             ) : null}
           </View>
         )}

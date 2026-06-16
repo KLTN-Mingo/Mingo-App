@@ -23,8 +23,8 @@ export function useOtpCooldown(initialSeconds = 60) {
   const isCoolingDown = remaining > 0;
 
   const label = useMemo(() => {
-    if (!isCoolingDown) return "Gửi / Gửi lại mã";
-    return `Gửi lại sau ${remaining}s`;
+    if (!isCoolingDown) return "Send / Resend code";
+    return `Resend in ${remaining}s`;
   }, [isCoolingDown, remaining]);
 
   return {

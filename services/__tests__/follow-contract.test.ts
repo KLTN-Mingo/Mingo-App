@@ -58,7 +58,7 @@ test("mutual accepted follow becomes friend and close friend requires explicit a
 test("follow action state matches backend contract labels and actions", () => {
   assert.deepEqual(getFollowActionState(null), {
     action: "follow",
-    label: "Theo dõi",
+    label: "Follow",
   });
 
   assert.deepEqual(
@@ -67,7 +67,7 @@ test("follow action state matches backend contract labels and actions", () => {
     ),
     {
       action: "cancel_request",
-      label: "Đã gửi yêu cầu",
+      label: "Request sent",
     }
   );
 
@@ -80,7 +80,7 @@ test("follow action state matches backend contract labels and actions", () => {
     ),
     {
       action: "unfollow",
-      label: "Đang theo dõi",
+      label: "Following",
     }
   );
 
@@ -90,7 +90,7 @@ test("follow action state matches backend contract labels and actions", () => {
     ),
     {
       action: "follow",
-      label: "Theo dõi",
+      label: "Follow",
     }
   );
 });

@@ -9,8 +9,8 @@ export interface ModerationBannerProps {
   isHidden?: boolean;
   hiddenReason?: string;
   /**
-   * Khi `true` (mặc định), banner chỉ render nếu post bị ẩn hoặc đang chờ duyệt.
-   * Truyền `false` để luôn show (dùng debug).
+   * Khi `true` (máº·c Ä‘á»‹nh), banner chá»‰ render náº¿u post bá»‹ áº©n hoáº·c Ä‘ang chá» duyá»‡t.
+   * Truyá»n `false` Ä‘á»ƒ luÃ´n show (dÃ¹ng debug).
    */
   hideIfApproved?: boolean;
 }
@@ -37,9 +37,9 @@ function getContent(
       border: isDark ? "#5C4815" : "#F0CE6A",
       textColor: isDark ? "#F5D58A" : "#7A5A0C",
       iconColor: isDark ? "#F5D58A" : "#A57708",
-      label: "Đang chờ kiểm duyệt",
-      detail: "Bài viết của bạn sẽ hiển thị sau khi hệ thống kiểm tra xong.",
-      emoji: "⏳",
+      label: "Pending review",
+      detail: "Your post will appear after the system finishes reviewing it.",
+      emoji: "â³",
     };
   }
 
@@ -52,9 +52,9 @@ function getContent(
       border: isDark ? "#5C4815" : "#F0CE6A",
       textColor: isDark ? "#F5D58A" : "#7A5A0C",
       iconColor: isDark ? "#F5D58A" : "#A57708",
-      label: "Đang được xem xét",
-      detail: "Bài viết bị đánh dấu nghi vấn, admin có thể xem xét lại.",
-      emoji: "⚠️",
+      label: "Under review",
+      detail: "This post was flagged and may be reviewed by an admin.",
+      emoji: "âš ï¸",
     };
   }
 
@@ -68,11 +68,11 @@ function getContent(
       border: isDark ? "#6B2828" : "#F0A4A4",
       textColor: isDark ? "#F4A8A8" : "#8A1C1C",
       iconColor: isDark ? "#F4A8A8" : "#C03030",
-      label: "Bài đang bị ẩn vì vi phạm",
+      label: "Post hidden for a violation",
       detail:
         hiddenReason ??
-        "Bài viết vi phạm tiêu chuẩn cộng đồng. Chỉ bạn nhìn thấy bài này.",
-      emoji: "🚫",
+        "This post violates community standards. Only you can see it.",
+      emoji: "ðŸš«",
     };
   }
 
@@ -80,8 +80,8 @@ function getContent(
 }
 
 /**
- * Banner mờ ở đầu bài viết hiển thị trạng thái moderation cho **chính tác giả**.
- * User khác không thấy bài isHidden nên không cần render.
+ * Banner má» á»Ÿ Ä‘áº§u posts hiá»ƒn thá»‹ tráº¡ng thÃ¡i moderation cho **chÃ­nh tÃ¡c giáº£**.
+ * User khÃ¡c khÃ´ng tháº¥y bÃ i isHidden nÃªn khÃ´ng cáº§n render.
  */
 export function ModerationBanner({
   status,

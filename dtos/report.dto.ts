@@ -69,13 +69,13 @@ export interface PaginatedReportsDto {
 // ─── Labels ────────────────────────────────────────────────────────────────────
 
 export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
-  [ReportReason.SPAM]: "Spam / Quảng cáo",
-  [ReportReason.HARASSMENT]: "Quấy rối",
-  [ReportReason.HATE_SPEECH]: "Ngôn ngữ thù ghét",
-  [ReportReason.INAPPROPRIATE]: "Nội dung không phù hợp",
-  [ReportReason.SCAM]: "Lừa đảo",
-  [ReportReason.COPYRIGHT]: "Vi phạm bản quyền",
-  [ReportReason.VIOLENCE]: "Bạo lực",
-  [ReportReason.MISINFORMATION]: "Thông tin sai lệch",
-  [ReportReason.OTHER]: "Khác",
+  [ReportReason.SPAM]: "Spam / Advertising",
+  [ReportReason.HARASSMENT]: "Harassment",
+  [ReportReason.HATE_SPEECH]: "Hate speech",
+  [ReportReason.INAPPROPRIATE]: "Inappropriate content",
+  [ReportReason.SCAM]: "Scam",
+  [ReportReason.COPYRIGHT]: "Copyright violation",
+  [ReportReason.VIOLENCE]: "Violence",
+  [ReportReason.MISINFORMATION]: "Misinformation",
+  [ReportReason.OTHER]: "Other",
 };

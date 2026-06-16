@@ -27,9 +27,9 @@ function formatIsoDateDisplay(iso?: string): string | null {
 
 function genderDisplay(g?: Gender): string | null {
   if (g === Gender.MALE) return "Nam";
-  if (g === Gender.FEMALE) return "Nữ";
-  if (g === Gender.OTHER) return "Khác";
-  if (g === Gender.PREFER_NOT_TO_SAY) return "Không tiết lộ";
+  if (g === Gender.FEMALE) return "Female";
+  if (g === Gender.OTHER) return "Other";
+  if (g === Gender.PREFER_NOT_TO_SAY) return "Prefer not to say";
   return null;
 }
 

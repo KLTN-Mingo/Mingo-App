@@ -103,7 +103,8 @@ function LocationField({
         }}
       />
       <Text variant="muted" className="mt-1 text-xs">
-        Nhập dạng: số nhà, đường..., rồi nhập tỉnh/thành sau dấu phẩy để gợi ý.
+        Enter an address, then add a city or province after a comma for
+        suggestions.
       </Text>
       {focused && suggestions.length > 0 ? (
         <View className="mt-2 rounded-2xl bg-input-light dark:bg-input-dark overflow-hidden">

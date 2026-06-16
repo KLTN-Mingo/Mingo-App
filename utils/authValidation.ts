@@ -65,29 +65,37 @@ function getRuleError<TValues extends FieldValuesShape>(
   label?: string
 ): string | undefined {
   if (rule === "required") {
-    return value ? undefined : `Vui lòng nhập ${label ?? "thông tin bắt buộc"}`;
+    return value ? undefined : `Please enter your ${label ?? "required information"}`;
   }
 
   if (rule === "phone") {
     if (!value) return undefined;
-    return PHONE_REGEX.test(value) ? undefined : "Số điện thoại không hợp lệ";
+    return PHONE_REGEX.test(value)
+      ? undefined
+      : "Please enter a valid phone number";
   }
 
   if (rule === "email") {
     if (!value) return undefined;
-    return EMAIL_REGEX.test(value) ? undefined : "Email không hợp lệ";
+    return EMAIL_REGEX.test(value)
+      ? undefined
+      : "Please enter a valid email address";
   }
 
   if (rule === "otp") {
     if (!value) return undefined;
-    return OTP_REGEX.test(value) ? undefined : "Mã xác nhận không hợp lệ";
+    return OTP_REGEX.test(value)
+      ? undefined
+      : "Please enter a valid verification code";
   }
 
   if (rule === "password") {
     if (!value) return undefined;
-    return value.length >= 6 ? undefined : "Mật khẩu phải có ít nhất 6 ký tự";
+    return value.length >= 6
+      ? undefined
+      : "Password must be at least 6 characters";
   }
 
   const compareValue = trimValue(values[rule.matchesField] as FieldValue);
-  return value === compareValue ? undefined : "Mật khẩu xác nhận không khớp";
+  return value === compareValue ? undefined : "Passwords do not match";
 }

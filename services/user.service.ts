@@ -10,9 +10,16 @@ import {
   UserStatsDto,
 } from "@/dtos";
 import { apiMultipartRequest } from "@/services/api-client";
+import {
+  createRefreshGate,
+  sendWithAutoRefresh,
+} from "@/services/auth-refresh";
 import { authService } from "@/services/auth.service";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
+const refreshAccessTokenOnce = createRefreshGate(() =>
+  authService.refreshAccessToken()
+);
 
 class UserService {
   private extractErrorMessage(json: Record<string, unknown>): string {
@@ -26,7 +33,7 @@ class UserService {
           ? ((json.error as Record<string, unknown>).message as string)
           : undefined;
 
-    return directMessage || nestedError || "Đã xảy ra lỗi";
+    return directMessage || nestedError || "Something went wrong";
   }
 
   private extractData<T>(json: Record<string, unknown>): T | undefined {
@@ -140,29 +147,28 @@ class UserService {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
-    _retry = false
+    retry = false
   ): Promise<T> {
-    const headers = await this.getAuthHeaders();
-
-    const response = await fetch(`${API_URL}/users${endpoint}`, {
-      ...options,
-      headers: { ...headers, ...options.headers },
-      credentials: "include",
+    const response = await sendWithAutoRefresh({
+      path: `/users${endpoint}`,
+      retry,
+      refreshAccessTokenOnce,
+      send: async () => {
+        const headers = await this.getAuthHeaders();
+        return fetch(`${API_URL}/users${endpoint}`, {
+          ...options,
+          headers: { ...headers, ...options.headers },
+          credentials: "include",
+        });
+      },
     });
-
-    if (response.status === 401 && !_retry) {
-      const refreshedToken = await authService.refreshAccessToken();
-      if (refreshedToken) {
-        return this.request<T>(endpoint, options, true);
-      }
-    }
 
     let json: Record<string, unknown> = {};
     try {
       const text = await response.text();
       json = text ? JSON.parse(text) : {};
     } catch {
-      throw new Error("Phản hồi từ máy chủ không hợp lệ");
+      throw new Error("Invalid server response");
     }
 
     const message = this.extractErrorMessage(json);
@@ -174,14 +180,14 @@ class UserService {
 
     const data = this.extractData<T>(json);
     if (data === undefined) {
-      throw new Error("Không nhận được dữ liệu hợp lệ");
+      throw new Error("No valid data received");
     }
     return data;
   }
 
   /** Chuẩn hóa user từ BE (có thể trả _id) sang đúng DTO (id) */
   private normalizeUserProfile(raw: any): UserProfileDto {
-    if (!raw) throw new Error("Không có dữ liệu hồ sơ");
+    if (!raw) throw new Error("No profile data found");
     const id = raw.id ?? raw._id?.toString?.() ?? String(raw._id);
     const hobby = Array.isArray(raw.hobby)
       ? (raw.hobby as unknown[]).filter((x): x is string => typeof x === "string")
@@ -227,7 +233,7 @@ class UserService {
     const storedUser = await authService.getStoredUser();
 
     if (!storedUser?.id) {
-      throw new Error("Không tìm thấy phiên đăng nhập");
+      throw new Error("No sign-in session found");
     }
 
     try {
@@ -294,7 +300,7 @@ class UserService {
       form
     );
     if (raw == null) {
-      throw new Error("Không nhận được dữ liệu hợp lệ");
+      throw new Error("No valid data received");
     }
     return this.profileFromUploadPayload(raw);
   }
@@ -316,7 +322,7 @@ class UserService {
       form
     );
     if (raw == null) {
-      throw new Error("Không nhận được dữ liệu hợp lệ");
+      throw new Error("No valid data received");
     }
     return this.profileFromUploadPayload(raw);
   }
@@ -326,30 +332,31 @@ class UserService {
     query: string,
     page = 1,
     limit = 20,
-    _retry = false
+    retry = false
   ): Promise<PaginatedPublicUsersDto> {
     const params = new URLSearchParams({
       search: query.trim(),
       page: String(page),
       limit: String(limit),
     });
-    const headers = await this.getAuthHeaders();
-    const response = await fetch(`${API_URL}/users?${params.toString()}`, {
-      headers,
-      credentials: "include",
+    const response = await sendWithAutoRefresh({
+      path: `/users?${params.toString()}`,
+      retry,
+      refreshAccessTokenOnce,
+      send: async () => {
+        const headers = await this.getAuthHeaders();
+        return fetch(`${API_URL}/users?${params.toString()}`, {
+          headers,
+          credentials: "include",
+        });
+      },
     });
-    if (response.status === 401 && !_retry) {
-      const refreshedToken = await authService.refreshAccessToken();
-      if (refreshedToken) {
-        return this.searchUsers(query, page, limit, true);
-      }
-    }
     let json: Record<string, unknown> = {};
     try {
       const text = await response.text();
       json = text ? JSON.parse(text) : {};
     } catch {
-      throw new Error("Phản hồi từ máy chủ không hợp lệ");
+      throw new Error("Invalid server response");
     }
     const message = this.extractErrorMessage(json);
     if (!response.ok) {
@@ -410,26 +417,29 @@ class UserService {
     return { users, pagination };
   }
 
-  /** GET /users/phone/:phoneNumber — tìm user qua số điện thoại */
-  async getUserByPhone(phoneNumber: string, _retry = false): Promise<PublicUserDto> {
-    const params = new URLSearchParams({ phoneNumber: phoneNumber.trim() });
-    const headers = await this.getAuthHeaders();
-    const response = await fetch(`${API_URL}/users/phone/${encodeURIComponent(phoneNumber.trim())}`, {
-      headers,
-      credentials: "include",
+  /** GET /users/phone/:phoneNumber — tìm user qua phone number */
+  async getUserByPhone(phoneNumber: string, retry = false): Promise<PublicUserDto> {
+    const response = await sendWithAutoRefresh({
+      path: `/users/phone/${encodeURIComponent(phoneNumber.trim())}`,
+      retry,
+      refreshAccessTokenOnce,
+      send: async () => {
+        const headers = await this.getAuthHeaders();
+        return fetch(
+          `${API_URL}/users/phone/${encodeURIComponent(phoneNumber.trim())}`,
+          {
+            headers,
+            credentials: "include",
+          }
+        );
+      },
     });
-    if (response.status === 401 && !_retry) {
-      const refreshedToken = await authService.refreshAccessToken();
-      if (refreshedToken) {
-        return this.getUserByPhone(phoneNumber, true);
-      }
-    }
     let json: Record<string, unknown> = {};
     try {
       const text = await response.text();
       json = text ? JSON.parse(text) : {};
     } catch {
-      throw new Error('Phản hồi từ máy chủ không hợp lệ');
+      throw new Error('Invalid server response');
     }
     const message = this.extractErrorMessage(json);
     if (!response.ok) {
@@ -438,7 +448,7 @@ class UserService {
     }
     const data = this.extractData<PublicUserDto>(json);
     if (data === undefined) {
-      throw new Error('Không tìm thấy người dùng');
+      throw new Error('User not found');
     }
     return data;
   }

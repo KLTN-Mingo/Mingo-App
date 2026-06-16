@@ -2,6 +2,7 @@ import { formatDistanceToNow } from "date-fns";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
@@ -23,7 +24,8 @@ import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { BackHeader, Icon, Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
-import { CommentResponseDto } from "@/dtos";
+import { CommentResponseDto, ReportEntityType } from "@/dtos";
+import { useReport } from "@/hooks/use-report";
 import { commentService } from "@/services/comment.service";
 
 interface CommentWithReplies extends CommentResponseDto {
@@ -56,6 +58,7 @@ export function CommentModal({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = isDark ? paletteDark : paletteLight;
+  const report = useReport();
 
   const [comments, setComments] = useState<CommentWithReplies[]>([]);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -343,6 +346,50 @@ export function CommentModal({
     inputRef.current?.focus();
   };
 
+  const handleStartEditComment = (comment: CommentResponseDto) => {
+    setEditingCommentId(comment.id);
+    setEditCommentDraft(comment.contentText);
+    setReplyingTo(null);
+  };
+
+  const handleCommentPress = (
+    comment: CommentResponseDto,
+    isOwner: boolean,
+    parentId?: string
+  ) => {
+    if (isOwner) {
+      Alert.alert("Comment", undefined, [
+        {
+          text: "Edit",
+          onPress: () => handleStartEditComment(comment),
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => handleDeleteComment(comment, parentId),
+        },
+        { text: "Cancel", style: "cancel" },
+      ]);
+      return;
+    }
+
+    if (!profile?.id) return;
+
+    Alert.alert("Comment", undefined, [
+      {
+        text: "Report comment",
+        style: "destructive",
+        onPress: () =>
+          report.openReport({
+            entityType: ReportEntityType.COMMENT,
+            entityId: comment.id,
+            entityLabel: "this comment",
+          }),
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
   const formatTime = (dateStr: string) => {
     try {
       return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
@@ -375,6 +422,11 @@ export function CommentModal({
         onLike={() => handleLikeComment(item, opts.parentId)}
         onReply={() => handleReply(item, opts.originalCommentId)}
         onDelete={isOwner ? () => handleDeleteComment(item, opts.parentId) : undefined}
+        onPressComment={
+          profile?.id
+            ? () => handleCommentPress(item, Boolean(isOwner), opts.parentId)
+            : undefined
+        }
         onSaveEdit={() => handleSaveEditComment(item.id, opts.parentId)}
         onCancelEdit={() => {
           setEditingCommentId(null);
@@ -436,7 +488,8 @@ export function CommentModal({
   };
 
   return (
-    <Modal
+    <>
+      <Modal
       visible={!!postId}
       animationType="slide"
       transparent
@@ -524,6 +577,8 @@ export function CommentModal({
           </SafeAreaView>
         </SafeModalSheet>
       </KeyboardAvoidingView>
-    </Modal>
+      </Modal>
+      {report.modal}
+    </>
   );
 }

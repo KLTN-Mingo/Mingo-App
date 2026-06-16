@@ -1,7 +1,8 @@
+import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { Ionicons } from "@expo/vector-icons";
 import { formatDistanceToNow } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,12 +16,11 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { ScreenContainer } from "@/components/containers/ScreenContainer";
 
 import { CommentComposer } from "@/components/post/CommentComposer";
+import { CommentThreadItem } from "@/components/post/CommentThreadItem";
 import { CultureHighlightedText } from "@/components/post/CultureHighlightedText";
 import { ModerationBanner } from "@/components/post/ModerationBanner";
-import { CommentThreadItem } from "@/components/post/CommentThreadItem";
 import {
   CommentIcon,
   LikeIcon,
@@ -32,6 +32,7 @@ import {
 import { EmptyState } from "@/components/shared/ui/EmptyState";
 import { Avatar, BackHeader, Text } from "@/components/ui";
 import { paletteDark, paletteLight } from "@/constants/designTokens";
+import { useAuth } from "@/context/AuthContext";
 import {
   CommentResponseDto,
   FeedTab,
@@ -41,18 +42,23 @@ import {
   UserMinimalDto,
 } from "@/dtos";
 import { useReport } from "@/hooks/use-report";
-import { useAuth } from "@/context/AuthContext";
 import { useSharePost } from "@/hooks/use-share-post";
-import { commentService } from "@/services/comment.service";
 import { getReplyTarget, ReplyTarget } from "@/services/comment-reply-target";
+import { commentService } from "@/services/comment.service";
 import { FollowApi } from "@/services/follow.service";
 import {
   frontendCacheKeys,
   invalidateCacheKeys,
 } from "@/services/frontend-cache";
-import { postService } from "@/services/post.service";
 import { isPostPermissionDeniedError } from "@/services/post-permission";
-import { colors, getSemantic, paletteIcon, statusColors } from "@/styles/colors";
+import { postService } from "@/services/post.service";
+import {
+  colors,
+  getSemantic,
+  paletteIcon,
+  statusColors,
+} from "@/styles/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -68,9 +74,9 @@ export default function PostDetailScreen() {
   }>();
   const postId = Array.isArray(id) ? id[0] : id;
   const { profile } = useAuth();
+  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
-  const themeColors =
-    colorScheme === "dark" ? paletteDark : paletteLight;
+  const themeColors = colorScheme === "dark" ? paletteDark : paletteLight;
   const semantic = getSemantic(colorScheme === "dark" ? "dark" : "light");
   const report = useReport();
 
@@ -84,8 +90,12 @@ export default function PostDetailScreen() {
   const [commentText, setCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ReplyTarget | null>(null);
   const [submittingComment, setSubmittingComment] = useState(false);
-  const [expandedReplyIds, setExpandedReplyIds] = useState<Record<string, boolean>>({});
-  const [loadingReplyIds, setLoadingReplyIds] = useState<Record<string, boolean>>({});
+  const [expandedReplyIds, setExpandedReplyIds] = useState<
+    Record<string, boolean>
+  >({});
+  const [loadingReplyIds, setLoadingReplyIds] = useState<
+    Record<string, boolean>
+  >({});
   const commentInputRef = useRef<TextInput>(null);
   const feedTab: FeedTab | undefined =
     tab === "explore" || tab === "friends"
@@ -190,7 +200,10 @@ export default function PostDetailScreen() {
     if (!postId) return;
     const now = Date.now();
     if (isFetchingCommentsRef.current) return;
-    if (lastCommentsFetchAtRef.current && now - lastCommentsFetchAtRef.current < 2000)
+    if (
+      lastCommentsFetchAtRef.current &&
+      now - lastCommentsFetchAtRef.current < 2000
+    )
       return;
     isFetchingCommentsRef.current = true;
     lastCommentsFetchAtRef.current = now;
@@ -214,33 +227,39 @@ export default function PostDetailScreen() {
     fetchComments();
   }, [postId, fetchPost, fetchComments]);
 
-  const buildCommentTree = useCallback((items: CommentResponseDto[]): CommentTreeNode[] => {
-    const map = new Map<string, CommentTreeNode>();
-    const roots: CommentTreeNode[] = [];
+  const buildCommentTree = useCallback(
+    (items: CommentResponseDto[]): CommentTreeNode[] => {
+      const map = new Map<string, CommentTreeNode>();
+      const roots: CommentTreeNode[] = [];
 
-    items.forEach((item) => {
-      map.set(item.id, { ...item, children: [] });
-    });
+      items.forEach((item) => {
+        map.set(item.id, { ...item, children: [] });
+      });
 
-    map.forEach((node) => {
-      if (node.parentCommentId && map.has(node.parentCommentId)) {
-        map.get(node.parentCommentId)?.children.push(node);
-      } else {
-        roots.push(node);
-      }
-    });
+      map.forEach((node) => {
+        if (node.parentCommentId && map.has(node.parentCommentId)) {
+          map.get(node.parentCommentId)?.children.push(node);
+        } else {
+          roots.push(node);
+        }
+      });
 
-    const sortByDateAsc = (a: CommentTreeNode, b: CommentTreeNode) =>
-      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      const sortByDateAsc = (a: CommentTreeNode, b: CommentTreeNode) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 
-    const sortRecursive = (nodes: CommentTreeNode[]) => {
-      nodes.sort(sortByDateAsc);
-      nodes.forEach((node) => sortRecursive(node.children));
-    };
-    sortRecursive(roots);
+      const sortRecursive = (nodes: CommentTreeNode[]) => {
+        nodes.sort(sortByDateAsc);
+        nodes.forEach((node) => sortRecursive(node.children));
+      };
+      sortRecursive(roots);
 
-    return roots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, []);
+      return roots.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    },
+    []
+  );
 
   const handleLikeComment = async (comment: CommentResponseDto) => {
     const newIsLiked = !comment.isLiked;
@@ -312,8 +331,8 @@ export default function PostDetailScreen() {
       setCommentText("");
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Không thể gửi bình luận";
-      Alert.alert("Bình luận không thành công", message);
+        error instanceof Error ? error.message : "Could not send comment";
+      Alert.alert("Comment failed", message);
     } finally {
       setSubmittingComment(false);
     }
@@ -328,6 +347,49 @@ export default function PostDetailScreen() {
     });
   };
 
+  const handleStartEditComment = (comment: CommentResponseDto) => {
+    setEditingCommentId(comment.id);
+    setEditCommentDraft(comment.contentText);
+    setReplyingTo(null);
+  };
+
+  const handleCommentPress = (
+    comment: CommentResponseDto,
+    isOwner: boolean
+  ) => {
+    if (isOwner) {
+      Alert.alert("Comment", undefined, [
+        {
+          text: "Edit",
+          onPress: () => handleStartEditComment(comment),
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => handleDeleteComment(comment),
+        },
+        { text: "Cancel", style: "cancel" },
+      ]);
+      return;
+    }
+
+    if (!currentUser?.id) return;
+
+    Alert.alert("Comment", undefined, [
+      {
+        text: "Report comment",
+        style: "destructive",
+        onPress: () =>
+          report.openReport({
+            entityType: ReportEntityType.COMMENT,
+            entityId: comment.id,
+            entityLabel: "this comment",
+          }),
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
   const handlePostMorePress = (p: PostResponseDto) => {
     if (!profile) return;
 
@@ -336,7 +398,10 @@ export default function PostDetailScreen() {
         {
           text: "Edit",
           onPress: () =>
-            router.push({ pathname: "/create-post", params: { id: p.id } } as any),
+            router.push({
+              pathname: "/create-post",
+              params: { id: p.id },
+            } as any),
         },
         {
           text: "Delete",
@@ -352,7 +417,8 @@ export default function PostDetailScreen() {
                     await postService.deletePost(p.id);
                     router.back();
                   } catch (e: unknown) {
-                    const msg = e instanceof Error ? e.message : "Cannot delete";
+                    const msg =
+                      e instanceof Error ? e.message : "Cannot delete";
                     Alert.alert("Error", msg);
                   }
                 },
@@ -382,7 +448,11 @@ export default function PostDetailScreen() {
         text: "Not interested",
         onPress: async () => {
           try {
-            await postService.submitFeedFeedback(p.id, "not_interested", feedTab);
+            await postService.submitFeedFeedback(
+              p.id,
+              "not_interested",
+              feedTab
+            );
             router.back();
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Cannot send feedback";
@@ -402,13 +472,13 @@ export default function PostDetailScreen() {
         },
       },
       {
-        text: "Báo cáo",
+        text: "Report",
         style: "destructive",
         onPress: () =>
           report.openReport({
             entityType: ReportEntityType.POST,
             entityId: p.id,
-            entityLabel: "bài viết này",
+            entityLabel: "this post",
           }),
       },
       { text: "Cancel", style: "cancel" },
@@ -421,7 +491,9 @@ export default function PostDetailScreen() {
       await commentService.deleteComment(comment.id);
       setComments((prev) => prev.filter((c) => c.id !== comment.id));
       setPost((prev) =>
-        prev ? { ...prev, commentsCount: Math.max(0, prev.commentsCount - 1) } : prev
+        prev
+          ? { ...prev, commentsCount: Math.max(0, prev.commentsCount - 1) }
+          : prev
       );
       if (editingCommentId === comment.id) {
         setEditingCommentId(null);
@@ -570,7 +642,9 @@ export default function PostDetailScreen() {
           const data = await commentService.getCommentReplies(commentId, 1, 50);
           setComments((prev) => {
             const existingIds = new Set(prev.map((c) => c.id));
-            const newReplies = data.comments.filter((r) => !existingIds.has(r.id));
+            const newReplies = data.comments.filter(
+              (r) => !existingIds.has(r.id)
+            );
             if (newReplies.length === 0) return prev;
             return [...prev, ...newReplies];
           });
@@ -599,7 +673,10 @@ export default function PostDetailScreen() {
         : undefined;
 
     const uiDepth = Math.min(depth, 2);
-    const shownReplyCount = Math.max(item.repliesCount ?? 0, item.children.length);
+    const shownReplyCount = Math.max(
+      item.repliesCount ?? 0,
+      item.children.length
+    );
     const hasReplies = shownReplyCount > 0;
     const isExpanded = !!expandedReplyIds[item.id];
     const isLoadingReplies = !!loadingReplyIds[item.id];
@@ -618,6 +695,11 @@ export default function PostDetailScreen() {
             onReply={() => handleReplyComment(item)}
             mentionName={parentName}
             onDelete={isOwner ? () => handleDeleteComment(item) : undefined}
+            onPressComment={
+              currentUser?.id
+                ? () => handleCommentPress(item, Boolean(isOwner))
+                : undefined
+            }
             onSaveEdit={() => handleSaveEditComment(item.id)}
             onCancelEdit={handleCancelEditComment}
             showModerationStatus={Boolean(isOwner)}
@@ -632,11 +714,16 @@ export default function PostDetailScreen() {
             }}
           >
             <TouchableOpacity
-              onPress={() => handleToggleReplies(item.id, item.children.length > 0)}
+              onPress={() =>
+                handleToggleReplies(item.id, item.children.length > 0)
+              }
               disabled={isLoadingReplies}
               activeOpacity={0.7}
             >
-              <Text className="text-xs" style={{ color: themeColors.textMuted }}>
+              <Text
+                className="text-xs text-title-light dark:text-title-dark"
+                // style={{ color: themeColors.textSecondary }}
+              >
                 {isLoadingReplies
                   ? "Loading replies..."
                   : isExpanded
@@ -665,7 +752,7 @@ export default function PostDetailScreen() {
       if (accessDenied) {
         return (
           <View className="px-4 py-10">
-            <EmptyState title="Bạn không còn quyền xem bài viết này" />
+            <EmptyState title="You no longer have access to this post" />
           </View>
         );
       }
@@ -710,7 +797,9 @@ export default function PostDetailScreen() {
         <View className="flex-row items-start">
           <TouchableOpacity
             onPress={() =>
-              post.userId ? router.push(`/profile/${post.userId}` as any) : undefined
+              post.userId
+                ? router.push(`/profile/${post.userId}` as any)
+                : undefined
             }
             className="flex-row items-center flex-1"
             activeOpacity={0.75}
@@ -728,7 +817,7 @@ export default function PostDetailScreen() {
                 </Text>
                 {renderMentions(post)}
               </View>
-              <Text className="mt-0.5 text-xs text-text-muted-light dark:text-text-muted-dark">
+              <Text className="mt-0.5 text-xs text-text-secondary-light dark:text-text-secondary-dark">
                 {formatTime(post.createdAt)}
               </Text>
             </View>
@@ -740,7 +829,7 @@ export default function PostDetailScreen() {
               className="p-2"
               activeOpacity={0.7}
             >
-              <ThreeDotsIcon size={20} color={theme.icon} />
+              <ThreeDotsIcon size={16} color={theme.icon} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -888,7 +977,9 @@ export default function PostDetailScreen() {
           ListHeaderComponent={<ListHeader />}
           style={{ backgroundColor: semantic.background }}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          keyboardDismissMode={
+            Platform.OS === "ios" ? "interactive" : "on-drag"
+          }
           ListEmptyComponent={
             loadingComments ? (
               <View className="py-8 items-center">
@@ -902,7 +993,12 @@ export default function PostDetailScreen() {
         />
 
         {currentUser?.id && post ? (
-          <View style={{ backgroundColor: themeColors.background }}>
+          <View
+            style={{
+              backgroundColor: themeColors.background,
+              paddingBottom: Math.max(insets.bottom, 12),
+            }}
+          >
             {replyingTo ? (
               <View
                 className="mx-4 mb-1 flex-row items-center rounded-2xl px-3 py-2"

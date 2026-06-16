@@ -49,6 +49,12 @@ const TABS: { key: TabType; label: string }[] = [
   { key: "friends", label: "Friends" },
   { key: "bestfriends", label: "Best friends" },
 ];
+const LIST_CONTENT_CONTAINER_STYLE = {
+  paddingHorizontal: 20,
+  paddingTop: 2,
+  paddingBottom: 140,
+};
+const LIST_STYLE = { overflow: "visible" } as const;
 
 export default function FriendScreen() {
   const colorScheme = useColorScheme() ?? "light";
@@ -191,9 +197,17 @@ export default function FriendScreen() {
   const renderContent = () => {
     if (loading && !refreshing) {
       if (activeTab === "requests") {
-        return <FriendRequestListSkeleton count={3} />;
+        return (
+          <View className="px-5">
+            <FriendRequestListSkeleton count={3} />
+          </View>
+        );
       }
-      return <FriendListSkeleton count={5} />;
+      return (
+        <View className="px-5">
+          <FriendListSkeleton count={5} />
+        </View>
+      );
     }
 
     switch (activeTab) {
@@ -234,6 +248,8 @@ export default function FriendScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
+        style={LIST_STYLE}
+        contentContainerStyle={LIST_CONTENT_CONTAINER_STYLE}
       />
     );
   };
@@ -259,6 +275,8 @@ export default function FriendScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
+        style={LIST_STYLE}
+        contentContainerStyle={LIST_CONTENT_CONTAINER_STYLE}
       />
     );
   };
@@ -296,7 +314,7 @@ export default function FriendScreen() {
               onPress={() =>
                 router.push(`/profile/${item.following.id}` as never)
               }
-              actionLabel="Hủy theo dõi"
+              actionLabel="Unfollow"
               actionLoading={unfollowingId === item.following.id}
               onActionPress={() => handleUnfollow(item.following.id)}
             />
@@ -306,6 +324,8 @@ export default function FriendScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
+        style={LIST_STYLE}
+        contentContainerStyle={LIST_CONTENT_CONTAINER_STYLE}
       />
     );
   };
@@ -345,6 +365,8 @@ export default function FriendScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
+        style={LIST_STYLE}
+        contentContainerStyle={LIST_CONTENT_CONTAINER_STYLE}
       />
     );
   };
@@ -370,6 +392,8 @@ export default function FriendScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
+        style={LIST_STYLE}
+        contentContainerStyle={LIST_CONTENT_CONTAINER_STYLE}
       />
     );
   };
@@ -378,9 +402,9 @@ export default function FriendScreen() {
 
   return (
     // <View className="flex-1 bg-background-light dark:bg-background-dark">
-    <ScreenContainer horizontalPadding="default" className="gap-6">
+    <ScreenContainer horizontalPadding="none" className="gap-6">
       {/* Header */}
-      <View className="">
+      <View className="px-5">
         <View className="flex-row justify-between items-center">
           <Text
             className="text-title-light dark:text-title-dark leading-[32px]"
@@ -412,7 +436,7 @@ export default function FriendScreen() {
       </View>
 
       {/* Tabs */}
-      <View className="">
+      <View className="px-5">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

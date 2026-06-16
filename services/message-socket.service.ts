@@ -104,7 +104,7 @@ export function disconnectMessageSocket(): void {
   listeners.clear();
 }
 
-/** Đăng ký listener — trả về unsubscribe fn. */
+/** Post ký listener — trả về unsubscribe fn. */
 export function subscribeMessageEvents(handlers: MessageSocketEvents): () => void {
   listeners.add(handlers);
   return () => {

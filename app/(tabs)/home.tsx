@@ -36,8 +36,8 @@ import { postService } from "@/services/post.service";
 import { getSemantic, getStatusColor } from "@/styles/colors";
 
 const FEED_TABS: { key: FeedTab; label: string }[] = [
-  { key: "explore", label: "Khám phá" },
-  { key: "friends", label: "Bạn bè" },
+  { key: "explore", label: "Explore" },
+  { key: "friends", label: "Friends" },
 ];
 
 /** Khoảng đệm dưới khi tab bar nổi (BAR_HEIGHT + offset) — khớp app/(tabs)/_layout */
@@ -314,13 +314,13 @@ export default function HomeScreen() {
         },
       },
       {
-        text: "Báo cáo",
+        text: "Report",
         style: "destructive",
         onPress: () =>
           report.openReport({
             entityType: ReportEntityType.POST,
             entityId: post.id,
-            entityLabel: "bài viết này",
+            entityLabel: "this post",
           }),
       },
       { text: "Cancel", style: "cancel" },
@@ -363,7 +363,7 @@ export default function HomeScreen() {
           onPress={handleTryAgain}
           className="mt-4 bg-primary px-6 py-3 rounded-full"
         >
-          <Text className="text-white font-semibold">Đăng nhập lại</Text>
+          <Text className="text-white font-semibold">Sign in again</Text>
         </TouchableOpacity>
       </ScreenContainer>
     );

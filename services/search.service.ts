@@ -15,7 +15,7 @@ const MIN_QUERY_LEN = 2;
 class SearchService {
   /**
    * GET /search — global search (users + posts).
-   * BE yêu cầu `q` >= 2 ký tự; ngắn hơn sẽ trả về kết quả rỗng (no-op) để tránh lãng phí roundtrip.
+   * BE yêu cầu `q` >= 2 characters; ngắn hơn sẽ trả về kết quả rỗng (no-op) để tránh lãng phí roundtrip.
    */
   async globalSearch(
     params: GlobalSearchParams

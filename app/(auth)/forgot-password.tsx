@@ -24,7 +24,7 @@ export default function ForgotPasswordScreen() {
       { phoneNumber },
       {
         phoneNumber: {
-          label: "số điện thoại",
+          label: "phone number",
           rules: ["required", "phone"],
         },
       }
@@ -47,8 +47,8 @@ export default function ForgotPasswordScreen() {
     } catch (err: unknown) {
       console.error("[auth] forgot password failed", err);
       Alert.alert(
-        "Lỗi",
-        err instanceof Error ? err.message : "Không gửi được mã xác nhận"
+        "Error",
+        err instanceof Error ? err.message : "Could not send verification code"
       );
     } finally {
       setLoading(false);
@@ -92,7 +92,7 @@ export default function ForgotPasswordScreen() {
               label="Phone Number"
               isRequired
               variant="auth"
-              placeholder="Nhập số điện thoại"
+              placeholder="Enter phone number"
               value={phoneNumber}
               onChangeText={(text) => {
                 setPhoneNumber(text);

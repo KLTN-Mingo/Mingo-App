@@ -24,7 +24,10 @@ class AuthService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    config: {
+      handleUnauthorized?: boolean;
+    } = {}
   ): Promise<T> {
     const response = await fetch(`${API_URL}/auth${endpoint}`, {
       ...options,
@@ -35,9 +38,18 @@ class AuthService {
       credentials: "include",
     });
 
-    const json: ApiResponse<T> = await response.json();
+    let json: ApiResponse<T> = {} as ApiResponse<T>;
+    try {
+      const text = await response.text();
+      json = text ? (JSON.parse(text) as ApiResponse<T>) : ({} as ApiResponse<T>);
+    } catch {
+      throw new Error("Invalid server response");
+    }
 
     if (!response.ok) {
+      if (config.handleUnauthorized) {
+        await this.handleUnauthorizedResponse(response, json.message);
+      }
       throw new Error(json.message || "Something went wrong");
     }
 
@@ -65,18 +77,7 @@ class AuthService {
     await AsyncStorage.multiRemove(["accessToken", "user"]);
   }
 
-  async clearSession(): Promise<void> {
-    await this.clearLocalSession();
-  }
-
-  async handleUnauthorizedResponse(
-    response: Response,
-    message?: string
-  ): Promise<boolean> {
-    if (!this.isUnauthorizedResponse(response, message)) {
-      return false;
-    }
-
+  private async triggerUnauthorizedState(): Promise<void> {
     await this.clearLocalSession();
 
     if (!this.isHandlingUnauthorized) {
@@ -89,6 +90,25 @@ class AuthService {
         }, 0);
       }
     }
+  }
+
+  async clearSession(): Promise<void> {
+    await this.clearLocalSession();
+  }
+
+  async handleUnauthorizedSession(): Promise<void> {
+    await this.triggerUnauthorizedState();
+  }
+
+  async handleUnauthorizedResponse(
+    response: Response,
+    message?: string
+  ): Promise<boolean> {
+    if (!this.isUnauthorizedResponse(response, message)) {
+      return false;
+    }
+
+    await this.triggerUnauthorizedState();
 
     return true;
   }
@@ -223,7 +243,8 @@ class AuthService {
     try {
       const response = await this.request<RefreshTokenResponseDto>(
         "/refresh-token",
-        { method: "POST" }
+        { method: "POST" },
+        { handleUnauthorized: true }
       );
       if (response?.accessToken) {
         await AsyncStorage.setItem("accessToken", response.accessToken);

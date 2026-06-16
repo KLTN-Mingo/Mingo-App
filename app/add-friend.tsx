@@ -41,7 +41,7 @@ export default function AddFriendScreen() {
 
   const handleSearchByPhone = async () => {
     if (!phoneNumber.trim()) {
-      setError("Vui lòng nhập số điện thoại");
+      setError("Please enter a phone number");
       return;
     }
 
@@ -60,7 +60,7 @@ export default function AddFriendScreen() {
         setRelationship(null);
       }
     } catch {
-      setError("Không tìm thấy người dùng với số điện thoại này");
+      setError("No user found with this phone number");
     } finally {
       setLoading(false);
     }
@@ -140,7 +140,7 @@ export default function AddFriendScreen() {
               <Ionicons name="person-outline" size={32} color={theme.textMuted} />
             </View>
             <Text className="text-base font-medium mb-1" style={{ color: theme.text }}>
-              Không tìm thấy
+              Not found
             </Text>
             <Text variant="muted" className="text-sm text-center">
               {error}
@@ -164,7 +164,7 @@ export default function AddFriendScreen() {
             />
             <View className="flex-1 ml-3 mr-2">
               <Text className="text-base font-semibold" style={{ color: theme.text }}>
-                {foundUser.name || "Người dùng"}
+                {foundUser.name || "User"}
               </Text>
               {foundUser.bio ? (
                 <Text variant="muted" className="text-sm mt-1" numberOfLines={2}>
@@ -208,7 +208,7 @@ export default function AddFriendScreen() {
               <SearchIcon size={40} color={theme.textMuted} />
             </View>
             <Text variant="muted" className="text-center">
-              Nhập số điện thoại để tìm kiếm bạn bè
+              Enter a phone number to find friends
             </Text>
           </View>
         </View>

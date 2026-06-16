@@ -54,7 +54,7 @@ function dispatchShareEvent(payload: unknown) {
   });
 }
 
-/** Đăng ký nhận `new_dm_share` / `new_repost`. Trả về hàm unsubscribe. */
+/** Post ký nhận `new_dm_share` / `new_repost`. Trả về hàm unsubscribe. */
 export function subscribeShareEvents(listener: ShareEventListener): () => void {
   shareListeners.add(listener);
   return () => shareListeners.delete(listener);
