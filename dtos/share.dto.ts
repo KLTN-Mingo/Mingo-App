@@ -12,7 +12,7 @@ export interface SendDMShareRequestDto {
   postId: string;
   /** 1..10 userIds; client cần validate trước khi gọi. */
   recipientIds: string[];
-  /** max 2000 ký tự */
+  /** max 2000 characters */
   message?: string;
 }
 
@@ -26,7 +26,7 @@ export interface SendDMShareSuccessDto {
 
 export interface RepostRequestDto {
   postId: string;
-  /** max 2000 ký tự */
+  /** max 2000 characters */
   comment?: string;
 }
 

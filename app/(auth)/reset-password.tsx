@@ -34,15 +34,15 @@ export default function ResetPasswordScreen() {
       { otp, newPassword, confirm },
       {
         otp: {
-          label: 'mã xác nhận',
+          label: 'verification code',
           rules: ['required', 'otp'],
         },
         newPassword: {
-          label: 'mật khẩu mới',
+          label: 'new password',
           rules: ['required', 'password'],
         },
         confirm: {
-          label: 'xác nhận mật khẩu',
+          label: 'confirm password',
           rules: ['required', { type: 'confirmPassword', matchesField: 'newPassword' }],
         },
       }
@@ -55,7 +55,7 @@ export default function ResetPasswordScreen() {
   const handleSubmit = async () => {
     if (!validate()) return;
     if (!phoneNumber) {
-      Alert.alert('Lỗi', 'Thiếu số điện thoại. Vui lòng quay lại bước trước.');
+      Alert.alert('Error', 'Missing phone number. Please go back to the previous step.');
       return;
     }
 
@@ -67,15 +67,15 @@ export default function ResetPasswordScreen() {
         newPassword,
       });
       Alert.alert(
-        'Thành công',
-        'Mật khẩu đã được đổi. Vui lòng đăng nhập lại.',
+        'Success',
+        'Your password has been changed. Please sign in again.',
         [{ text: 'OK', onPress: () => router.replace('/(auth)/signin') }]
       );
     } catch (err: unknown) {
       console.error('[auth] reset password failed', err);
       Alert.alert(
-        'Lỗi',
-        err instanceof Error ? err.message : 'Không đổi được mật khẩu'
+        'Error',
+        err instanceof Error ? err.message : 'Could not change password'
       );
     } finally {
       setLoading(false);
@@ -100,17 +100,17 @@ export default function ResetPasswordScreen() {
           </Text>
 
           <Text variant="muted" className="text-center mb-10">
-            Nhập mã xác nhận đã gửi tới{' '}
-            <Text className="font-semibold">{phoneNumber || '...'}</Text> và mật
-            khẩu mới.
+            Enter the verification code sent to{' '}
+            <Text className="font-semibold">{phoneNumber || '...'}</Text> and your
+            new password.
           </Text>
 
           <View className="gap-4">
             <ActionInput
-              label="Mã xác nhận"
+              label="Verification code"
               isRequired
               variant="auth"
-              placeholder="6 chữ số"
+              placeholder="6 digits"
               value={otp}
               onChangeText={(t) => {
                 setOtp(t);
@@ -123,10 +123,10 @@ export default function ResetPasswordScreen() {
             />
 
             <ActionInput
-              label="Mật khẩu mới"
+              label="New password"
               isRequired
               variant="auth"
-              placeholder="Ít nhất 6 ký tự"
+              placeholder="At least 6 characters"
               value={newPassword}
               onChangeText={(t) => {
                 setNewPassword(t);
@@ -138,10 +138,10 @@ export default function ResetPasswordScreen() {
             />
 
             <ActionInput
-              label="Xác nhận mật khẩu"
+              label="Confirm password"
               isRequired
               variant="auth"
-              placeholder="Nhập lại mật khẩu"
+              placeholder="Re-enter password"
               value={confirm}
               onChangeText={(t) => {
                 setConfirm(t);
@@ -153,7 +153,7 @@ export default function ResetPasswordScreen() {
             />
 
             <Button onPress={handleSubmit} loading={loading} className="mt-4">
-              Đổi mật khẩu
+              Change password
             </Button>
           </View>
         </ScrollView>

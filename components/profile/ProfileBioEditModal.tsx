@@ -51,12 +51,12 @@ export function ProfileBioEditModal({
               <View className="w-10 h-1 bg-border-light dark:bg-border-dark rounded-full" />
             </View>
             <Text className="text-center font-semibold text-lg mb-3 text-text-light dark:text-text-dark">
-              Giới thiệu
+              Bio
             </Text>
             <TextArea
               value={value}
               onChangeText={onChangeText}
-              placeholder="Viết giới thiệu... (tối đa 500 ký tự)"
+              placeholder="Write a bio... (up to 500 characters)"
               rows={6}
               maxLength={500}
             />
@@ -67,7 +67,7 @@ export function ProfileBioEditModal({
                 onPress={onCancel}
                 disabled={saving}
               >
-                Hủy
+                Cancel
               </Button>
               <Button
                 className="flex-1"
@@ -75,7 +75,7 @@ export function ProfileBioEditModal({
                 loading={saving}
                 disabled={saving}
               >
-                Lưu
+                Save
               </Button>
             </View>
           </SafeModalSheet>

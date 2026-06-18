@@ -46,7 +46,7 @@ export default function VerifyEmailScreen() {
           rules: ["required", "email"],
         },
         code: {
-          label: "mã xác nhận",
+          label: "verification code",
           rules: ["required", "otp"],
         },
       }
@@ -64,15 +64,15 @@ export default function VerifyEmailScreen() {
     try {
       await authService.sendEmailVerification();
       Alert.alert(
-        "Đã gửi mã",
-        "Kiểm tra hộp thư email (và cả thư mục Spam)."
+        "Code sent",
+        "Check your email inbox and Spam folder."
       );
       otpCooldown.startCooldown();
     } catch (err: unknown) {
       console.error("[auth] send email verification failed", err);
       Alert.alert(
-        "Lỗi",
-        err instanceof Error ? err.message : "Không gửi được mã"
+        "Error",
+        err instanceof Error ? err.message : "Could not send code"
       );
     } finally {
       setResending(false);
@@ -90,14 +90,14 @@ export default function VerifyEmailScreen() {
     setLoading(true);
     try {
       await authService.verifyEmail({ email: email.trim(), code: code.trim() });
-      Alert.alert("Thành công", "Email đã được xác nhận.", [
+      Alert.alert("Success", "Email has been verified.", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (err: unknown) {
       console.error("[auth] verify email failed", err);
       Alert.alert(
-        "Lỗi",
-        err instanceof Error ? err.message : "Mã không hợp lệ"
+        "Error",
+        err instanceof Error ? err.message : "Invalid code"
       );
     } finally {
       setLoading(false);
@@ -118,11 +118,11 @@ export default function VerifyEmailScreen() {
           className="px-6"
         >
           <Text variant="title" className="text-center mb-4">
-            Xác nhận email
+            Verify email
           </Text>
 
           <Text variant="muted" className="text-center mb-10">
-            Chúng tôi sẽ gửi mã xác nhận tới địa chỉ email của bạn.
+            We will send a verification code to your email address.
           </Text>
 
           <View className="gap-4">
@@ -151,10 +151,10 @@ export default function VerifyEmailScreen() {
             </Button>
 
             <ActionInput
-              label="Mã xác nhận"
+              label="Verification code"
               isRequired
               variant="auth"
-              placeholder="6 chữ số"
+              placeholder="6 digits"
               value={code}
               onChangeText={(t) => {
                 setCode(t);
@@ -166,7 +166,7 @@ export default function VerifyEmailScreen() {
             />
 
             <Button onPress={handleVerify} loading={loading} className="mt-2">
-              Xác nhận
+              Confirm
             </Button>
           </View>
         </ScrollView>

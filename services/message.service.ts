@@ -12,10 +12,17 @@ import {
   CreateGroupDto,
   MessageResponseDto,
 } from "@/dtos";
+import {
+  createRefreshGate,
+  sendWithAutoRefresh,
+} from "@/services/auth-refresh";
 import { authService } from "@/services/auth.service";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
 const MESSAGES_BASE = `${API_URL}/messages`;
+const refreshAccessTokenOnce = createRefreshGate(() =>
+  authService.refreshAccessToken()
+);
 
 // ─── Response types (mirror backend / api-client) ─────────────────────────────
 
@@ -172,7 +179,8 @@ class MessageServiceClass {
     options?: {
       body?: object | FormData;
       query?: Record<string, string>;
-    }
+    },
+    retry = false
   ): Promise<T> {
     const url = new URL(path.startsWith("http") ? path : MESSAGES_BASE + path);
     if (options?.query) {
@@ -181,20 +189,27 @@ class MessageServiceClass {
       );
     }
 
-    const isFormData = options?.body instanceof FormData;
-    const headers = await this.getAuthHeaders(isFormData);
+    const response = await sendWithAutoRefresh({
+      path: url.pathname + url.search,
+      retry,
+      refreshAccessTokenOnce,
+      send: async () => {
+        const isFormData = options?.body instanceof FormData;
+        const headers = await this.getAuthHeaders(isFormData);
+        const init: RequestInit = {
+          method,
+          headers,
+          credentials: "include",
+          body: isFormData
+            ? (options.body as FormData)
+            : options?.body != null && typeof options.body === "object"
+              ? JSON.stringify(options.body)
+              : undefined,
+        };
 
-    const init: RequestInit = {
-      method,
-      headers,
-      body: isFormData
-        ? (options.body as FormData)
-        : options?.body != null && typeof options.body === "object"
-          ? JSON.stringify(options.body)
-          : undefined,
-    };
-
-    const response = await fetch(url.toString(), init);
+        return fetch(url.toString(), init);
+      },
+    });
     const json = (await response.json()) as ApiResponse<T>;
 
     if (!response.ok) {
@@ -294,16 +309,28 @@ class MessageServiceClass {
   }
 
   async getFriendsWithOnlineStatus(): Promise<FriendOnlineItem[]> {
-    const token = await AsyncStorage.getItem("accessToken");
-    const response = await fetch(`${API_URL}/messages/friends/online-status`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+    const response = await sendWithAutoRefresh({
+      path: "/messages/friends/online-status",
+      refreshAccessTokenOnce,
+      send: async () => {
+        const token = await AsyncStorage.getItem("accessToken");
+        return fetch(`${API_URL}/messages/friends/online-status`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
       },
     });
     const json = await response.json();
-    if (!response.ok)
+    if (!response.ok) {
+      await authService.handleUnauthorizedResponse(
+        response,
+        json.message ?? "Failed to fetch friends"
+      );
       throw new Error(json.message ?? "Failed to fetch friends");
+    }
     return (json.data?.friends ?? []) as FriendOnlineItem[];
   }
 
@@ -391,27 +418,57 @@ class MessageServiceClass {
 
   private async sendToBox(
     boxId: string,
-    form: FormData
+    form: FormData,
+    retry = false
   ): Promise<SingleMessageData> {
-    const token = await AsyncStorage.getItem("accessToken");
     const url = `${MESSAGES_BASE}/${encodeURIComponent(boxId)}/send`;
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", url);
-      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       xhr.timeout = 60000;
+
+      void authService
+        .getAccessToken()
+        .then((token) => {
+          if (token) {
+            xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+          }
+          xhr.send(form);
+        })
+        .catch(() => {
+          xhr.send(form);
+        });
 
       xhr.onload = () => {
         console.log("XHR status:", xhr.status);
         console.log("XHR response:", xhr.responseText);
         try {
-          const json = JSON.parse(xhr.responseText);
+          const json = xhr.responseText ? JSON.parse(xhr.responseText) : {};
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(json.data as SingleMessageData);
-          } else {
-            reject(new Error(json.message ?? "Failed to send"));
+            return;
           }
+
+          if (xhr.status === 401 && !retry) {
+            void refreshAccessTokenOnce()
+              .then(async (token) => {
+                if (token) {
+                  resolve(await this.sendToBox(boxId, form, true));
+                  return;
+                }
+
+                await authService.handleUnauthorizedSession();
+                reject(new Error(json.message ?? "Unauthorized"));
+              })
+              .catch(reject);
+            return;
+          }
+
+          if (xhr.status === 401) {
+            void authService.handleUnauthorizedSession().catch(() => undefined);
+          }
+          reject(new Error(json.message ?? "Failed to send"));
         } catch {
           reject(new Error("Invalid server response"));
         }
@@ -424,7 +481,6 @@ class MessageServiceClass {
       };
       xhr.ontimeout = () => reject(new Error("Request timeout"));
 
-      xhr.send(form);
     });
   }
 
@@ -730,7 +786,7 @@ class MessageServiceClass {
     leaderId: string, // Giữ nguyên tham số này để không lỗi các file khác
     dto: CreateGroupDto
   ): Promise<{ success: boolean; message: string; box: any }> {
-    // Sửa thành "/boxes" vì MESSAGES_BASE đã bao gồm đoạn "/api/messages"
+    // Edit thành "/boxes" vì MESSAGES_BASE đã bao gồm đoạn "/api/messages"
     return this.request("POST", "/boxes", {
       body: dto,
     });

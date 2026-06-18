@@ -77,7 +77,7 @@ export function SharePostModal({
       setFriends(r.friends);
     } catch (e) {
       console.error("[share-modal] load friends failed", e);
-      Alert.alert("Lỗi", "Không tải được danh sách bạn bè");
+      Alert.alert("Error", "Could not load friends");
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ export function SharePostModal({
     setSelectedIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= MAX_RECIPIENTS) {
-        Alert.alert("Giới hạn", `Chỉ được chọn tối đa ${MAX_RECIPIENTS} người`);
+        Alert.alert("Limit", `You can select up to ${MAX_RECIPIENTS} people`);
         return prev;
       }
       return [...prev, id];
@@ -112,7 +112,7 @@ export function SharePostModal({
     if (!post?.id) return;
     if (submitting) return;
     if (selectedIds.length === 0) {
-      Alert.alert("Chưa chọn ai", "Vui lòng chọn ít nhất 1 người nhận");
+      Alert.alert("No recipients selected", "Please select at least one recipient");
       return;
     }
 
@@ -142,8 +142,8 @@ export function SharePostModal({
           // best-effort refresh
         }
         Alert.alert(
-          "KhÃ´ng cÃ²n quyá»n xem",
-          "Báº¡n khÃ´ng cÃ²n quyá»n xem bÃ i viáº¿t nÃ y."
+          "No longer available",
+          "You no longer have access to this post."
         );
         onClose();
         return;
@@ -152,25 +152,25 @@ export function SharePostModal({
       const code = err.code;
       // Theo bảng error trong guide §3.
       if (code === "RECIPIENTS_LIMIT_EXCEEDED") {
-        Alert.alert("Quá giới hạn", err.message);
+        Alert.alert("Limit exceeded", err.message);
       } else if (code === "RECIPIENT_SELF_INVALID") {
-        Alert.alert("Không hợp lệ", "Không thể gửi cho chính mình");
+        Alert.alert("Invalid", "You cannot send this to yourself");
       } else if (code === "RECIPIENT_NOT_FRIEND") {
         Alert.alert(
-          "Không phải bạn bè",
-          "Chỉ có thể gửi cho những người là bạn của bạn"
+          "Not friends",
+          "You can only send this to your friends"
         );
         loadFriends();
       } else if (code === "POST_NOT_FOUND") {
-        Alert.alert("Bài viết không tồn tại", "Bài này có thể đã bị xoá");
+        Alert.alert("Post not found", "This post may have been deleted");
         onClose();
       } else if (code === "SHARE_RATE_LIMIT_EXCEEDED") {
         Alert.alert(
-          "Quá nhanh",
-          "Bạn đã chia sẻ quá nhiều, vui lòng thử lại sau"
+          "Too fast",
+          "You have shared too much. Please try again later"
         );
       } else {
-        Alert.alert("Lỗi", err?.message ?? "Không gửi được tin nhắn chia sẻ");
+        Alert.alert("Error", err?.message ?? "Could not send the shared message");
       }
     } finally {
       setSubmitting(false);
@@ -192,7 +192,7 @@ export function SharePostModal({
           {/* Header */}
           <View className="flex-row items-center mb-3">
             <Text className="flex-1 text-base font-semibold text-text-light dark:text-text-dark">
-              Chia sẻ tới bạn bè
+              Share with friends
             </Text>
             <TouchableOpacity
               onPress={onClose}
@@ -205,7 +205,7 @@ export function SharePostModal({
           {/* Search */}
           <View className="flex-row items-center mb-3">
             <SearchBarInput
-              placeholder="Tìm bạn bè..."
+              placeholder="Search friends..."
               value={search}
               onChangeText={setSearch}
               autoCorrect={false}
@@ -227,7 +227,7 @@ export function SharePostModal({
                 <View className="py-8 items-center">
                   <SearchIcon size={28} color={mutedIconColor} />
                   <Text variant="muted" className="mt-2 text-sm text-center">
-                    Không tìm thấy bạn bè phù hợp
+                    No matching friends found
                   </Text>
                 </View>
               }
@@ -245,7 +245,7 @@ export function SharePostModal({
           {/* Message */}
           <View className="mt-3">
             <TextArea
-              placeholder="Nhập tin nhắn (tuỳ chọn)..."
+              placeholder="Enter a message (optional)..."
               value={message}
               onChangeText={setMessage}
               maxLength={MAX_MESSAGE_LEN}
@@ -267,8 +267,8 @@ export function SharePostModal({
               <SendIcon size={16} color="#FFFFFF" />
               <Text className="text-white font-semibold">
                 {selectedIds.length > 0
-                  ? `Gửi (${selectedIds.length})`
-                  : "Gửi"}
+                  ? `Send (${selectedIds.length})`
+                  : "Send"}
               </Text>
             </View>
           </Button>

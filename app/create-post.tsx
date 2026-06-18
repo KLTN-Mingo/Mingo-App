@@ -28,10 +28,10 @@ import { PostVisibility, UpdatePostRequestDto, UserMinimalDto } from "@/dtos";
 import { postService } from "@/services/post.service";
 
 const VISIBILITY_OPTIONS: { value: PostVisibility; label: string }[] = [
-  { value: PostVisibility.PUBLIC, label: "Công khai" },
-  { value: PostVisibility.FRIENDS, label: "Bạn bè" },
-  { value: PostVisibility.BESTFRIENDS, label: "Bạn thân" },
-  { value: PostVisibility.PRIVATE, label: "Chỉ mình tôi" },
+  { value: PostVisibility.PUBLIC, label: "Public" },
+  { value: PostVisibility.FRIENDS, label: "Friends" },
+  { value: PostVisibility.BESTFRIENDS, label: "Close friends" },
+  { value: PostVisibility.PRIVATE, label: "Only me" },
 ];
 function extractHashtags(text: string): string[] {
   const re = /#[\p{L}\p{N}_]+/gu;
@@ -139,7 +139,7 @@ export default function CreatePostScreen() {
     try {
       const post = await postService.getPostById(editPostId);
       if (profile?.id && post.userId !== profile.id) {
-        Alert.alert("Không thể sửa", "Bạn không phải chủ bài viết.");
+        Alert.alert("Cannot edit", "You are not the post owner.");
         router.back();
         return;
       }
@@ -152,8 +152,8 @@ export default function CreatePostScreen() {
       setLocationName(post.location?.name ?? "");
       setExistingMediaNote(Boolean(post.media && post.media.length > 0));
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Không tải được bài viết";
-      Alert.alert("Lỗi", msg);
+      const msg = e instanceof Error ? e.message : "Could not load post";
+      Alert.alert("Error", msg);
       router.back();
     } finally {
       setLoadingPost(false);
@@ -207,7 +207,7 @@ export default function CreatePostScreen() {
         appendDocumentAssets(result.assets);
       } catch (err) {
         console.error("[create-post] document video pick failed", err);
-        Alert.alert("Lỗi chọn media", "Không thể chọn video từ Files.");
+        Alert.alert("Media selection error", "Cannot select video from Files.");
       }
       return;
     }
@@ -215,8 +215,8 @@ export default function CreatePostScreen() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       Alert.alert(
-        "Quyền truy cập",
-        "Cần quyền thư viện ảnh để đính kèm media."
+        "Permission required",
+        "Photo library permission is required to attach media."
       );
       return;
     }
@@ -302,29 +302,22 @@ export default function CreatePostScreen() {
       if (msg.includes("PHPhotosErrorDomain")) {
         const limitedAccessNote =
           perm.accessPrivileges === "limited"
-            ? " App hiện chỉ được xem một phần thư viện Ảnh. Hãy cấp thêm quyền cho video này hoặc cho phép full access trong Settings > Photos."
+            ? " The app currently has limited photo library access. Grant access to this video or allow full access in Settings > Photos."
             : "";
-        if (limitedAccessNote) {
-          Alert.alert(
-            "KhÃ´ng thá»ƒ chá»n media",
-            "iOS chÆ°a táº£i Ä‘Æ°á»£c áº£nh hoáº·c video nÃ y. HÃ£y má»Ÿ media trong á»©ng dá»¥ng áº¢nh Ä‘á»ƒ táº£i tá»« iCloud, sau Ä‘Ã³ thá»­ láº¡i." +
-              limitedAccessNote
-          );
-          return;
-        }
         Alert.alert(
-          "Không thể chọn media",
-          "iOS chưa tải được ảnh hoặc video này. Hãy mở media trong ứng dụng Ảnh để tải từ iCloud, sau đó thử lại."
+          "Cannot select media",
+          "iOS has not downloaded this photo or video yet. Open it in Photos to download it from iCloud, then try again." +
+            limitedAccessNote
         );
         return;
       }
-      Alert.alert("Lỗi chọn media", "Không thể mở thư viện ảnh.");
+      Alert.alert("Media selection error", "Could not open the photo library.");
     }
   };
 
   const handleAddMedia = () => {
     if (pendingMedia.length >= 10) {
-      Alert.alert("Đã đủ", "Tối đa 10 ảnh/video cho mỗi bài viết.");
+      Alert.alert("Limit reached", "Each post can include up to 10 photos/videos.");
       return;
     }
     Alert.alert("Add media", undefined, [
@@ -351,7 +344,7 @@ export default function CreatePostScreen() {
   const handleSubmit = async () => {
     const text = contentText.trim();
     if (!isEdit && !text && pendingMedia.length === 0) {
-      Alert.alert("Thiếu nội dung", "Thêm chữ hoặc ít nhất một ảnh/video.");
+      Alert.alert("Missing content", "Add text or at least one photo/video.");
       return;
     }
 
@@ -366,18 +359,18 @@ export default function CreatePostScreen() {
           payload.contentText = text;
         }
         if (Object.keys(payload).length === 0) {
-          Alert.alert("Không có thay đổi", "Bạn chưa chỉnh sửa gì.");
+          Alert.alert("No changes", "You have not changed anything.");
           return;
         }
         if (
           payload.contentText !== undefined &&
           payload.contentText.trim().length === 0
         ) {
-          Alert.alert("Nội dung", "Nội dung bài viết không được để trống.");
+          Alert.alert("Content", "Post content cannot be empty.");
           return;
         }
         await postService.updatePost(editPostId, payload);
-        Alert.alert("Đã lưu", "Bài viết đã được cập nhật.", [
+        Alert.alert("Saved", "Your post has been updated.", [
           {
             text: "OK",
             onPress: () => router.replace(`/post/${editPostId}` as any),
@@ -411,8 +404,8 @@ export default function CreatePostScreen() {
 
       router.replace(`/post/${created.id}` as any);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Đã xảy ra lỗi";
-      Alert.alert("Không thành công", msg);
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      Alert.alert("Failed", msg);
     } finally {
       setSubmitting(false);
     }
@@ -426,7 +419,7 @@ export default function CreatePostScreen() {
       >
         <ActivityIndicator color={sem.primary} size="large" />
         <Text variant="muted" className="mt-3">
-          Đang tải bài viết…
+          Loading post...
         </Text>
       </ScreenContainer>
     );
@@ -443,7 +436,7 @@ export default function CreatePostScreen() {
         keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
         <BackHeader
-          title={isEdit ? "Sửa bài viết" : "Tạo bài viết"}
+          title={isEdit ? "Edit post" : "Create post"}
           disabled={submitting}
         />
 
@@ -462,14 +455,14 @@ export default function CreatePostScreen() {
             />
             <View className="flex-1">
               <Text className="font-semibold text-text-light dark:text-text-dark">
-                {profile?.name ?? "Bạn"}
+                {profile?.name ?? "You"}
               </Text>
             </View>
           </View>
 
           {/* Caption */}
           <TextArea
-            placeholder="Bạn đang nghĩ gì? Dùng #hashtag trong nội dung nếu cần."
+            placeholder="What are you thinking? Add #hashtags if needed."
             value={contentText}
             onChangeText={setContentText}
             maxLength={10000}
@@ -626,7 +619,7 @@ export default function CreatePostScreen() {
           {/* Visibility */}
           <View className="mt-3">
             <Text className="mb-2 text-sm font-medium text-title-light dark:text-title-dark">
-              Ai có thể xem?
+              Who can see this?
             </Text>
             <View className="flex-row flex-wrap gap-2">
               {VISIBILITY_OPTIONS.map((opt) => {

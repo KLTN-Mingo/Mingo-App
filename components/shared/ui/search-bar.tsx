@@ -24,7 +24,7 @@ export type SearchBarTriggerProps = {
 /** Ô tìm kiếm dạng nút (vd. Home → mở màn search) */
 export function SearchBarTrigger({
   onPress,
-  placeholder = "Tìm kiếm bài viết, người dùng...",
+  placeholder = "Search posts, users...",
   className = "",
 }: SearchBarTriggerProps) {
   const colorScheme = useColorScheme() ?? "light";

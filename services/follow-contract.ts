@@ -97,14 +97,14 @@ export function getFollowActionState(
   const status = relationship?.followStatus;
 
   if (status === FollowStatus.PENDING) {
-    return { action: "cancel_request", label: "Đã gửi yêu cầu" };
+    return { action: "cancel_request", label: "Request sent" };
   }
 
   if (status === FollowStatus.ACCEPTED) {
-    return { action: "unfollow", label: "Đang theo dõi" };
+    return { action: "unfollow", label: "Following" };
   }
 
-  return { action: "follow", label: "Theo dõi" };
+  return { action: "follow", label: "Follow" };
 }
 
 export function buildFollowCollectionPath(

@@ -51,9 +51,10 @@ export function ProfileHeader({
     if (phone) return phone;
     const em = user.email?.trim();
     if (em) return em;
-    if (user.verified) return "Đã xác minh";
+    if (user.verified) return "Verified";
     return null;
   }, [user.phoneNumber, user.email, user.verified]);
+  const shouldShowBioCard = isOwnProfile || Boolean(user.bio?.trim());
 
   return (
     <View className="">
@@ -113,24 +114,26 @@ export function ProfileHeader({
           )}
         </TouchableOpacity>
 
-        <View className="flex-1 ml-3 min-w-0 mt-10">
-          <TouchableOpacity
-            onPress={isOwnProfile ? onEditBio : undefined}
-            activeOpacity={isOwnProfile ? 0.75 : 1}
-            className="rounded-lg bg-white dark:bg-surface-dark py-5 px-5 gap-3"
-            style={cardShadowStyle}
-          >
-            {user.bio ? (
-              <Text className="text-[14px] leading-[22px] text-text-light dark:text-text-dark">
-                {user.bio}
-              </Text>
-            ) : isOwnProfile ? (
-              <Text className="text-[14px] text-text-light dark:text-text-dark italic">
-                Thêm giới thiệu...
-              </Text>
-            ) : null}
-          </TouchableOpacity>
-        </View>
+        {shouldShowBioCard ? (
+          <View className="flex-1 ml-3 min-w-0 mt-10">
+            <TouchableOpacity
+              onPress={isOwnProfile ? onEditBio : undefined}
+              activeOpacity={isOwnProfile ? 0.75 : 1}
+              className="rounded-lg bg-white dark:bg-surface-dark py-5 px-5 gap-3"
+              style={cardShadowStyle}
+            >
+              {user.bio ? (
+                <Text className="text-[14px] leading-[22px] text-text-light dark:text-text-dark">
+                  {user.bio}
+                </Text>
+              ) : (
+                <Text className="text-[14px] text-text-light dark:text-text-dark italic">
+                  Add bio...
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </View>
     </View>
   );

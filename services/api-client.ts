@@ -1,7 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { authService } from "@/services/auth.service";
 import { ApiError } from "@/services/api-error";
+import { authService } from "@/services/auth.service";
+import {
+  createRefreshGate,
+  sendWithAutoRefresh,
+} from "@/services/auth-refresh";
 
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -15,6 +19,10 @@ type ApiEnvelope<T> = {
   payload?: T;
   user?: T;
 };
+
+const refreshAccessTokenOnce = createRefreshGate(() =>
+  authService.refreshAccessToken()
+);
 
 function extractData<T>(json: ApiEnvelope<T>): T | undefined {
   if (json.data !== undefined) return json.data;
@@ -35,38 +43,12 @@ export async function getAuthHeaders(
   };
 }
 
-/** FormData: không set Content-Type để fetch tự thêm boundary. */
+// FormData should not set Content-Type so fetch can add its boundary.
 export async function getAuthHeadersMultipart(): Promise<Record<string, string>> {
   const token = await AsyncStorage.getItem("accessToken");
-  const h: Record<string, string> = {};
-  if (token) h.Authorization = `Bearer ${token}`;
-  return h;
-}
-
-// Singleton promise: N request 401 đồng thời chỉ trigger 1 lần refresh.
-let refreshPromise: Promise<string | null> | null = null;
-
-async function refreshOnce(): Promise<string | null> {
-  if (!refreshPromise) {
-    refreshPromise = authService
-      .refreshAccessToken()
-      .catch(() => null)
-      .finally(() => {
-        refreshPromise = null;
-      });
-  }
-  return refreshPromise;
-}
-
-/** Chặn refresh đệ quy nếu chính endpoint refresh / login fail 401. */
-function isRefreshableEndpoint(path: string): boolean {
-  return (
-    !path.includes("/auth/refresh-token") &&
-    !path.includes("/auth/login") &&
-    !path.includes("/auth/register") &&
-    !path.includes("/auth/forgot-password") &&
-    !path.includes("/auth/reset-password")
-  );
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
 }
 
 async function parseJson<T>(response: Response): Promise<ApiEnvelope<T>> {
@@ -74,27 +56,29 @@ async function parseJson<T>(response: Response): Promise<ApiEnvelope<T>> {
     const text = await response.text();
     return text ? (JSON.parse(text) as ApiEnvelope<T>) : {};
   } catch {
-    throw new Error("Phản hồi từ máy chủ không hợp lệ");
+    throw new Error("Invalid server response");
   }
 }
 
 export async function apiMultipartRequest<T>(
   path: string,
   formData: FormData,
-  _retry = false
+  retry = false
 ): Promise<T> {
-  const headers = await getAuthHeadersMultipart();
-  const response = await fetch(`${API_URL}${path}`, {
-    method: "POST",
-    headers,
-    body: formData,
-    credentials: "include",
+  const response = await sendWithAutoRefresh({
+    path,
+    retry,
+    refreshAccessTokenOnce,
+    send: async () => {
+      const headers = await getAuthHeadersMultipart();
+      return fetch(`${API_URL}${path}`, {
+        method: "POST",
+        headers,
+        body: formData,
+        credentials: "include",
+      });
+    },
   });
-
-  if (response.status === 401 && !_retry && isRefreshableEndpoint(path)) {
-    const newToken = await refreshOnce();
-    if (newToken) return apiMultipartRequest<T>(path, formData, true);
-  }
 
   const json = await parseJson<T>(response);
   const message = json.message || "Something went wrong";
@@ -119,19 +103,21 @@ export async function apiMultipartRequest<T>(
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
-  _retry = false
+  retry = false
 ): Promise<T> {
-  const headers = await getAuthHeaders(options.headers);
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-    credentials: "include",
+  const response = await sendWithAutoRefresh({
+    path,
+    retry,
+    refreshAccessTokenOnce,
+    send: async () => {
+      const headers = await getAuthHeaders(options.headers);
+      return fetch(`${API_URL}${path}`, {
+        ...options,
+        headers,
+        credentials: "include",
+      });
+    },
   });
-
-  if (response.status === 401 && !_retry && isRefreshableEndpoint(path)) {
-    const newToken = await refreshOnce();
-    if (newToken) return apiRequest<T>(path, options, true);
-  }
 
   const json = await parseJson<T>(response);
   const message = json.message || "Something went wrong";

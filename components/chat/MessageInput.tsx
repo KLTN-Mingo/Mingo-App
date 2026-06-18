@@ -422,7 +422,7 @@ export function MessageInput({
               disabled={fileBusy}
               style={{ opacity: fileBusy ? 0.6 : 1 }}
             >
-              <CameraIcon size={35} color={iconColor} />
+              <CameraIcon size={31} color={iconColor} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -469,7 +469,7 @@ export function MessageInput({
                 opacity: text.trim() && !disabled && !sending ? 1 : 0.5,
               }}
             >
-              <SendIcon size={28} color={semantic.primary} />
+              <SendIcon size={28} color={semantic.title} />
             </TouchableOpacity>
           </>
         )}

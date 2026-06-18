@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { TextInput, TouchableOpacity, View } from "react-native";
 
 import { Avatar, Text } from "@/components/ui";
@@ -21,6 +21,7 @@ export interface CommentThreadItemProps {
   onSaveEdit?: () => void;
   onCancelEdit?: () => void;
   onDelete?: () => void;
+  onPressComment?: () => void;
   showModerationStatus?: boolean;
 }
 
@@ -34,7 +35,7 @@ function getModerationLabel(comment: CommentResponseDto): {
     comment.moderationStatus === CommentModerationStatus.REJECTED
   ) {
     return {
-      label: "Bình luận bị ẩn vì vi phạm",
+      label: "Comment hidden for a violation",
       backgroundColor: "#FFEEEE",
       color: "#8A1C1C",
     };
@@ -42,7 +43,7 @@ function getModerationLabel(comment: CommentResponseDto): {
 
   if (comment.moderationStatus === CommentModerationStatus.PENDING) {
     return {
-      label: "Đang chờ kiểm duyệt",
+      label: "Pending review",
       backgroundColor: "#FFF7E0",
       color: "#7A5A0C",
     };
@@ -50,7 +51,7 @@ function getModerationLabel(comment: CommentResponseDto): {
 
   if (comment.moderationStatus === CommentModerationStatus.FLAGGED) {
     return {
-      label: "Bình luận đang được xem xét",
+      label: "Comment is under review",
       backgroundColor: "#FFF7E0",
       color: "#7A5A0C",
     };
@@ -73,14 +74,30 @@ export function CommentThreadItem({
   onSaveEdit,
   onCancelEdit,
   onDelete,
+  onPressComment,
   showModerationStatus = false,
 }: CommentThreadItemProps) {
   const authorName = comment.user?.name ?? "Unknown";
   const likeLabel =
     comment.likesCount > 0 ? `Like ${comment.likesCount}` : "Like";
-  const moderation = showModerationStatus
-    ? getModerationLabel(comment)
-    : null;
+  const moderation = showModerationStatus ? getModerationLabel(comment) : null;
+  const editInputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (!isEditing) return;
+
+    const frame = requestAnimationFrame(() => {
+      editInputRef.current?.focus();
+    });
+    const timer = setTimeout(() => {
+      editInputRef.current?.focus();
+    }, 80);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
+  }, [isEditing]);
 
   return (
     <View className="flex-row px-4 py-2">
@@ -131,6 +148,7 @@ export function CommentThreadItem({
 
         {isEditing ? (
           <TextInput
+            ref={editInputRef}
             value={editDraft}
             onChangeText={onEditDraftChange}
             className="text-sm rounded-2xl px-3 py-2.5 mb-1"
@@ -142,10 +160,14 @@ export function CommentThreadItem({
             }}
             multiline
             maxLength={500}
+            autoFocus
             placeholderTextColor={colors.textMuted}
           />
         ) : (
-          <View
+          <TouchableOpacity
+            onPress={onPressComment}
+            disabled={!onPressComment}
+            activeOpacity={0.75}
             className="rounded-2xl px-3.5 py-2.5 self-start max-w-full"
             style={{ backgroundColor: colors.surfaceMuted }}
           >
@@ -155,33 +177,36 @@ export function CommentThreadItem({
             >
               {comment.contentText}
             </Text>
-          </View>
+          </TouchableOpacity>
         )}
 
         {!isEditing ? (
           <View className="flex-row items-center flex-wrap gap-1.5 mt-1.5">
-            <Text className="text-xs" style={{ color: colors.textMuted }}>
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
               {formatTime(comment.createdAt)}
             </Text>
-            <Text className="text-xs" style={{ color: colors.textMuted }}>
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
               ·
             </Text>
             <TouchableOpacity onPress={onLike} activeOpacity={0.7}>
-              <Text className="text-xs" style={{ color: colors.textMuted }}>
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
                 {likeLabel}
               </Text>
             </TouchableOpacity>
-            <Text className="text-xs" style={{ color: colors.textMuted }}>
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
               ·
             </Text>
             <TouchableOpacity onPress={onReply} activeOpacity={0.7}>
-              <Text className="text-xs" style={{ color: colors.textMuted }}>
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
                 Reply
               </Text>
             </TouchableOpacity>
             {onDelete ? (
               <>
-                <Text className="text-xs" style={{ color: colors.textMuted }}>
+                <Text
+                  className="text-xs"
+                  style={{ color: colors.textSecondary }}
+                >
                   ·
                 </Text>
                 <TouchableOpacity onPress={onDelete} activeOpacity={0.7}>
@@ -193,12 +218,14 @@ export function CommentThreadItem({
             ) : null}
           </View>
         ) : (
-          <View className="flex-row gap-4 mt-2">
+          <View className="flex-row gap-4 mt-2 justify-end">
             <TouchableOpacity onPress={onSaveEdit}>
-              <Text className="text-xs font-semibold text-primary-100">Save</Text>
+              <Text className="text-xs font-semibold text-primary-100">
+                Save
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={onCancelEdit}>
-              <Text className="text-xs" style={{ color: colors.textMuted }}>
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
                 Cancel
               </Text>
             </TouchableOpacity>

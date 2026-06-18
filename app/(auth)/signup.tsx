@@ -72,7 +72,7 @@ export default function SignUpScreen() {
   const validateForm = (): boolean => {
     const newErrors = validateAuthFields(formData, {
       name: {
-        label: "họ tên",
+        label: "full name",
         rules: ["required"],
       },
       email: {
@@ -80,15 +80,15 @@ export default function SignUpScreen() {
         rules: ["required", "email"],
       },
       phoneNumber: {
-        label: "số điện thoại",
+        label: "phone number",
         rules: ["required", "phone"],
       },
       password: {
-        label: "mật khẩu",
+        label: "password",
         rules: ["required", "password"],
       },
       confirmPassword: {
-        label: "xác nhận mật khẩu",
+        label: "confirm password",
         rules: [
           "required",
           { type: "confirmPassword", matchesField: "password" },
@@ -105,7 +105,7 @@ export default function SignUpScreen() {
       { code },
       {
         code: {
-          label: verificationChannel === "phone" ? "mã SMS" : "mã email",
+          label: verificationChannel === "phone" ? "SMS code" : "email code",
           rules: ["required", "otp"],
         },
       }
@@ -166,13 +166,13 @@ export default function SignUpScreen() {
       setStep("otp");
       otpCooldown.startCooldown();
       Alert.alert(
-        "Đã gửi mã",
-        "Vui lòng kiểm tra tin nhắn SMS để lấy mã xác thực."
+        "Code sent",
+        "Please check your SMS for the verification code."
       );
     } catch (error: unknown) {
       const msg =
-        error instanceof Error ? error.message : "Không gửi được mã xác thực";
-      Alert.alert("Lỗi", msg);
+        error instanceof Error ? error.message : "Could not send verification code";
+      Alert.alert("Error", msg);
     } finally {
       setLoading(false);
     }
@@ -186,15 +186,15 @@ export default function SignUpScreen() {
       await sendRegisterOtp(pendingRegisterData, verificationChannel);
       otpCooldown.startCooldown();
       Alert.alert(
-        "Đã gửi lại mã",
+        "Code resent",
         verificationChannel === "phone"
-          ? "Vui lòng kiểm tra tin nhắn SMS."
-          : "Vui lòng kiểm tra hộp thư email."
+          ? "Please check your SMS."
+          : "Please check your email inbox."
       );
     } catch (error: unknown) {
       const msg =
-        error instanceof Error ? error.message : "Không gửi lại được mã";
-      Alert.alert("Lỗi", msg);
+        error instanceof Error ? error.message : "Could not resend code";
+      Alert.alert("Error", msg);
     } finally {
       setResending(false);
     }
@@ -213,15 +213,15 @@ export default function SignUpScreen() {
       setErrors({});
       otpCooldown.startCooldown();
       Alert.alert(
-        "Đã gửi mã",
+        "Code sent",
         nextChannel === "phone"
-          ? "Vui lòng kiểm tra tin nhắn SMS."
-          : "Vui lòng kiểm tra hộp thư email."
+          ? "Please check your SMS."
+          : "Please check your email inbox."
       );
     } catch (error: unknown) {
       const msg =
-        error instanceof Error ? error.message : "Không gửi được mã xác thực";
-      Alert.alert("Lỗi", msg);
+        error instanceof Error ? error.message : "Could not send verification code";
+      Alert.alert("Error", msg);
     } finally {
       setResending(false);
     }
@@ -236,8 +236,8 @@ export default function SignUpScreen() {
       await register(pendingRegisterData);
     } catch (error: unknown) {
       const msg =
-        error instanceof Error ? error.message : "Đăng ký hoặc xác thực thất bại";
-      Alert.alert("Lỗi", msg);
+        error instanceof Error ? error.message : "Registration or verification failed";
+      Alert.alert("Error", msg);
     } finally {
       setLoading(false);
     }
@@ -362,7 +362,7 @@ export default function SignUpScreen() {
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() =>
-            Alert.alert("Thông báo", "Đăng ký Google sẽ được hỗ trợ sau.")
+            Alert.alert("Notice", "Google sign-up will be supported later.")
           }
           className={`${AUTH_BTN} border border-border-light dark:border-border-dark flex-row items-center justify-center gap-2 px-6`}
         >

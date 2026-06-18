@@ -87,34 +87,34 @@ export function getNotificationMessage(
   type: NotificationType,
   actorName?: string
 ): string {
-  const name = actorName || 'Ai đó';
+  const name = actorName || 'Someone';
 
   const messages: Record<NotificationType, string> = {
     // Post
-    [NotificationType.POST_LIKE]: `${name} đã thích bài viết của bạn`,
-    [NotificationType.POST_COMMENT]: `${name} đã bình luận bài viết của bạn`,
-    [NotificationType.POST_SHARE]: `${name} đã chia sẻ bài viết của bạn`,
-    [NotificationType.POST_MENTION]: `${name} đã nhắc đến bạn trong một bài viết`,
+    [NotificationType.POST_LIKE]: `${name} liked your post`,
+    [NotificationType.POST_COMMENT]: `${name} commented on your post`,
+    [NotificationType.POST_SHARE]: `${name} shared your post`,
+    [NotificationType.POST_MENTION]: `${name} mentioned you in a post`,
     // Media
-    [NotificationType.MEDIA_LIKE]: `${name} đã thích ảnh/video của bạn`,
-    [NotificationType.MEDIA_COMMENT]: `${name} đã bình luận ảnh/video của bạn`,
-    [NotificationType.MEDIA_SHARE]: `${name} đã chia sẻ ảnh/video của bạn`,
+    [NotificationType.MEDIA_LIKE]: `${name} liked your photo/video`,
+    [NotificationType.MEDIA_COMMENT]: `${name} commented on your photo/video`,
+    [NotificationType.MEDIA_SHARE]: `${name} shared your photo/video`,
     // Comment
-    [NotificationType.COMMENT_LIKE]: `${name} đã thích bình luận của bạn`,
-    [NotificationType.COMMENT_REPLY]: `${name} đã trả lời bình luận của bạn`,
-    [NotificationType.COMMENT_MENTION]: `${name} đã nhắc đến bạn trong một bình luận`,
+    [NotificationType.COMMENT_LIKE]: `${name} liked your comment`,
+    [NotificationType.COMMENT_REPLY]: `${name} replied to your comment`,
+    [NotificationType.COMMENT_MENTION]: `${name} mentioned you in a comment`,
     // Follow
-    [NotificationType.FOLLOW_REQUEST]: `${name} đã gửi yêu cầu theo dõi bạn`,
-    [NotificationType.FOLLOW_ACCEPTED]: `${name} đã chấp nhận yêu cầu theo dõi của bạn`,
-    [NotificationType.FOLLOW_NEW]: `${name} đã bắt đầu theo dõi bạn`,
+    [NotificationType.FOLLOW_REQUEST]: `${name} sent you a follow request`,
+    [NotificationType.FOLLOW_ACCEPTED]: `${name} accepted your follow request`,
+    [NotificationType.FOLLOW_NEW]: `${name} started following you`,
     // Close Friend
-    [NotificationType.CLOSE_FRIEND_REQUEST]: `${name} muốn trở thành bạn thân của bạn`,
-    [NotificationType.CLOSE_FRIEND_ACCEPTED]: `${name} đã chấp nhận yêu cầu bạn thân của bạn`,
+    [NotificationType.CLOSE_FRIEND_REQUEST]: `${name} wants to be your close friend`,
+    [NotificationType.CLOSE_FRIEND_ACCEPTED]: `${name} accepted your close friend request`,
     // Message
-    [NotificationType.MESSAGE_NEW]: `${name} đã gửi tin nhắn cho bạn`,
+    [NotificationType.MESSAGE_NEW]: `${name} sent you a message`,
     // System
-    [NotificationType.SYSTEM]: 'Thông báo từ hệ thống',
+    [NotificationType.SYSTEM]: 'System notification',
   };
 
-  return messages[type] || 'Bạn có thông báo mới';
+  return messages[type] || 'You have a new notification';
 }

@@ -36,7 +36,7 @@ export default function TwoFactorScreen() {
       { code },
       {
         code: {
-          label: "mã xác thực",
+          label: "verification code",
           rules: ["required", "otp"],
         },
       }
@@ -47,7 +47,7 @@ export default function TwoFactorScreen() {
       return;
     }
     if (!pendingToken) {
-      Alert.alert("Phiên xác thực hết hạn", "Vui lòng đăng nhập lại.", [
+      Alert.alert("Verification session expired", "Please sign in again.", [
         { text: "OK", onPress: () => router.replace("/(auth)/signin") },
       ]);
       return;
@@ -65,13 +65,13 @@ export default function TwoFactorScreen() {
         setProfile(nextProfile);
         router.replace("/(tabs)/home" as never);
       } else {
-        Alert.alert("Lỗi", "Không nhận được token");
+        Alert.alert("Error", "No token received");
       }
     } catch (err: unknown) {
       console.error("[auth] 2fa complete failed", err);
       Alert.alert(
-        "Lỗi",
-        err instanceof Error ? err.message : "Mã không hợp lệ"
+        "Error",
+        err instanceof Error ? err.message : "Invalid code"
       );
     } finally {
       setLoading(false);
@@ -99,12 +99,12 @@ export default function TwoFactorScreen() {
           </Text>
 
           <Text variant="muted" className="text-center mb-10">
-            Mở ứng dụng Authenticator của bạn và nhập mã 6 chữ số.
+            Open your Authenticator app and enter the 6-digit code.
           </Text>
 
           <View className="gap-4">
             <ActionInput
-              label="Mã xác thực"
+              label="Verification code"
               isRequired
               variant="auth"
               placeholder="000 000"
@@ -119,7 +119,7 @@ export default function TwoFactorScreen() {
             />
 
             <Button onPress={handleVerify} loading={loading} className="mt-2">
-              Xác nhận
+              Confirm
             </Button>
           </View>
         </ScrollView>

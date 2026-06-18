@@ -50,15 +50,15 @@ export function ChangePasswordModal({ visible, onRequestClose }: Props) {
   const validate = () => {
     const nextErrors = validateAuthFields(formData, {
       currentPassword: {
-        label: "mật khẩu hiện tại",
+        label: "current password",
         rules: ["required", "password"],
       },
       newPassword: {
-        label: "mật khẩu mới",
+        label: "new password",
         rules: ["required", "password"],
       },
       confirmPassword: {
-        label: "xác nhận mật khẩu",
+        label: "confirm password",
         rules: [
           "required",
           { type: "confirmPassword", matchesField: "newPassword" },
@@ -87,12 +87,12 @@ export function ChangePasswordModal({ visible, onRequestClose }: Props) {
         currentPassword: formData.currentPassword.trim(),
         newPassword: formData.newPassword.trim(),
       });
-      Alert.alert("Thành công", "Đổi mật khẩu thành công.");
+      Alert.alert("Success", "Password changed successfully.");
       resetAndClose();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Không thể đổi mật khẩu";
-      Alert.alert("Lỗi", message);
+        error instanceof Error ? error.message : "Could not change password";
+      Alert.alert("Error", message);
       setSaving(false);
     }
   };

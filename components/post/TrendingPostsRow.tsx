@@ -19,7 +19,7 @@ const ITEM_WIDTH = 220;
 const ITEM_HEIGHT = 160;
 
 /**
- * Carousel "Đang hot" — kéo ngang ở đầu home/explore.
+ * Carousel "Trending" — kéo ngang ở đầu home/explore.
  * Tự fetch trending khi mount, fail silent (chỉ ẩn nếu lỗi).
  */
 export function TrendingPostsRow() {
@@ -71,7 +71,7 @@ export function TrendingPostsRow() {
     <View>
       <View className="flex-row items-center justify-between px-1 mb-2">
         <Text className="text-base font-semibold text-text-light dark:text-text-dark">
-          Đang hot
+          Trending
         </Text>
 
         <View className="px-2 py-0.5 rounded-full bg-primary/10">
@@ -126,7 +126,7 @@ export function TrendingPostsRow() {
                     numberOfLines={4}
                     style={{ color: colors.textPrimary }}
                   >
-                    {item.contentText || "Bài viết không có nội dung"}
+                    {item.contentText || "This post has no content"}
                   </Text>
                 </View>
               )}

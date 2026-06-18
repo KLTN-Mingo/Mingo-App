@@ -1,8 +1,10 @@
 import React, { useCallback, useState } from "react";
-import { Alert } from "react-native";
+import { Modal, Pressable, TouchableOpacity, View } from "react-native";
 
 import { RepostModal } from "@/components/post/RepostModal";
 import { SharePostModal } from "@/components/post/SharePostModal";
+import { SafeModalSheet } from "@/components/containers/SafeLayout";
+import { Text } from "@/components/ui";
 import type { PostResponseDto, RepostSuccessDto } from "@/dtos";
 
 interface UseSharePostOptions {
@@ -26,35 +28,82 @@ interface UseSharePostOptions {
 export function useSharePost(options: UseSharePostOptions = {}) {
   const { currentUserId, onShared, onReposted } = options;
 
+  const [chooserPost, setChooserPost] = useState<PostResponseDto | null>(null);
   const [dmPost, setDmPost] = useState<PostResponseDto | null>(null);
   const [repostPost, setRepostPost] = useState<PostResponseDto | null>(null);
 
   const openSheet = useCallback(
     (post: PostResponseDto) => {
-      const isOwn = !!currentUserId && post.userId === currentUserId;
-
-      Alert.alert("Chia sẻ bài viết", undefined, [
-        {
-          text: "Gửi qua tin nhắn",
-          onPress: () => setDmPost(post),
-        },
-        // REPOST_OWN_POST_FORBIDDEN guard (guide §3) — disable ở UI thay vì chờ BE.
-        ...(isOwn
-          ? []
-          : [
-              {
-                text: "Repost",
-                onPress: () => setRepostPost(post),
-              },
-            ]),
-        { text: "Huỷ", style: "cancel" as const },
-      ]);
+      setChooserPost(post);
     },
-    [currentUserId]
+    []
   );
+
+  const closeChooser = useCallback(() => {
+    setChooserPost(null);
+  }, []);
+
+  const openDmShare = useCallback(() => {
+    if (!chooserPost) return;
+    setDmPost(chooserPost);
+    setChooserPost(null);
+  }, [chooserPost]);
+
+  const openRepost = useCallback(() => {
+    if (!chooserPost) return;
+    setRepostPost(chooserPost);
+    setChooserPost(null);
+  }, [chooserPost]);
+
+  const canRepost =
+    !!chooserPost && (!currentUserId || chooserPost.userId !== currentUserId);
 
   const modals = (
     <>
+      <Modal
+        visible={!!chooserPost}
+        transparent
+        animationType="slide"
+        onRequestClose={closeChooser}
+      >
+        <View className="flex-1 justify-end bg-black/40">
+          <Pressable className="flex-1" onPress={closeChooser} />
+          <SafeModalSheet className="gap-2">
+            <Text className="mb-1 text-base font-semibold text-text-light dark:text-text-dark">
+              Share post
+            </Text>
+            <TouchableOpacity
+              onPress={openDmShare}
+              activeOpacity={0.75}
+              className="rounded-2xl px-4 py-3 bg-surface-muted-light dark:bg-surface-muted-dark"
+            >
+              <Text className="font-semibold text-text-light dark:text-text-dark">
+                Send via message
+              </Text>
+            </TouchableOpacity>
+            {canRepost ? (
+              <TouchableOpacity
+                onPress={openRepost}
+                activeOpacity={0.75}
+                className="rounded-2xl px-4 py-3 bg-surface-muted-light dark:bg-surface-muted-dark"
+              >
+                <Text className="font-semibold text-text-light dark:text-text-dark">
+                  Repost
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              onPress={closeChooser}
+              activeOpacity={0.75}
+              className="mt-1 rounded-2xl px-4 py-3"
+            >
+              <Text className="text-center font-semibold text-title-light dark:text-title-dark">
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </SafeModalSheet>
+        </View>
+      </Modal>
       <SharePostModal
         visible={!!dmPost}
         post={dmPost}

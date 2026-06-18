@@ -62,7 +62,7 @@ export default function HashtagPostsScreen() {
         setPagination(data.pagination);
       } catch (e) {
         console.error("[hashtag] load failed", e);
-        if (!append) setError("Không tải được bài viết");
+        if (!append) setError("Could not load post");
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -118,7 +118,7 @@ export default function HashtagPostsScreen() {
           </Text>
           {pagination?.total ? (
             <Text variant="muted" className="text-xs">
-              {pagination.total} bài viết
+              {pagination.total} posts
             </Text>
           ) : null}
         </View>
@@ -164,7 +164,7 @@ export default function HashtagPostsScreen() {
           onEndReached={onLoadMore}
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
-            <EmptyState title="Chưa có bài viết nào với hashtag này" />
+            <EmptyState title="No posts yet for this hashtag" />
           }
           ListFooterComponent={
             loadingMore ? (

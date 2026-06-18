@@ -386,7 +386,7 @@ export function MessageBubble({
                     fontStyle: "italic",
                   }}
                 >
-                  đã chỉnh sửa
+                  edited
                 </Text>
               ) : null}
             </>

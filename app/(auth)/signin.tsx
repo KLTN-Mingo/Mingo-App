@@ -49,8 +49,8 @@ export default function SignInScreen() {
     onError: (err) => {
       console.error("[auth] google login failed", err);
       Alert.alert(
-        "Lỗi",
-        err instanceof Error ? err.message : "Đăng nhập Google thất bại"
+        "Error",
+        err instanceof Error ? err.message : "Google sign-in failed"
       );
     },
   });
@@ -70,11 +70,11 @@ export default function SignInScreen() {
   const validate = (): boolean => {
     const newErrors = validateAuthFields(formData, {
       phoneNumber: {
-        label: "số điện thoại",
+        label: "phone number",
         rules: ["required", "phone"],
       },
       password: {
-        label: "mật khẩu",
+        label: "password",
         rules: ["required", "password"],
       },
     });
@@ -96,8 +96,8 @@ export default function SignInScreen() {
         } as never);
       }
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : "Đăng nhập thất bại";
-      Alert.alert("Lỗi", msg);
+      const msg = error instanceof Error ? error.message : "Sign-in failed";
+      Alert.alert("Error", msg);
     } finally {
       setLoading(false);
     }
@@ -225,8 +225,8 @@ export default function SignInScreen() {
               onPress={() => {
                 if (!google.ready) {
                   Alert.alert(
-                    "Chưa cấu hình",
-                    "Đăng nhập Google chưa được cấu hình cho build này."
+                    "Not configured",
+                    "Google sign-in is not configured for this build."
                   );
                   return;
                 }
@@ -242,7 +242,7 @@ export default function SignInScreen() {
                 className="text-base font-medium text-text-light dark:text-text-dark text-center leading-5"
                 style={{ lineHeight: 20 }}
               >
-                {google.loading ? "Đang xử lý..." : "Sign In with Google"}
+                {google.loading ? "Processing..." : "Sign In with Google"}
               </Text>
             </TouchableOpacity>
           </View>

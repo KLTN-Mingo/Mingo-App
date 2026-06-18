@@ -28,7 +28,7 @@ class ShareService {
       });
       return data;
     } catch (e) {
-      throw this.toShareError(e, "Không gửi được tin nhắn chia sẻ");
+      throw this.toShareError(e, "Could not send the shared message");
     }
   }
 
@@ -42,7 +42,7 @@ class ShareService {
       });
       return data;
     } catch (e) {
-      throw this.toShareError(e, "Không repost được bài viết");
+      throw this.toShareError(e, "Could not repost post");
     }
   }
 
@@ -68,38 +68,38 @@ class ShareService {
   // ─── validation ──────────────────────────────────────────────────────────────
 
   private assertValidDmShare(p: SendDMShareRequestDto) {
-    if (!p.postId) throw new ShareApiError("Thiếu postId", "DTO_VALIDATION_ERROR");
+    if (!p.postId) throw new ShareApiError("Missing postId", "DTO_VALIDATION_ERROR");
     if (!Array.isArray(p.recipientIds) || p.recipientIds.length === 0) {
       throw new ShareApiError(
-        "Vui lòng chọn ít nhất 1 người nhận",
+        "Please select at least one recipient",
         "DTO_VALIDATION_ERROR"
       );
     }
     if (p.recipientIds.length > MAX_RECIPIENTS) {
       throw new ShareApiError(
-        `Chỉ được gửi tối đa ${MAX_RECIPIENTS} người`,
+        `You can send to up to ${MAX_RECIPIENTS} people`,
         "RECIPIENTS_LIMIT_EXCEEDED"
       );
     }
     if (new Set(p.recipientIds).size !== p.recipientIds.length) {
       throw new ShareApiError(
-        "Danh sách người nhận có trùng lặp",
+        "Recipient list has duplicates",
         "DTO_VALIDATION_ERROR"
       );
     }
     if (p.message && p.message.length > MAX_MESSAGE_LEN) {
       throw new ShareApiError(
-        `Tin nhắn không vượt quá ${MAX_MESSAGE_LEN} ký tự`,
+        `Message cannot exceed ${MAX_MESSAGE_LEN} characters`,
         "DTO_VALIDATION_ERROR"
       );
     }
   }
 
   private assertValidRepost(p: RepostRequestDto) {
-    if (!p.postId) throw new ShareApiError("Thiếu postId", "DTO_VALIDATION_ERROR");
+    if (!p.postId) throw new ShareApiError("Missing postId", "DTO_VALIDATION_ERROR");
     if (p.comment && p.comment.length > MAX_MESSAGE_LEN) {
       throw new ShareApiError(
-        `Comment không vượt quá ${MAX_MESSAGE_LEN} ký tự`,
+        `Comment cannot exceed ${MAX_MESSAGE_LEN} characters`,
         "DTO_VALIDATION_ERROR"
       );
     }
@@ -129,7 +129,7 @@ class ShareService {
     if (status === 403) {
       return "POST_VISIBILITY_FORBIDDEN";
     }
-    if (m.includes("REPOST_DUPLICATED") || m.includes("ĐÃ REPOST")) {
+    if (m.includes("REPOST_DUPLICATED") || m.includes("ALREADY REPOSTED")) {
       return "REPOST_DUPLICATED";
     }
     if (m.includes("RECIPIENT_NOT_FRIEND")) return "RECIPIENT_NOT_FRIEND";

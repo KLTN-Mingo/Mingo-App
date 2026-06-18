@@ -49,7 +49,7 @@ export function NotificationBadge({
       </View>
       {showLabel && (
         <Text className="text-base" style={{ color: iconColor }}>
-          Thông báo
+          Notice
         </Text>
       )}
     </TouchableOpacity>

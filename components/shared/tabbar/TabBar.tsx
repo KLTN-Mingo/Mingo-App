@@ -1,29 +1,29 @@
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { PlatformPressable } from "@react-navigation/elements";
 import { useLinkBuilder } from "@react-navigation/native";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutChangeEvent,
   StyleSheet,
+  Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import Animated, {
-  interpolate,
-  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withTiming,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 import {
+  getSemantic,
   paletteDark,
   paletteIcon,
   paletteLight,
-  palettePrimary,
 } from "@/constants/designTokens";
+import { useTheme } from "@/context/ThemeContext";
 
 type TabRoute = BottomTabBarProps["state"]["routes"][number];
 type IconProps = { color: string; width?: number; height?: number };
@@ -31,11 +31,13 @@ type TabItemProps = {
   route: TabRoute;
   descriptors: BottomTabBarProps["descriptors"];
   isFocused: boolean;
-  activeTextColor: string;
-  inactiveColor: string;
-  activeIndexShared: SharedValue<number>;
   navigation: BottomTabBarProps["navigation"];
   buildHref: ReturnType<typeof useLinkBuilder>["buildHref"];
+  activeWidth: number;
+  inactiveWidth: number;
+  activeIconColor: string;
+  inactiveIconColor: string;
+  activeLabelColor: string;
 };
 
 const HomeIcon = ({ color, width = 22, height = 22 }: IconProps) => (
@@ -82,9 +84,27 @@ const FriendIcon = ({ color, width = 22, height = 22 }: IconProps) => (
 
 const MessageIcon = ({ color, width = 22, height = 22 }: IconProps) => (
   <Svg width={width} height={height} viewBox="0 0 24 24" fill="none">
-    <Path d="M15.9393 12.413H15.9483" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    <Path d="M11.9304 12.413H11.9394" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    <Path d="M7.9214 12.413H7.9304" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <Path
+      d="M15.9393 12.413H15.9483"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M11.9304 12.413H11.9394"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M7.9214 12.413H7.9304"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
     <Path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -120,21 +140,26 @@ const PlusIcon = ({ color, size = 28 }: { color: string; size?: number }) => (
   </Svg>
 );
 
-const SPACER_WIDTH = 64;
-const INDICATOR_PADDING = 18;
 const VISIBLE_TABS = ["home", "friend", "message", "profile"];
-const SPRING_CONFIG = { damping: 25, stiffness: 80 };
-const ACTIVE_ICON_DARK = paletteDark.background;
+const TAB_BAR_BOTTOM_OFFSET = 18;
+const TAB_BAR_HORIZONTAL_OFFSET = 20;
+const TAB_BAR_HEIGHT = 62;
+const POST_BUTTON_GAP = 8;
+const TAB_BAR_INSET = 6;
+const INACTIVE_TAB_WIDTH = 75;
+const MIN_ACTIVE_TAB_WIDTH = 112;
 
 function TabItem({
   route,
   descriptors,
   isFocused,
-  activeTextColor,
-  inactiveColor,
-  activeIndexShared,
   navigation,
   buildHref,
+  activeWidth,
+  inactiveWidth,
+  activeIconColor,
+  inactiveIconColor,
+  activeLabelColor,
 }: TabItemProps) {
   const { options } = descriptors[route.key];
   const IconComponent =
@@ -147,19 +172,25 @@ function TabItem({
           : route.name === "profile"
             ? ProfileIcon
             : null;
-  const scale = useSharedValue(isFocused ? 1 : 0);
+  const label =
+    typeof options.title === "string"
+      ? options.title
+      : typeof options.tabBarLabel === "string"
+        ? options.tabBarLabel
+        : route.name;
+  const itemWidth = useSharedValue(isFocused ? activeWidth : inactiveWidth);
 
   useEffect(() => {
-    scale.value = withSpring(isFocused ? 1 : 0, SPRING_CONFIG);
-  }, [isFocused, scale]);
+    itemWidth.value = withTiming(isFocused ? activeWidth : inactiveWidth, {
+      duration: 260,
+    });
+  }, [activeWidth, inactiveWidth, isFocused, itemWidth]);
 
-  const animatedIconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(scale.value, [0, 1], [1, 1.1]) }],
+  const itemAnimatedStyle = useAnimatedStyle(() => ({
+    width: itemWidth.value,
   }));
 
   const onPress = () => {
-    const index = VISIBLE_TABS.indexOf(route.name);
-    if (index >= 0) activeIndexShared.value = index;
     const event = navigation.emit({
       type: "tabPress",
       target: route.key,
@@ -175,26 +206,34 @@ function TabItem({
   };
 
   return (
-    <PlatformPressable
-      href={buildHref(route.name, route.params)}
-      accessibilityRole="tab"
-      accessibilityState={isFocused ? { selected: true } : {}}
-      accessibilityLabel={options.tabBarAccessibilityLabel}
-      testID={options.tabBarButtonTestID}
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={styles.tabItem}
-    >
-      <Animated.View style={animatedIconStyle}>
+    <Animated.View style={[styles.tabSlot, itemAnimatedStyle]}>
+      <PlatformPressable
+        href={buildHref(route.name, route.params)}
+        accessibilityRole="tab"
+        accessibilityState={isFocused ? { selected: true } : {}}
+        accessibilityLabel={options.tabBarAccessibilityLabel}
+        testID={options.tabBarButtonTestID}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        style={styles.tabItem}
+      >
         {IconComponent ? (
           <IconComponent
-            color={isFocused ? activeTextColor : inactiveColor}
-            width={20}
-            height={20}
+            color={isFocused ? activeIconColor : inactiveIconColor}
+            width={21}
+            height={21}
           />
         ) : null}
-      </Animated.View>
-    </PlatformPressable>
+        {isFocused ? (
+          <Text
+            style={[styles.activeLabel, { color: activeLabelColor }]}
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+        ) : null}
+      </PlatformPressable>
+    </Animated.View>
   );
 }
 
@@ -204,53 +243,56 @@ export default function TabBar({
   navigation,
 }: BottomTabBarProps) {
   const { buildHref } = useLinkBuilder();
-  const colorScheme = useColorScheme() ?? "light";
-  const backgroundColor =
-    colorScheme === "dark" ? paletteDark.background : paletteLight.background;
-  const sheetColor =
-    colorScheme === "dark" ? paletteDark.surface : paletteLight.background;
-  const plusColor =
-    colorScheme === "dark" ? paletteDark.textPrimary : paletteLight.textPrimary;
-  const inactiveColor = paletteIcon.lightMuted;
-  const activeTextColor =
-    colorScheme === "dark" ? ACTIVE_ICON_DARK : paletteLight.white;
+  const insets = useSafeAreaInsets();
+  const { colorScheme } = useTheme();
+  const semantic = getSemantic(colorScheme);
+  const isDark = colorScheme === "dark";
+  const activeTabColor = semantic.primary;
+  const barColor = semantic.surface;
+  const barBorderColor = isDark
+    ? paletteDark.borderAccent
+    : paletteLight.borderSubtle;
+  const activeIconColor = semantic.onPrimary;
+  const inactiveIconColor = isDark ? paletteDark.textMuted : paletteIcon.lightMuted;
+  const postButtonBackground = semantic.surfaceElevated;
+  const shadowColor = isDark ? paletteDark.background : paletteDark.background;
+  const shadowOpacity = isDark ? 0.32 : 0.22;
   const routes = state.routes;
-  const leftRoutes = routes.filter((route) =>
-    ["home", "friend"].includes(route.name)
+  const visibleRoutes = routes.filter((route) =>
+    VISIBLE_TABS.includes(route.name)
   );
-  const rightRoutes = routes.filter((route) =>
-    ["message", "profile"].includes(route.name)
+  const bottom = Math.max(insets.bottom, TAB_BAR_BOTTOM_OFFSET);
+  const [tabbarWidth, setTabbarWidth] = useState(0);
+  const activeVisibleIndex = Math.max(
+    visibleRoutes.findIndex((route) => route.key === routes[state.index]?.key),
+    0
   );
-  const tabbarWidthShared = useSharedValue(0);
-  const tabbarHeightShared = useSharedValue(0);
-  const activeIndexShared = useSharedValue(
-    VISIBLE_TABS.indexOf(routes[state.index]?.name ?? "")
-  );
+  const inactiveWidth = INACTIVE_TAB_WIDTH;
+  const activeWidth =
+    visibleRoutes.length > 0
+      ? Math.max(
+          tabbarWidth -
+            TAB_BAR_INSET * 2 -
+            inactiveWidth * (visibleRoutes.length - 1),
+          MIN_ACTIVE_TAB_WIDTH
+        )
+      : 0;
+  const indicatorX = useSharedValue(0);
 
   useEffect(() => {
-    const route = routes[state.index];
-    const index = VISIBLE_TABS.indexOf(route?.name ?? "");
-    if (index >= 0) activeIndexShared.value = index;
-  }, [activeIndexShared, routes, state.index]);
+    indicatorX.value = withTiming(activeVisibleIndex * inactiveWidth, {
+      duration: 260,
+    });
+  }, [activeVisibleIndex, inactiveWidth, indicatorX]);
 
-  const animatedIndicatorStyle = useAnimatedStyle(() => {
-    const totalWidth = tabbarWidthShared.value;
-    if (totalWidth === 0) {
-      return { width: 0, height: 0, transform: [{ translateX: 0 }] };
-    }
-    const buttonWidth = (totalWidth - SPACER_WIDTH) / 4;
-    const index = activeIndexShared.value;
-    const targetX =
-      index < 2
-        ? index * buttonWidth + INDICATOR_PADDING
-        : index * buttonWidth + SPACER_WIDTH + INDICATOR_PADDING;
+  const indicatorStyle = useAnimatedStyle(() => ({
+    width: activeWidth,
+    transform: [{ translateX: indicatorX.value }],
+  }));
 
-    return {
-      width: buttonWidth - INDICATOR_PADDING * 2,
-      height: tabbarHeightShared.value > 0 ? tabbarHeightShared.value - 16 : 0,
-      transform: [{ translateX: withSpring(targetX, SPRING_CONFIG) }],
-    };
-  });
+  const handleTabbarLayout = (event: LayoutChangeEvent) => {
+    setTabbarWidth(event.nativeEvent.layout.width);
+  };
 
   const renderTab = (route: TabRoute) => (
     <TabItem
@@ -258,54 +300,69 @@ export default function TabBar({
       route={route}
       descriptors={descriptors}
       isFocused={state.index === routes.indexOf(route)}
-      activeTextColor={activeTextColor}
-      inactiveColor={inactiveColor}
-      activeIndexShared={activeIndexShared}
       navigation={navigation}
       buildHref={buildHref}
+      activeWidth={activeWidth}
+      inactiveWidth={inactiveWidth}
+      activeIconColor={activeIconColor}
+      inactiveIconColor={inactiveIconColor}
+      activeLabelColor={activeIconColor}
     />
   );
 
   return (
-    <View style={styles.wrapper} pointerEvents="box-none">
-      <View
-        style={[
-          styles.tabbarShadow,
-          { backgroundColor, shadowColor: paletteDark.background },
-        ]}
-      >
-        <View
-          style={[styles.tabbar, { backgroundColor }]}
-          onLayout={(event: LayoutChangeEvent) => {
-            tabbarWidthShared.value = event.nativeEvent.layout.width;
-            tabbarHeightShared.value = event.nativeEvent.layout.height;
-          }}
-        >
-          <Animated.View
-            style={[
-              styles.indicator,
-              { backgroundColor: palettePrimary[500] },
-              animatedIndicatorStyle,
-            ]}
-          />
-          <View style={styles.side}>{leftRoutes.map(renderTab)}</View>
-          <View style={styles.centerSpacer} />
-          <View style={styles.side}>{rightRoutes.map(renderTab)}</View>
-        </View>
-      </View>
-
+    <View
+      style={[
+        styles.wrapper,
+        {
+          bottom,
+          paddingHorizontal: TAB_BAR_HORIZONTAL_OFFSET,
+        },
+      ]}
+      pointerEvents="box-none"
+    >
       <TouchableOpacity
         style={[
           styles.postButton,
-          { backgroundColor: sheetColor, shadowColor: paletteDark.background },
+          {
+            bottom: TAB_BAR_HEIGHT + POST_BUTTON_GAP,
+            right: TAB_BAR_HORIZONTAL_OFFSET,
+            backgroundColor: postButtonBackground,
+            borderColor: barBorderColor,
+            shadowColor,
+            shadowOpacity: isDark ? 0.28 : 0.2,
+          },
         ]}
         onPress={() => navigation.navigate("create-post")}
         activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityLabel="Create post"
       >
-        <PlusIcon color={plusColor} />
+        <PlusIcon color={activeTabColor} size={24} />
       </TouchableOpacity>
+      <View
+        style={[
+          styles.tabbar,
+          {
+            backgroundColor: barColor,
+            borderColor: barBorderColor,
+            shadowColor,
+            shadowOpacity,
+          },
+        ]}
+        onLayout={handleTabbarLayout}
+      >
+        {activeWidth > 0 ? (
+          <Animated.View
+            style={[
+              styles.activeIndicator,
+              { backgroundColor: activeTabColor },
+              indicatorStyle,
+            ]}
+          />
+        ) : null}
+        {visibleRoutes.map(renderTab)}
+      </View>
     </View>
   );
 }
@@ -313,61 +370,62 @@ export default function TabBar({
 const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
-    bottom: 30,
-    left: 20,
-    right: 20,
-    alignItems: "center",
+    left: 0,
+    right: 0,
+    alignItems: "flex-end",
     overflow: "visible",
+    zIndex: 100,
+    elevation: 100,
   },
   tabbar: {
-    width: "100%",
+    position: "relative",
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    borderRadius: 35,
+    alignSelf: "stretch",
+    height: TAB_BAR_HEIGHT,
+    padding: TAB_BAR_INSET,
+    borderRadius: 32,
+    borderWidth: 1,
     overflow: "hidden",
-  },
-  tabbarShadow: {
-    width: "100%",
-    borderRadius: 35,
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.28,
-    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    shadowRadius: 18,
     elevation: 18,
   },
-  indicator: {
+  activeIndicator: {
     position: "absolute",
-    borderRadius: 35,
-    top: 8,
+    left: TAB_BAR_INSET,
+    top: TAB_BAR_INSET,
+    bottom: TAB_BAR_INSET,
+    borderRadius: 25,
   },
-  side: {
-    flex: 1,
-    flexDirection: "row",
-  },
-  centerSpacer: {
-    width: SPACER_WIDTH,
+  tabSlot: {
+    height: 50,
+    zIndex: 1,
   },
   tabItem: {
     flex: 1,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
-    minHeight: 44,
-    paddingVertical: 4,
+    borderRadius: 25,
+    gap: 8,
+  },
+  activeLabel: {
+    flexShrink: 1,
+    fontSize: 13,
+    fontWeight: "600",
   },
   postButton: {
     position: "absolute",
-    top: -10,
-    alignSelf: "center",
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     alignItems: "center",
     justifyContent: "center",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 14,
+    elevation: 20,
     zIndex: 10,
   },
 });

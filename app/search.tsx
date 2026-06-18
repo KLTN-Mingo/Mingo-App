@@ -25,7 +25,7 @@ import {
 } from "@/hooks/use-search-history";
 import { searchService } from "@/services/search.service";
 
-/** BE yêu cầu q >= 2 ký tự */
+/** BE yêu cầu q >= 2 characters */
 const MIN_QUERY_LEN = 2;
 /** Số item/lần fetch — BE giới hạn tối đa 20. */
 const PAGE_LIMIT = 10;
@@ -72,7 +72,7 @@ export default function SearchScreen() {
     const q = query.trim();
     if (q.length < MIN_QUERY_LEN) {
       setSubmittedQuery("");
-      setError("Từ khóa tìm kiếm phải có ít nhất 2 ký tự");
+      setError("Search term must be at least 2 characters");
       return;
     }
     setLoading(true);
@@ -106,7 +106,7 @@ export default function SearchScreen() {
       setActiveTab("users");
     } catch (e) {
       console.error("[search] global failed", e);
-      const msg = e instanceof Error ? e.message : "Không tải được kết quả";
+      const msg = e instanceof Error ? e.message : "Could not load results";
       setError(msg);
       setSubmittedQuery(q);
       setUsersState(emptyPaginated<SearchUserItemDto>());
@@ -350,7 +350,7 @@ export default function SearchScreen() {
               onEndReachedThreshold={0.5}
               onEndReached={loadMoreUsers}
               ListEmptyComponent={
-                <EmptyState title="Không tìm thấy người dùng phù hợp" />
+                <EmptyState title="No matching users found" />
               }
               ListFooterComponent={
                 usersState.loadingMore ? (
@@ -383,7 +383,7 @@ export default function SearchScreen() {
               onEndReachedThreshold={0.5}
               onEndReached={loadMorePosts}
               ListEmptyComponent={
-                <EmptyState title="Không tìm thấy bài viết phù hợp" />
+                <EmptyState title="No matching posts found" />
               }
               ListFooterComponent={
                 postsState.loadingMore ? (
@@ -404,7 +404,7 @@ export default function SearchScreen() {
               onEndReachedThreshold={0.5}
               onEndReached={loadMoreHashtags}
               ListEmptyComponent={
-                <EmptyState title="Không tìm thấy hashtag phù hợp" />
+                <EmptyState title="No matching hashtags found" />
               }
               ListFooterComponent={
                 hashtagsState.loadingMore ? (
@@ -602,7 +602,7 @@ function HashtagResultCard({ item, onPress }: HashtagResultCardProps) {
         </Text>
         {item.postsCount > 0 ? (
           <Text variant="muted" className="text-sm">
-            {item.postsCount} bài viết
+            {item.postsCount} posts
           </Text>
         ) : null}
       </View>
@@ -634,7 +634,7 @@ function PostResultCard({ item }: PostResultCardProps) {
         className="text-sm text-text-light dark:text-text-dark"
         numberOfLines={2}
       >
-        {item.contentText || "Bài viết không có nội dung"}
+        {item.contentText || "This post has no content"}
       </Text>
       <Text variant="muted" className="mt-2 text-xs">
         {item.likesCount} likes · {item.commentsCount} comments

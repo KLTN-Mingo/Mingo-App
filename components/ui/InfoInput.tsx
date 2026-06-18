@@ -140,7 +140,7 @@ function InfoInputText(props: InfoInputTextProps) {
     mapPickEnabled ? (
       <TouchableOpacity onPress={openMaps} className="mt-2 self-start">
         <Text className="text-sm text-primary-100 font-medium">
-          Mở Google Maps để chọn / xem vị trí
+          Open Google Maps to choose / view location
         </Text>
       </TouchableOpacity>
     ) : null;
@@ -212,7 +212,7 @@ function InfoInputSelect(props: InfoInputSelectProps) {
     value,
     onValueChange,
     options,
-    placeholder = "Chọn...",
+    placeholder = "Select...",
   } = props;
   const { colorScheme } = useTheme();
   const sem = getSemantic(colorScheme === "dark" ? "dark" : "light");
@@ -319,7 +319,7 @@ function InfoInputDate(props: InfoInputDateProps) {
               : "text-text-muted-light dark:text-text-muted-dark"
           }`}
         >
-          {display || "Chọn ngày sinh"}
+          {display || "Select date of birth"}
         </Text>
         <Ionicons name="calendar-outline" size={20} color={sem.textMuted} />
       </TouchableOpacity>
@@ -346,7 +346,7 @@ function InfoInputDate(props: InfoInputDateProps) {
             >
               <View className="flex-row justify-between items-center mb-2">
                 <TouchableOpacity onPress={() => setShow(false)}>
-                  <Text className="text-text-muted-light">Hủy</Text>
+                  <Text className="text-text-muted-light">Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {

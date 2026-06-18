@@ -102,8 +102,8 @@ export function TwoFactorSettingsModal({
       setSetup(data);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Không thể tạo mã 2FA";
-      Alert.alert("Lỗi", message);
+        error instanceof Error ? error.message : "Could not create 2FA code";
+      Alert.alert("Error", message);
     } finally {
       setLoadingSetup(false);
     }
@@ -113,7 +113,7 @@ export function TwoFactorSettingsModal({
     if (!setup || saving) return;
     const nextErrors = validateAuthFields(enableForm, {
       code: {
-        label: "mã xác thực",
+        label: "verification code",
         rules: ["required", "otp"],
       },
     });
@@ -124,12 +124,12 @@ export function TwoFactorSettingsModal({
     try {
       await authService.enable2FA(setup.secret, enableForm.code);
       onChanged(true);
-      Alert.alert("Thành công", "Xác thực 2 yếu tố đã được bật.");
+      Alert.alert("Success", "Two-factor authentication has been enabled.");
       resetAndClose();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Không thể bật 2FA";
-      Alert.alert("Lỗi", message);
+        error instanceof Error ? error.message : "Could not enable 2FA";
+      Alert.alert("Error", message);
       setSaving(false);
     }
   };
@@ -138,11 +138,11 @@ export function TwoFactorSettingsModal({
     if (saving) return;
     const nextErrors = validateAuthFields(disableForm, {
       password: {
-        label: "mật khẩu",
+        label: "password",
         rules: ["required", "password"],
       },
       code: {
-        label: "mã xác thực",
+        label: "verification code",
         rules: ["required", "otp"],
       },
     });
@@ -153,12 +153,12 @@ export function TwoFactorSettingsModal({
     try {
       await authService.disable2FA(disableForm.code, disableForm.password);
       onChanged(false);
-      Alert.alert("Thành công", "Xác thực 2 yếu tố đã được tắt.");
+      Alert.alert("Success", "Two-factor authentication has been disabled.");
       resetAndClose();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Không thể tắt 2FA";
-      Alert.alert("Lỗi", message);
+        error instanceof Error ? error.message : "Could not disable 2FA";
+      Alert.alert("Error", message);
       setSaving(false);
     }
   };

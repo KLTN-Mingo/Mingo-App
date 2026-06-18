@@ -60,7 +60,7 @@ export function useGoogleAuth(
 
     const idToken = response.params?.id_token;
     if (!idToken) {
-      options.onError?.(new Error("Không nhận được idToken từ Google"));
+      options.onError?.(new Error("No idToken received from Google"));
       return;
     }
 

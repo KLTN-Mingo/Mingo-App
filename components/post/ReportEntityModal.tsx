@@ -22,7 +22,7 @@ export interface ReportEntityModalProps {
   visible: boolean;
   entityType: ReportEntityType;
   entityId: string;
-  /** Tên hiển thị (vd "bài viết của An") — chỉ để hint user. */
+  /** Tên hiển thị (vd "An's post") — chỉ để hint user. */
   entityLabel?: string;
   onClose: () => void;
   onSuccess?: () => void;
@@ -57,7 +57,7 @@ export function ReportEntityModal({
 
   const handleSubmit = async () => {
     if (!selected) {
-      Alert.alert("Lỗi", "Vui lòng chọn lý do");
+      Alert.alert("Error", "Please select a reason");
       return;
     }
     setSubmitting(true);
@@ -81,8 +81,8 @@ export function ReportEntityModal({
         );
       }
       Alert.alert(
-        "Đã gửi báo cáo",
-        "Cảm ơn bạn. Chúng tôi sẽ xem xét báo cáo này sớm.",
+        "Report sent",
+        "Thank you. We will review this report soon.",
         [
           {
             text: "OK",
@@ -98,8 +98,8 @@ export function ReportEntityModal({
     } catch (err: unknown) {
       console.error("[report] submit failed", err);
       Alert.alert(
-        "Lỗi",
-        err instanceof Error ? err.message : "Không gửi được báo cáo"
+        "Error",
+        err instanceof Error ? err.message : "Could not submit report"
       );
     } finally {
       setSubmitting(false);
@@ -118,10 +118,10 @@ export function ReportEntityModal({
         style={{ backgroundColor: colors.background }}
       >
         <ScreenHeader
-          title="Báo cáo"
+          title="Report"
           rightSlot={
             <TouchableOpacity onPress={onClose} className="p-2">
-              <Text style={{ color: colors.textMuted }}>Đóng</Text>
+              <Text style={{ color: colors.textMuted }}>Close</Text>
             </TouchableOpacity>
           }
         />
@@ -134,9 +134,9 @@ export function ReportEntityModal({
             className="text-sm leading-relaxed mb-4"
             style={{ color: colors.textSecondary }}
           >
-            Hãy giúp chúng tôi hiểu vấn đề
-            {entityLabel ? ` với ${entityLabel}` : ""}. Báo cáo của bạn sẽ
-            được giữ kín.
+            Help us understand the issue
+            {entityLabel ? ` with ${entityLabel}` : ""}. Your report will
+            be kept private.
           </Text>
 
           <View className="gap-2">
@@ -189,12 +189,12 @@ export function ReportEntityModal({
             className="text-sm mt-6 mb-2"
             style={{ color: colors.textPrimary }}
           >
-            Mô tả thêm (tuỳ chọn)
+            Additional details (optional)
           </Text>
           <TextInput
             value={description}
             onChangeText={setDescription}
-            placeholder="Cho chúng tôi biết thêm chi tiết..."
+            placeholder="Tell us more details..."
             placeholderTextColor={colors.textMuted}
             multiline
             maxLength={500}
@@ -215,7 +215,7 @@ export function ReportEntityModal({
             disabled={!selected}
             className="mt-6"
           >
-            Gửi báo cáo
+            Submit report
           </Button>
         </ScrollView>
       </View>

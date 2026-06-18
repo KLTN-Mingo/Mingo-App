@@ -62,6 +62,7 @@ export const ActionInput = forwardRef<TextInput, ActionInputProps>(
               ? {
                   height: AUTH_CONTROL_HEIGHT,
                   borderRadius: AUTH_CONTROL_RADIUS,
+                  borderColor: error ? sem.danger : sem.border,
                 }
               : undefined
           }
@@ -107,7 +108,7 @@ export const ActionInput = forwardRef<TextInput, ActionInputProps>(
           {rightIcon ? <View className="ml-2">{rightIcon}</View> : null}
         </View>
         {error ? (
-          <Text className="mt-1 text-sm text-error-light dark:text-error-dark">
+          <Text className="mt-1 text-sm font-medium" style={{ color: sem.danger }}>
             {error}
           </Text>
         ) : null}

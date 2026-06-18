@@ -15,7 +15,7 @@ export interface CultureHighlightedTextProps {
   text: string;
   terms?: CultureTermDto[] | null;
   className?: string;
-  /** Cho phép caller override style chữ thường (non-highlighted). */
+  /** Cho phÃ©p caller override style chá»¯ thÆ°á»ng (non-highlighted). */
   baseTextClassName?: string;
 }
 
@@ -26,13 +26,13 @@ interface Segment {
 
 function getToneColor(tone: CultureTermDto["tone"] | undefined, isDark: boolean) {
   switch (tone) {
-    case "tích cực":
+    case "positive":
       return isDark ? "#6EE7B7" : "#047857";
-    case "hài hước":
+    case "funny":
       return isDark ? "#FBBF24" : "#B45309";
-    case "tiêu cực":
+    case "negative":
       return isDark ? "#FCA5A5" : "#DC2626";
-    case "trung tính":
+    case "neutral":
     default:
       return isDark ? "#93C5FD" : "#2563EB";
   }
@@ -72,8 +72,8 @@ export function buildCultureSegments(
 }
 
 /**
- * Render text với slang/idiom được highlight (gạch dưới chấm).
- * Khi tap, mở tooltip modal hiển thị nghĩa, nguồn gốc, tone, context.
+ * Render text vá»›i slang/idiom Ä‘Æ°á»£c highlight (gáº¡ch dÆ°á»›i cháº¥m).
+                      Origin
  */
 export function CultureHighlightedText({
   text,
@@ -177,7 +177,7 @@ export function CultureHighlightedText({
                 {selected.origin ? (
                   <View className="mb-2">
                     <Text variant="muted" className="text-xs font-semibold">
-                      Nguồn gốc
+                      Origin
                     </Text>
                     <Text
                       className="text-sm"
@@ -190,7 +190,7 @@ export function CultureHighlightedText({
                 {selected.contextNote ? (
                   <View>
                     <Text variant="muted" className="text-xs font-semibold">
-                      Ghi chú ngữ cảnh
+                      Context note
                     </Text>
                     <Text
                       className="text-sm"

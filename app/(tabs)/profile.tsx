@@ -375,6 +375,7 @@ export default function ProfileScreen() {
         return userProfile ? (
           <ProfileRepostsList
             userId={userProfile.id}
+            profileUser={userMinimal}
             currentUser={userMinimal}
           />
         ) : null;
@@ -437,7 +438,7 @@ export default function ProfileScreen() {
           contentContainerStyle={{
             gap: 16,
             paddingHorizontal: 20,
-            paddingBottom: 32,
+            paddingBottom: 160,
           }}
         >
         <View className="gap-4">

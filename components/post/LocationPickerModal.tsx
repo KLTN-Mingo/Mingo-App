@@ -58,11 +58,11 @@ export function LocationPickerModal({
   const suggestions = useVNLocationSuggestions(locationQuery, 30);
   const popularSuggestions = useMemo(
     () => [
-      "Hà Nội",
-      "TP. Hồ Chí Minh",
-      "Đà Nẵng",
-      "Cần Thơ",
-      "Hải Phòng",
+      "Hanoi",
+      "Ho Chi Minh City",
+      "Da Nang",
+      "Can Tho",
+      "Hai Phong",
       "Nha Trang",
     ],
     []
@@ -112,7 +112,7 @@ export function LocationPickerModal({
 
           <View className="mb-3">
             <SearchBarInput
-              placeholder="Số nhà, đường..., tỉnh/thành"
+              placeholder="Street address, city/province"
               value={query}
               onChangeText={setQuery}
               autoFocus
@@ -122,12 +122,12 @@ export function LocationPickerModal({
           </View>
 
           {/* <Text variant="muted" className="mb-3 text-xs">
-	            Gợi ý lấy từ dữ liệu địa chỉ Việt Nam trong app.
+	            Gá»£i Ã½ láº¥y tá»« dá»¯ liá»‡u Ä‘á»‹a chá»‰ Viá»‡t Nam trong app.
 	          </Text> */}
 
           {locationQuery.trim().length > 0 ? (
             <Text className="mb-2 text-xs text-text-muted-light dark:text-text-muted-dark">
-              Từ khóa: {locationQuery.trim()}
+              Keyword: {locationQuery.trim()}
             </Text>
           ) : null}
 

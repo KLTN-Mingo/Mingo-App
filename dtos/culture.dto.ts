@@ -6,7 +6,7 @@ export interface CultureTermDto {
   endIndex: number;
   meaning: string;
   origin?: string;
-  tone?: "tích cực" | "trung tính" | "hài hước" | "tiêu cực" | string;
+  tone?: "positive" | "neutral" | "funny" | "negative" | string;
   contextNote?: string;
 }
 

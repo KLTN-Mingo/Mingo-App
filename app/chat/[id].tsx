@@ -296,12 +296,12 @@ export default function ChatScreen() {
   const handleBubbleLongPress = useCallback(
     (msg: MessageResponseDto) => {
       if (msg.isRevoked) return;
-      Alert.alert("Tin nhắn", undefined, [
+      Alert.alert("Messages", undefined, [
         {
-          text: "Sửa",
+          text: "Edit",
           onPress: () => {
             Alert.prompt(
-              "Sửa tin nhắn",
+              "Edit message",
               undefined,
               async (text) => {
                 if (!text?.trim()) return;
@@ -309,8 +309,8 @@ export default function ChatScreen() {
                   await editMessage(msg.id, text.trim());
                 } catch (err) {
                   Alert.alert(
-                    "Lỗi",
-                    err instanceof Error ? err.message : "Không sửa được"
+                    "Error",
+                    err instanceof Error ? err.message : "Could not edit"
                   );
                 }
               },
@@ -320,26 +320,26 @@ export default function ChatScreen() {
           },
         },
         {
-          text: "Thu hồi",
+          text: "Recall",
           style: "destructive",
           onPress: () => {
             Alert.alert(
-              "Thu hồi tin nhắn này?",
-              "Tin nhắn sẽ bị xóa với tất cả mọi người.",
+              "Recall this message?",
+              "This message will be deleted for everyone.",
               [
-                { text: "Hủy", style: "cancel" },
+                { text: "Cancel", style: "cancel" },
                 {
-                  text: "Thu hồi",
+                  text: "Recall",
                   style: "destructive",
                   onPress: async () => {
                     try {
                       await recallMessage(msg.id);
                     } catch (err) {
                       Alert.alert(
-                        "Lỗi",
+                        "Error",
                         err instanceof Error
                           ? err.message
-                          : "Không thu hồi được"
+                          : "Could not recall"
                       );
                     }
                   },
@@ -348,7 +348,7 @@ export default function ChatScreen() {
             );
           },
         },
-        { text: "Đóng", style: "cancel" },
+        { text: "Close", style: "cancel" },
       ]);
     },
     [editMessage, recallMessage]
@@ -423,10 +423,10 @@ export default function ChatScreen() {
                 }}
               >
                 {isReceiverTyping
-                  ? "Đang gõ..."
+                  ? "Typing..."
                   : isReceiverOnline
-                    ? "Đang hoạt động"
-                    : "Không hoạt động"}
+                    ? "Active now"
+                    : "Inactive"}
               </Text>
             </View>
         </View>

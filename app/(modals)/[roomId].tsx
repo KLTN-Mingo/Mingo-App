@@ -71,7 +71,7 @@ export default function CallRoomScreen() {
               </Text>
             </View>
           )}
-          <Text style={styles.callingText}>Đang gọi...</Text>
+          <Text style={styles.callingText}>Calling...</Text>
           <Text style={styles.remoteName}>{remoteName}</Text>
         </View>
         <View style={styles.controls}>

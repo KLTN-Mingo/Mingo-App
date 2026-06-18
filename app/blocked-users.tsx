@@ -33,7 +33,7 @@ export default function BlockedUsersScreen() {
       setItems(data.blockedUsers ?? []);
     } catch (err) {
       console.error("[blocked-users] load failed", err);
-      Alert.alert("Lỗi", "Không tải được danh sách");
+      Alert.alert("Error", "Could not load the list");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -51,12 +51,12 @@ export default function BlockedUsersScreen() {
 
   const handleUnblock = (item: BlockedUser) => {
     Alert.alert(
-      "Bỏ chặn người này?",
-      `${item.user.name ?? "Người dùng"} sẽ có thể xem profile và tương tác lại với bạn.`,
+      "Unblock this user?",
+      `${item.user.name ?? "User"} will be able to view your profile and interact with you again.`,
       [
-        { text: "Huỷ", style: "cancel" },
+        { text: "Cancel", style: "cancel" },
         {
-          text: "Bỏ chặn",
+          text: "Unblock",
           style: "destructive",
           onPress: async () => {
             setUnblockingId(item.user.id);
@@ -67,7 +67,7 @@ export default function BlockedUsersScreen() {
               );
             } catch (err) {
               console.error("[blocked-users] unblock failed", err);
-              Alert.alert("Lỗi", "Không bỏ chặn được");
+              Alert.alert("Error", "Could not unblock");
             } finally {
               setUnblockingId(null);
             }
@@ -79,7 +79,7 @@ export default function BlockedUsersScreen() {
 
   return (
     <ScreenContainer horizontalPadding="none">
-      <BackHeader title="Người bị chặn" className="px-4" />
+      <BackHeader title="Blocked users" className="px-4" />
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
@@ -99,7 +99,7 @@ export default function BlockedUsersScreen() {
           }
           contentContainerStyle={{ paddingVertical: 12 }}
           ItemSeparatorComponent={() => <View className="h-2" />}
-          ListEmptyComponent={<EmptyState title="Chưa chặn ai" />}
+          ListEmptyComponent={<EmptyState title="No blocked users yet" />}
           renderItem={({ item }) => (
             <View className="mx-4 px-4 py-3 rounded-xl bg-surface-light dark:bg-surface-dark flex-row items-center">
               <TouchableOpacity
@@ -119,10 +119,10 @@ export default function BlockedUsersScreen() {
                     className="text-base font-semibold text-text-light dark:text-text-dark"
                     numberOfLines={1}
                   >
-                    {item.user.name || "Người dùng"}
+                    {item.user.name || "User"}
                   </Text>
                   <Text variant="muted" className="text-xs">
-                    Đã chặn{" "}
+                    Blocked{" "}
                     {new Date(item.blockedAt).toLocaleDateString("vi-VN")}
                   </Text>
                 </View>
@@ -133,7 +133,7 @@ export default function BlockedUsersScreen() {
                 loading={unblockingId === item.user.id}
                 className="ml-2"
               >
-                Bỏ chặn
+                Unblock
               </Button>
             </View>
           )}
