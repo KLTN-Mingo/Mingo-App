@@ -41,6 +41,7 @@ import {
   ReportEntityType,
   UserMinimalDto,
 } from "@/dtos";
+import { usePostOptions } from "@/hooks/use-post-options";
 import { useReport } from "@/hooks/use-report";
 import { useSharePost } from "@/hooks/use-share-post";
 import { getReplyTarget, ReplyTarget } from "@/services/comment-reply-target";
@@ -79,6 +80,7 @@ export default function PostDetailScreen() {
   const themeColors = colorScheme === "dark" ? paletteDark : paletteLight;
   const semantic = getSemantic(colorScheme === "dark" ? "dark" : "light");
   const report = useReport();
+  const postOptions = usePostOptions();
 
   const [post, setPost] = useState<PostResponseDto | null>(null);
   const [comments, setComments] = useState<CommentResponseDto[]>([]);
@@ -394,9 +396,9 @@ export default function PostDetailScreen() {
     if (!profile) return;
 
     if (p.userId === profile.id) {
-      Alert.alert("Your post", undefined, [
+      postOptions.openOptions([
         {
-          text: "Edit",
+          label: "Edit",
           onPress: () =>
             router.push({
               pathname: "/create-post",
@@ -404,8 +406,8 @@ export default function PostDetailScreen() {
             } as any),
         },
         {
-          text: "Delete",
-          style: "destructive",
+          label: "Delete post",
+          destructive: true,
           onPress: () => {
             Alert.alert("Delete post?", "This action cannot be undone.", [
               { text: "Cancel", style: "cancel" },
@@ -426,14 +428,13 @@ export default function PostDetailScreen() {
             ]);
           },
         },
-        { text: "Close", style: "cancel" },
       ]);
       return;
     }
 
-    Alert.alert("Post", undefined, [
+    postOptions.openOptions([
       {
-        text: "Hide post",
+        label: "Hide post",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(p.id, "hide", feedTab);
@@ -445,7 +446,7 @@ export default function PostDetailScreen() {
         },
       },
       {
-        text: "Not interested",
+        label: "Not interested",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(
@@ -461,7 +462,7 @@ export default function PostDetailScreen() {
         },
       },
       {
-        text: "See more like this",
+        label: "See more like this",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(p.id, "see_more", feedTab);
@@ -472,8 +473,8 @@ export default function PostDetailScreen() {
         },
       },
       {
-        text: "Report",
-        style: "destructive",
+        label: "Report",
+        destructive: true,
         onPress: () =>
           report.openReport({
             entityType: ReportEntityType.POST,
@@ -481,7 +482,6 @@ export default function PostDetailScreen() {
             entityLabel: "this post",
           }),
       },
-      { text: "Cancel", style: "cancel" },
     ]);
   };
 
@@ -720,10 +720,7 @@ export default function PostDetailScreen() {
               disabled={isLoadingReplies}
               activeOpacity={0.7}
             >
-              <Text
-                className="text-xs text-title-light dark:text-title-dark"
-                // style={{ color: themeColors.textSecondary }}
-              >
+              <Text className="text-xs text-title-light dark:text-title-dark">
                 {isLoadingReplies
                   ? "Loading replies..."
                   : isExpanded
@@ -1043,6 +1040,7 @@ export default function PostDetailScreen() {
 
       {share.modals}
       {report.modal}
+      {postOptions.modal}
     </ScreenContainer>
   );
 }
