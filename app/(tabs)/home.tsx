@@ -28,6 +28,7 @@ import {
   UserMinimalDto,
 } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { usePostOptions } from "@/hooks/use-post-options";
 import { useReport } from "@/hooks/use-report";
 import { useSharePost } from "@/hooks/use-share-post";
 import { interactionService } from "@/services/interaction.service";
@@ -223,37 +224,38 @@ export default function HomeScreen() {
   });
 
   const report = useReport();
+  const postOptions = usePostOptions();
 
   const handleUserPress = (userId: string) => {
     router.push(`/profile/${userId}` as any);
   };
 
-  const handlePostMorePress = (post: PostResponseDto) => {
+  const handlePostMorePress = (p: PostResponseDto) => {
     if (!profile) return;
 
-    if (post.userId === profile.id) {
-      Alert.alert("Your post", undefined, [
+    if (p.userId === profile.id) {
+      postOptions.openOptions([
         {
-          text: "Edit",
+          label: "Chỉnh sửa",
           onPress: () =>
             router.push({
               pathname: "/create-post",
-              params: { id: post.id },
+              params: { id: p.id },
             } as any),
         },
         {
-          text: "Delete",
-          style: "destructive",
+          label: "Xoá bài viết",
+          destructive: true,
           onPress: () => {
-            Alert.alert("Delete post?", "This action cannot be undone.", [
-              { text: "Cancel", style: "cancel" },
+            Alert.alert("Xoá bài viết?", "Hành động này không thể hoàn tác.", [
+              { text: "Huỷ", style: "cancel" },
               {
-                text: "Delete",
+                text: "Xoá",
                 style: "destructive",
                 onPress: async () => {
                   try {
-                    await postService.deletePost(post.id);
-                    setPosts((prev) => prev.filter((p) => p.id !== post.id));
+                    await postService.deletePost(p.id);
+                    setPosts((prev) => prev.filter((post) => post.id !== p.id));
                   } catch (e: unknown) {
                     const msg =
                       e instanceof Error ? e.message : "Cannot delete";
@@ -264,18 +266,17 @@ export default function HomeScreen() {
             ]);
           },
         },
-        { text: "Close", style: "cancel" },
       ]);
       return;
     }
 
-    Alert.alert("Post", undefined, [
+    postOptions.openOptions([
       {
-        text: "Hide post",
+        label: "Hide post",
         onPress: async () => {
           try {
-            await postService.submitFeedFeedback(post.id, "hide", activeTab);
-            setPosts((prev) => prev.filter((p) => p.id !== post.id));
+            await postService.submitFeedFeedback(p.id, "hide", activeTab);
+            setPosts((prev) => prev.filter((post) => post.id !== p.id));
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Cannot send feedback";
             Alert.alert("Error", msg);
@@ -283,15 +284,15 @@ export default function HomeScreen() {
         },
       },
       {
-        text: "Not interested",
+        label: "Not interested",
         onPress: async () => {
           try {
             await postService.submitFeedFeedback(
-              post.id,
+              p.id,
               "not_interested",
               activeTab
             );
-            setPosts((prev) => prev.filter((p) => p.id !== post.id));
+            setPosts((prev) => prev.filter((post) => post.id !== p.id));
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Cannot send feedback";
             Alert.alert("Error", msg);
@@ -299,14 +300,10 @@ export default function HomeScreen() {
         },
       },
       {
-        text: "See more like this",
+        label: "See more like this",
         onPress: async () => {
           try {
-            await postService.submitFeedFeedback(
-              post.id,
-              "see_more",
-              activeTab
-            );
+            await postService.submitFeedFeedback(p.id, "see_more", activeTab);
           } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Cannot send feedback";
             Alert.alert("Error", msg);
@@ -314,16 +311,15 @@ export default function HomeScreen() {
         },
       },
       {
-        text: "Report",
-        style: "destructive",
+        label: "Report",
+        destructive: true,
         onPress: () =>
           report.openReport({
             entityType: ReportEntityType.POST,
-            entityId: post.id,
-            entityLabel: "this post",
+            entityId: p.id,
+            entityLabel: "bài viết này",
           }),
       },
-      { text: "Cancel", style: "cancel" },
     ]);
   };
 
@@ -487,6 +483,7 @@ export default function HomeScreen() {
 
       {share.modals}
       {report.modal}
+      {postOptions.modal}
     </ScreenContainer>
   );
 }
