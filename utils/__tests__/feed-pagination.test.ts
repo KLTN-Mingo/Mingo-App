@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  appendUniqueById,
   canLoadNextFeedPage,
   getHasMoreFeedPages,
   isAtFeedEnd,
@@ -55,5 +56,15 @@ test("recognizes the actual end of the feed scroll", () => {
   assert.equal(
     isAtFeedEnd({ contentOffsetY: 700, viewportHeight: 600, contentHeight: 1500 }),
     false
+  );
+});
+
+test("does not append duplicate posts returned by the next feed page", () => {
+  assert.deepEqual(
+    appendUniqueById(
+      [{ id: "post-1" }, { id: "post-2" }],
+      [{ id: "post-2" }, { id: "post-3" }]
+    ),
+    [{ id: "post-1" }, { id: "post-2" }, { id: "post-3" }]
   );
 });

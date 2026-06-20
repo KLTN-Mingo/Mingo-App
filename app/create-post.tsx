@@ -25,6 +25,10 @@ import { getSemantic } from "@/constants/designTokens";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { PostVisibility, UpdatePostRequestDto, UserMinimalDto } from "@/dtos";
+import {
+  frontendCacheKeys,
+  invalidateCacheKeys,
+} from "@/services/frontend-cache";
 import { postService } from "@/services/post.service";
 
 const VISIBILITY_OPTIONS: { value: PostVisibility; label: string }[] = [
@@ -402,6 +406,10 @@ export default function CreatePostScreen() {
         localAssets
       );
 
+      invalidateCacheKeys([
+        frontendCacheKeys.feedPosts,
+        ...(profile?.id ? [frontendCacheKeys.userPosts(profile.id)] : []),
+      ]);
       router.replace(`/post/${created.id}` as any);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
