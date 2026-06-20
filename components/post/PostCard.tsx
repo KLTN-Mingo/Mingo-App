@@ -1,4 +1,5 @@
 import { formatDistanceToNow } from "date-fns";
+import { ResizeMode, Video } from "expo-av";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -35,6 +36,7 @@ import {
 import { isPostPermissionDeniedError } from "@/services/post-permission";
 import { postService } from "@/services/post.service";
 import { colors, paletteIcon, statusColors } from "@/styles/colors";
+import { isVideoPostMedia } from "@/utils/post-media";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -311,6 +313,38 @@ export function PostCard({
         )
       : baseMediaWidth;
 
+  const renderPostMedia = (
+    media: PostResponseDto["media"][number],
+    style: { width: number | `${number}%`; height: number },
+    key: string
+  ) => {
+    if (isVideoPostMedia(media)) {
+      return (
+        <Video
+          key={key}
+          source={{ uri: media.mediaUrl }}
+          style={style}
+          useNativeControls
+          resizeMode={ResizeMode.COVER}
+          isLooping={false}
+          posterSource={
+            media.thumbnailUrl ? { uri: media.thumbnailUrl } : undefined
+          }
+          posterStyle={style}
+        />
+      );
+    }
+
+    return (
+      <Image
+        key={key}
+        source={{ uri: media.mediaUrl }}
+        style={style}
+        resizeMode="cover"
+      />
+    );
+  };
+
   const isOwnPost =
     currentUser?.id && post.userId && currentUser.id === post.userId;
 
@@ -449,23 +483,22 @@ export function PostCard({
         {post.media && post.media.length > 0 && (
           <View className="bg-white dark:bg-surface-dark">
             {post.media.length === 1 ? (
-              <Image
-                source={{ uri: post.media[0].mediaUrl }}
-                style={{ width: "100%", height: singleMediaHeight }}
-                resizeMode="cover"
-              />
+              renderPostMedia(
+                post.media[0],
+                { width: "100%", height: singleMediaHeight },
+                post.media[0].id || "post-media-0"
+              )
             ) : (
               <View className="flex-row flex-wrap">
                 {post.media.slice(0, 4).map((media, index) => (
-                  <Image
-                    key={media.id}
-                    source={{ uri: media.mediaUrl }}
-                    style={{
-                      width: index % 2 === 0 ? "50%" : "50%",
+                  renderPostMedia(
+                    media,
+                    {
+                      width: "50%",
                       height: baseMediaWidth / 2,
-                    }}
-                    resizeMode="cover"
-                  />
+                    },
+                    media.id || `post-media-${index}`
+                  )
                 ))}
               </View>
             )}
