@@ -1,6 +1,7 @@
 import { ScreenContainer } from "@/components/containers/ScreenContainer";
 import { Ionicons } from "@expo/vector-icons";
 import { formatDistanceToNow } from "date-fns";
+import { ResizeMode, Video } from "expo-av";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -59,6 +60,10 @@ import {
   paletteIcon,
   statusColors,
 } from "@/styles/colors";
+import {
+  getPostMediaPreviewHeight,
+  isVideoPostMedia,
+} from "@/utils/post-media";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -767,19 +772,50 @@ export default function PostDetailScreen() {
     const showCultureAnalyzing =
       post.cultureAnalyzed === false && effectiveCultureTerms.length === 0;
     const mediaBaseWidth = SCREEN_WIDTH - 32;
-    const mediaWidth = post.media?.[0]?.width;
-    const mediaHeight = post.media?.[0]?.height;
-    const singleMediaHeight =
-      mediaWidth && mediaHeight
-        ? Math.min(
-            460,
-            Math.max(260, (mediaBaseWidth * mediaHeight) / mediaWidth)
-          )
-        : mediaBaseWidth;
+    const mediaPreviewHeight = getPostMediaPreviewHeight();
     const isOwnPost =
       Boolean(currentUser?.id) &&
       Boolean(post.userId) &&
       currentUser?.id === post.userId;
+    const renderPostMedia = (
+      media: NonNullable<PostResponseDto["media"]>[number],
+      index: number
+    ) => {
+      const style = { width: mediaBaseWidth, height: mediaPreviewHeight };
+
+      if (!media.mediaUrl) {
+        return <View key={media.id || `post-media-${index}`} style={style} />;
+      }
+
+      if (isVideoPostMedia(media)) {
+        return (
+          <Video
+            key={media.id || `post-media-${index}`}
+            source={{ uri: media.mediaUrl }}
+            style={style}
+            useNativeControls
+            resizeMode={ResizeMode.CONTAIN}
+            isLooping={false}
+            onError={(error) =>
+              console.warn("[PostDetail] video load failed", {
+                postId: post.id,
+                mediaId: media.id,
+                error,
+              })
+            }
+          />
+        );
+      }
+
+      return (
+        <Image
+          key={media.id || `post-media-${index}`}
+          source={{ uri: media.mediaUrl }}
+          style={style}
+          resizeMode="contain"
+        />
+      );
+    };
 
     return (
       <View className="px-4 pt-4 pb-3 gap-4">
@@ -862,29 +898,16 @@ export default function PostDetailScreen() {
         ) : null}
 
         {post.media && post.media.length > 0 ? (
-          <View>
-            {post.media.length === 1 ? (
-              <Image
-                source={{ uri: post.media[0].mediaUrl }}
-                style={{ width: "100%", height: singleMediaHeight }}
-                resizeMode="cover"
-              />
-            ) : (
-              <View className="flex-row flex-wrap">
-                {post.media.slice(0, 4).map((media, index) => (
-                  <Image
-                    key={media.id}
-                    source={{ uri: media.mediaUrl }}
-                    style={{
-                      width: "50%",
-                      height: mediaBaseWidth / 2,
-                    }}
-                    resizeMode="cover"
-                  />
-                ))}
-              </View>
-            )}
-          </View>
+          <FlatList
+            data={post.media}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(media, index) => media.id || `post-media-${index}`}
+            renderItem={({ item, index }) => renderPostMedia(item, index)}
+            ItemSeparatorComponent={() => <View className="w-2" />}
+            snapToInterval={mediaBaseWidth + 8}
+            decelerationRate="fast"
+          />
         ) : null}
 
         <View className="flex-row items-center gap-5">
