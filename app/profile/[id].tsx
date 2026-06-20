@@ -38,6 +38,7 @@ import {
   frontendCacheKeys,
   subscribeCacheInvalidation,
 } from "@/services/frontend-cache";
+import { usePostOptions } from "@/hooks/use-post-options";
 import { useReport } from "@/hooks/use-report";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useSharePost } from "@/hooks/use-share-post";
@@ -118,6 +119,7 @@ export default function UserProfileDetailScreen() {
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { profile: me } = useAuth();
+  const postOptions = usePostOptions();
   const colorScheme = useColorScheme() ?? "light";
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -377,27 +379,26 @@ export default function UserProfileDetailScreen() {
     const relationState = getRelationshipViewState(relationship);
     const canUnfriend =
       relationState === "friend" || relationState === "close_friend";
-    Alert.alert(user?.name ?? "User", undefined, [
+    postOptions.openOptions([
       ...(canUnfriend
         ? [
             {
-              text: "Unfriend",
-              style: "destructive" as const,
+              label: "Unfriend",
+              destructive: true,
               onPress: handleUnfriendUser,
             },
           ]
         : []),
       {
-        text: "Report user",
-        style: "destructive",
+        label: "Report user",
+        destructive: true,
         onPress: handleReportUser,
       },
       {
-        text: "Block user",
-        style: "destructive",
+        label: "Block user",
+        destructive: true,
         onPress: handleBlockUser,
       },
-      { text: "Cancel", style: "cancel" },
     ]);
   };
 
@@ -628,7 +629,9 @@ export default function UserProfileDetailScreen() {
         />
 
         {/* Avatar + cover */}
-        <ProfileHeader user={user} isOwnProfile={isMine} />
+        <View className="mt-3">
+          <ProfileHeader user={user} isOwnProfile={isMine} />
+        </View>
 
         {/* Bio + info */}
         <ProfileInfo user={user} isOwnProfile={isMine} />
@@ -779,6 +782,7 @@ export default function UserProfileDetailScreen() {
         }}
       />
 
+      {postOptions.modal}
       {share.modals}
       {report.modal}
     </ScreenContainer>
