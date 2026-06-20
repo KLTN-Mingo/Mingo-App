@@ -32,8 +32,8 @@ test("builds register OTP payloads without auth-only fields", () => {
   });
 });
 
-test("defaults register verification to phone and allows switching to email", () => {
-  assert.equal(DEFAULT_REGISTER_VERIFICATION_CHANNEL, "phone");
+test("defaults register verification to email and allows switching to phone", () => {
+  assert.equal(DEFAULT_REGISTER_VERIFICATION_CHANNEL, "email");
   assert.equal(getAlternateRegisterVerificationChannel("phone"), "email");
   assert.equal(getAlternateRegisterVerificationChannel("email"), "phone");
 });

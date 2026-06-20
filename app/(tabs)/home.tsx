@@ -41,6 +41,9 @@ const FEED_TABS: { key: FeedTab; label: string }[] = [
   { key: "friends", label: "Friends" },
 ];
 
+const EXPLORE_FEED_LIMIT = 15;
+const FRIENDS_FEED_LIMIT = 20;
+
 /** Khoảng đệm dưới khi tab bar nổi (BAR_HEIGHT + offset) — khớp app/(tabs)/_layout */
 const TAB_BAR_FLOAT_RESERVE = 64 + 20 + 20;
 
@@ -82,7 +85,9 @@ export default function HomeScreen() {
           setError(null);
         }
 
-        const data = await postService.getFeedPosts(page, 20, tab);
+        const limit =
+          tab === "explore" ? EXPLORE_FEED_LIMIT : FRIENDS_FEED_LIMIT;
+        const data = await postService.getFeedPosts(page, limit, tab);
 
         if (append) {
           setPosts((prev) => [...prev, ...data.posts]);

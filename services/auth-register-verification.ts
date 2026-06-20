@@ -2,7 +2,7 @@ export type RegisterVerificationChannel = "email" | "phone";
 export type RegisterVerificationAction = "send" | "verify";
 
 export const DEFAULT_REGISTER_VERIFICATION_CHANNEL: RegisterVerificationChannel =
-  "phone";
+  "email";
 
 export function getAlternateRegisterVerificationChannel(
   channel: RegisterVerificationChannel
