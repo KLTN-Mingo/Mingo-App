@@ -48,3 +48,20 @@ export function isAtFeedEnd({
   const endThreshold = 160;
   return contentOffsetY + viewportHeight >= contentHeight - endThreshold;
 }
+
+export function appendUniqueById<T extends { id: string }>(
+  currentItems: T[],
+  nextItems: T[]
+): T[] {
+  const existingIds = new Set(currentItems.map((item) => item.id));
+  const uniqueNextItems = nextItems.filter((item) => {
+    if (existingIds.has(item.id)) {
+      return false;
+    }
+
+    existingIds.add(item.id);
+    return true;
+  });
+
+  return [...currentItems, ...uniqueNextItems];
+}

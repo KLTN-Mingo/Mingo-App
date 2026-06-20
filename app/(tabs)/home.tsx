@@ -35,10 +35,15 @@ import { usePostOptions } from "@/hooks/use-post-options";
 import { useReport } from "@/hooks/use-report";
 import { useSharePost } from "@/hooks/use-share-post";
 import { interactionService } from "@/services/interaction.service";
+import {
+  frontendCacheKeys,
+  subscribeCacheInvalidation,
+} from "@/services/frontend-cache";
 import { notificationService } from "@/services/notification.service";
 import { postService } from "@/services/post.service";
 import { getSemantic, getStatusColor } from "@/styles/colors";
 import {
+  appendUniqueById,
   canLoadNextFeedPage,
   isAtFeedEnd,
 } from "@/utils/feed-pagination";
@@ -100,7 +105,7 @@ export default function HomeScreen() {
         const data = await postService.getFeedPosts(page, limit, tab);
 
         if (append) {
-          setPosts((prev) => [...prev, ...data.posts]);
+          setPosts((prev) => appendUniqueById(prev, data.posts));
         } else {
           setPosts(data.posts);
         }
@@ -132,6 +137,14 @@ export default function HomeScreen() {
       fetchPosts(1, false, activeTab);
     }
   }, [profile, activeTab, fetchPosts]);
+
+  useEffect(() => {
+    if (!profile) return;
+
+    return subscribeCacheInvalidation(frontendCacheKeys.feedPosts, () =>
+      fetchPosts(1, false, activeTab)
+    );
+  }, [activeTab, fetchPosts, profile]);
 
   useEffect(() => {
     const loadNotificationCount = async () => {
