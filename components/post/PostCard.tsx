@@ -1,9 +1,10 @@
 import { formatDistanceToNow } from "date-fns";
 import { ResizeMode, Video } from "expo-av";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  Dimensions,
+  FlatList,
   Image,
   TouchableOpacity,
   useColorScheme,
@@ -12,6 +13,7 @@ import {
 
 import { CultureHighlightedText } from "@/components/post/CultureHighlightedText";
 import { ModerationBanner } from "@/components/post/ModerationBanner";
+import { PostMediaViewer } from "@/components/post/PostMediaViewer";
 import {
   CommentIcon,
   LikeIcon,
@@ -23,6 +25,7 @@ import {
 import { Avatar, Text } from "@/components/ui";
 import {
   CultureTermDto,
+  PostMediaDto,
   PostResponseDto,
   RelationshipStatusDto,
   UserMinimalDto,
@@ -36,9 +39,10 @@ import {
 import { isPostPermissionDeniedError } from "@/services/post-permission";
 import { postService } from "@/services/post.service";
 import { colors, paletteIcon, statusColors } from "@/styles/colors";
-import { isVideoPostMedia } from "@/utils/post-media";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+import {
+  getPostMediaPreviewHeight,
+  isVideoPostMedia,
+} from "@/utils/post-media";
 
 interface PostCardProps {
   post: PostResponseDto;
@@ -65,7 +69,6 @@ export function PostCard({
   post,
   currentUser,
   onLikeChange,
-  onCommentPress,
   onShareChange,
   onSaveChange,
   onUserPress,
@@ -104,6 +107,10 @@ export function PostCard({
   const [relationship, setRelationship] =
     useState<RelationshipStatusDto | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [mediaCarouselWidth, setMediaCarouselWidth] = useState(0);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const [viewerMediaIndex, setViewerMediaIndex] = useState<number | null>(null);
+  const mediaCarouselRef = React.useRef<FlatList<PostMediaDto>>(null);
   const effectiveCultureTerms =
     Array.isArray(cultureTerms) && cultureTerms.length > 0
       ? cultureTerms
@@ -117,6 +124,11 @@ export function PostCard({
     setIsSaved(post.isSaved ?? false);
     setSavesCount(post.savesCount ?? 0);
   }, [post.id, post.isSaved, post.savesCount]);
+
+  useEffect(() => {
+    setActiveMediaIndex(0);
+    setViewerMediaIndex(null);
+  }, [post.id]);
 
   useEffect(() => {
     let active = true;
@@ -302,47 +314,64 @@ export function PostCard({
 
   const firstMusicTag = post.hashtags?.find(Boolean);
 
-  const baseMediaWidth = SCREEN_WIDTH - 32;
-  const mediaWidth = post.media?.[0]?.width;
-  const mediaHeight = post.media?.[0]?.height;
-  const singleMediaHeight =
-    mediaWidth && mediaHeight
-      ? Math.min(
-          460,
-          Math.max(260, (baseMediaWidth * mediaHeight) / mediaWidth)
-        )
-      : baseMediaWidth;
+  const singleMediaHeight = getPostMediaPreviewHeight(post.media?.[0]);
 
   const renderPostMedia = (
-    media: PostResponseDto["media"][number],
-    style: { width: number | `${number}%`; height: number },
-    key: string
+    media: NonNullable<PostResponseDto["media"]>[number],
+    index: number
   ) => {
-    if (isVideoPostMedia(media)) {
-      return (
-        <Video
-          key={key}
-          source={{ uri: media.mediaUrl }}
-          style={style}
-          useNativeControls
-          resizeMode={ResizeMode.COVER}
-          isLooping={false}
-          posterSource={
-            media.thumbnailUrl ? { uri: media.thumbnailUrl } : undefined
-          }
-          posterStyle={style}
-        />
-      );
+    const style = { width: mediaCarouselWidth, height: singleMediaHeight };
+    const key = media.id || `post-media-${index}`;
+    if (!media.mediaUrl) {
+      return <View key={key} style={style} className="bg-input-light dark:bg-input-dark" />;
     }
 
-    return (
-      <Image
-        key={key}
+    const contentStyle = { width: "100%" as const, height: "100%" as const };
+    const content = isVideoPostMedia(media) ? (
+      <Video
         source={{ uri: media.mediaUrl }}
-        style={style}
+        style={contentStyle}
+        useNativeControls
+        resizeMode={ResizeMode.COVER}
+        isLooping={false}
+        posterSource={
+          media.thumbnailUrl ? { uri: media.thumbnailUrl } : undefined
+        }
+        posterStyle={contentStyle}
+        onError={(error) =>
+          console.warn("[PostCard] video load failed", {
+            postId: post.id,
+            mediaId: media.id,
+            error,
+          })
+        }
+      />
+    ) : (
+      <Image
+        source={{ uri: media.mediaUrl }}
+        style={contentStyle}
         resizeMode="cover"
       />
     );
+
+    return (
+      <TouchableOpacity
+        key={key}
+        style={style}
+        activeOpacity={0.95}
+        onPress={() => setViewerMediaIndex(index)}
+      >
+        {content}
+      </TouchableOpacity>
+    );
+
+  };
+
+  const openPostDetail = () => router.push(`/post/${post.id}` as any);
+
+  const goToMediaSlide = (index: number) => {
+    mediaCarouselRef.current?.scrollToIndex({ index, animated: true });
+    setActiveMediaIndex(index);
   };
 
   const isOwnPost =
@@ -390,8 +419,9 @@ export function PostCard({
   }
 
   return (
-    <View style={cardShadowStyle} className="rounded-[20px]">
-      <View className="p-4 overflow-hidden rounded-[20px] bg-white dark:bg-surface-dark gap-4">
+    <>
+      <View style={cardShadowStyle} className="rounded-[20px]">
+        <View className="p-4 overflow-hidden rounded-[20px] bg-white dark:bg-surface-dark gap-4">
         {isOwnPost ? (
           <ModerationBanner
             status={post.moderationStatus}
@@ -445,7 +475,7 @@ export function PostCard({
 
         {/* Content */}
         {post.contentText && (
-          <View className="">
+          <TouchableOpacity className="" activeOpacity={0.8} onPress={openPostDetail}>
             {effectiveCultureTerms.length > 0 ? (
               <CultureHighlightedText
                 text={post.contentText}
@@ -462,7 +492,7 @@ export function PostCard({
                 Analyzing cultural context...
               </Text>
             ) : null}
-          </View>
+          </TouchableOpacity>
         )}
 
         {/* Location & Music Tags */}
@@ -481,27 +511,48 @@ export function PostCard({
 
         {/* Media */}
         {post.media && post.media.length > 0 && (
-          <View className="bg-white dark:bg-surface-dark">
-            {post.media.length === 1 ? (
-              renderPostMedia(
-                post.media[0],
-                { width: "100%", height: singleMediaHeight },
-                post.media[0].id || "post-media-0"
-              )
-            ) : (
-              <View className="flex-row flex-wrap">
-                {post.media.slice(0, 4).map((media, index) => (
-                  renderPostMedia(
-                    media,
-                    {
-                      width: "50%",
-                      height: baseMediaWidth / 2,
-                    },
-                    media.id || `post-media-${index}`
+          <View
+            className="relative bg-white dark:bg-surface-dark"
+            onLayout={(event) => setMediaCarouselWidth(event.nativeEvent.layout.width)}
+          >
+            {mediaCarouselWidth > 0 ? (
+              <FlatList
+                ref={mediaCarouselRef}
+                data={post.media}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(media, index) => media.id || `post-media-${index}`}
+                renderItem={({ item, index }) => renderPostMedia(item, index)}
+                onMomentumScrollEnd={(event) =>
+                  setActiveMediaIndex(
+                    Math.round(event.nativeEvent.contentOffset.x / mediaCarouselWidth)
                   )
-                ))}
-              </View>
+                }
+              />
+            ) : (
+              <View style={{ height: singleMediaHeight }} />
             )}
+            {post.media.length > 1 ? (
+              <>
+                <TouchableOpacity
+                  onPress={() => goToMediaSlide(Math.max(0, activeMediaIndex - 1))}
+                  disabled={activeMediaIndex === 0}
+                  className="absolute left-3 top-[140px] h-10 w-10 rounded-full bg-black/55 items-center justify-center"
+                >
+                  <Text className="text-3xl leading-8 text-white">{"<"}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() =>
+                    goToMediaSlide(Math.min(post.media!.length - 1, activeMediaIndex + 1))
+                  }
+                  disabled={activeMediaIndex === post.media.length - 1}
+                  className="absolute right-3 top-[140px] h-10 w-10 rounded-full bg-black/55 items-center justify-center"
+                >
+                  <Text className="text-3xl leading-8 text-white">{">"}</Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
           </View>
         )}
 
@@ -527,7 +578,7 @@ export function PostCard({
 
           {/* Comment */}
           <TouchableOpacity
-            onPress={() => onCommentPress?.(post.id)}
+            onPress={openPostDetail}
             className="flex-row items-center gap-2"
           >
             <CommentIcon size={23} color={theme.icon} />
@@ -577,7 +628,7 @@ export function PostCard({
             fallback={currentUser?.name}
           />
           <TouchableOpacity
-            onPress={() => onCommentPress?.(post.id)}
+            onPress={openPostDetail}
             activeOpacity={0.85}
             className="flex-1 flex-row items-center px-4 py-3 rounded-[20px] bg-input-light dark:bg-input-dark"
           >
@@ -591,7 +642,14 @@ export function PostCard({
             {/* <SearchIcon size={22} color={semantic.textMuted} /> */}
           </TouchableOpacity>
         </View>
+        </View>
       </View>
-    </View>
+      <PostMediaViewer
+        media={post.media ?? []}
+        initialIndex={viewerMediaIndex ?? 0}
+        visible={viewerMediaIndex !== null}
+        onClose={() => setViewerMediaIndex(null)}
+      />
+    </>
   );
 }

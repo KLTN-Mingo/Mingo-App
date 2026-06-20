@@ -11,6 +11,8 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { PaginationDto } from "@/dtos/common.dto";
 import { apiMultipartRequest, apiRequest } from "@/services/api-client";
+import { getHasMoreFeedPages } from "@/utils/feed-pagination";
+import { normalizePostMedia } from "@/utils/post-media";
 
 /** Góp ý feed — Mingo doc + một số BE cũ */
 export type FeedFeedbackType =
@@ -49,11 +51,12 @@ class PostService {
       id: postId,
       userId,
       user,
-      media: Array.isArray(raw?.media)
+      media: (Array.isArray(raw?.media)
         ? raw.media
         : Array.isArray(raw?.mediaFiles)
           ? raw.mediaFiles
-          : [],
+          : []
+      ).map(normalizePostMedia),
       mentions: Array.isArray(raw?.mentions) ? raw.mentions : [],
       hashtags: Array.isArray(raw?.hashtags) ? raw.hashtags : [],
       likesCount: Number(raw?.likesCount ?? 0),
@@ -119,12 +122,26 @@ class PostService {
     const posts = rawPosts.map((item: any) => this.normalizePost(item));
 
     const rawPagination = raw?.pagination ?? {};
+    const paginationPage = Number(rawPagination.page ?? page);
+    const hasTotalPages =
+      rawPagination.totalPages != null &&
+      Number.isFinite(Number(rawPagination.totalPages));
+    const paginationTotalPages = hasTotalPages
+      ? Number(rawPagination.totalPages)
+      : paginationPage;
     const pagination = {
-      page: Number(rawPagination.page ?? page),
+      page: paginationPage,
       limit: Number(rawPagination.limit ?? limit),
       total: Number(rawPagination.total ?? posts.length),
-      totalPages: Number(rawPagination.totalPages ?? 1),
-      hasMore: Boolean(rawPagination.hasMore ?? false),
+      totalPages: paginationTotalPages,
+      hasMore: getHasMoreFeedPages({
+        page: paginationPage,
+        totalPages: paginationTotalPages,
+        hasMore: rawPagination.hasMore,
+        hasTotalPages,
+        receivedItemCount: posts.length,
+        pageLimit: limit,
+      }),
     };
 
     const data: PaginatedPostsDto = {

@@ -1,8 +1,11 @@
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   RefreshControl,
   TouchableOpacity,
   View,
@@ -35,6 +38,10 @@ import { interactionService } from "@/services/interaction.service";
 import { notificationService } from "@/services/notification.service";
 import { postService } from "@/services/post.service";
 import { getSemantic, getStatusColor } from "@/styles/colors";
+import {
+  canLoadNextFeedPage,
+  isAtFeedEnd,
+} from "@/utils/feed-pagination";
 
 const FEED_TABS: { key: FeedTab; label: string }[] = [
   { key: "explore", label: "Explore" },
@@ -63,6 +70,9 @@ export default function HomeScreen() {
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
   const [notificationCount, setNotificationCount] =
     useState<NotificationCountDto | null>(null);
+  const loadingNextPageRef = React.useRef(false);
+  const hasUserScrolledFeedRef = React.useRef(false);
+  const hasReachedFeedEndRef = React.useRef(false);
 
   // Convert profile to UserMinimalDto for components
   const userMinimal: UserMinimalDto | null = profile
@@ -101,6 +111,13 @@ export default function HomeScreen() {
         }
         console.error("Error fetching posts:", err);
       } finally {
+        if (append) {
+          loadingNextPageRef.current = false;
+          hasReachedFeedEndRef.current = false;
+        } else {
+          hasUserScrolledFeedRef.current = false;
+          hasReachedFeedEndRef.current = false;
+        }
         setLoading(false);
         setRefreshing(false);
         setLoadingMore(false);
@@ -135,15 +152,52 @@ export default function HomeScreen() {
 
   const handleTabChange = (tab: FeedTab) => {
     if (tab === activeTab) return;
+    loadingNextPageRef.current = false;
+    hasUserScrolledFeedRef.current = false;
+    hasReachedFeedEndRef.current = false;
     setPosts([]);
     setPagination(null);
     setActiveTab(tab);
   };
 
-  const onLoadMore = () => {
-    if (loadingMore || !pagination?.hasMore) return;
+  const onLoadMore = useCallback(() => {
+    if (
+      !canLoadNextFeedPage({
+        hasMore: pagination?.hasMore,
+        loading: loadingNextPageRef.current,
+      })
+    ) {
+      return;
+    }
+
+    loadingNextPageRef.current = true;
     setLoadingMore(true);
-    fetchPosts(pagination.page + 1, true, activeTab);
+    void fetchPosts(pagination!.page + 1, true, activeTab);
+  }, [activeTab, fetchPosts, pagination]);
+
+  const handleFeedScroll = (
+    event: NativeSyntheticEvent<NativeScrollEvent>
+  ) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    if (contentOffset.y > 0) {
+      hasUserScrolledFeedRef.current = true;
+    }
+
+    const atFeedEnd = isAtFeedEnd({
+      contentOffsetY: contentOffset.y,
+      viewportHeight: layoutMeasurement.height,
+      contentHeight: contentSize.height,
+    });
+
+    if (!atFeedEnd) {
+      hasReachedFeedEndRef.current = false;
+      return;
+    }
+
+    if (hasUserScrolledFeedRef.current && !hasReachedFeedEndRef.current) {
+      hasReachedFeedEndRef.current = true;
+      onLoadMore();
+    }
   };
 
   const handleLikeChange = (postId: string, isLiked: boolean) => {
@@ -161,14 +215,25 @@ export default function HomeScreen() {
   };
 
   const handleViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: { item: PostResponseDto }[] }) => {
+    ({
+      viewableItems,
+    }: {
+      viewableItems: { item: PostResponseDto; index: number | null }[];
+    }) => {
       viewableItems.forEach((vi) => {
         if (vi?.item?.id) {
           interactionService.trackView(vi.item.id, activeTab);
         }
       });
+
+      const lastPostIsVisible = viewableItems.some(
+        (vi) => vi.index === posts.length - 1
+      );
+      if (lastPostIsVisible) {
+        onLoadMore();
+      }
     },
-    [activeTab]
+    [activeTab, onLoadMore, posts.length]
   );
 
   const viewabilityConfig = React.useRef({
@@ -452,8 +517,8 @@ export default function HomeScreen() {
             tintColor="#768D85"
           />
         }
-        onEndReached={onLoadMore}
-        onEndReachedThreshold={0.5}
+        onScroll={handleFeedScroll}
+        scrollEventThrottle={16}
         onViewableItemsChanged={handleViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         ListEmptyComponent={
@@ -468,7 +533,8 @@ export default function HomeScreen() {
         ListFooterComponent={
           loadingMore ? (
             <View className="py-4 items-center">
-              <Text variant="muted">Loading more...</Text>
+              <ActivityIndicator color="#768D85" />
+              <Text variant="muted" className="mt-2">Loading more...</Text>
             </View>
           ) : null
         }
