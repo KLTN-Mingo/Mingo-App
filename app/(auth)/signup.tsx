@@ -17,12 +17,12 @@ import { useAuth } from "@/context/AuthContext";
 import { RegisterRequestDto } from "@/dtos";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useOtpCooldown } from "@/hooks/use-otp-cooldown";
-import { authService } from "@/services/auth.service";
 import {
   DEFAULT_REGISTER_VERIFICATION_CHANNEL,
   RegisterVerificationChannel,
   getAlternateRegisterVerificationChannel,
 } from "@/services/auth-register-verification";
+import { authService } from "@/services/auth.service";
 import { paletteIcon } from "@/styles/colors";
 import { validateAuthFields } from "@/utils/authValidation";
 
@@ -159,7 +159,10 @@ export default function SignUpScreen() {
 
     setLoading(true);
     try {
-      await sendRegisterOtp(registerData, DEFAULT_REGISTER_VERIFICATION_CHANNEL);
+      await sendRegisterOtp(
+        registerData,
+        DEFAULT_REGISTER_VERIFICATION_CHANNEL
+      );
       setVerificationChannel(DEFAULT_REGISTER_VERIFICATION_CHANNEL);
       setPendingRegisterData(registerData);
       setCode("");
@@ -167,11 +170,13 @@ export default function SignUpScreen() {
       otpCooldown.startCooldown();
       Alert.alert(
         "Code sent",
-        "Please check your SMS for the verification code."
+        "Please check your email inbox for the verification code."
       );
     } catch (error: unknown) {
       const msg =
-        error instanceof Error ? error.message : "Could not send verification code";
+        error instanceof Error
+          ? error.message
+          : "Could not send verification code";
       Alert.alert("Error", msg);
     } finally {
       setLoading(false);
@@ -220,7 +225,9 @@ export default function SignUpScreen() {
       );
     } catch (error: unknown) {
       const msg =
-        error instanceof Error ? error.message : "Could not send verification code";
+        error instanceof Error
+          ? error.message
+          : "Could not send verification code";
       Alert.alert("Error", msg);
     } finally {
       setResending(false);
@@ -236,7 +243,9 @@ export default function SignUpScreen() {
       await register(pendingRegisterData);
     } catch (error: unknown) {
       const msg =
-        error instanceof Error ? error.message : "Registration or verification failed";
+        error instanceof Error
+          ? error.message
+          : "Registration or verification failed";
       Alert.alert("Error", msg);
     } finally {
       setLoading(false);
@@ -284,7 +293,8 @@ export default function SignUpScreen() {
         variant="muted"
         className="text-center text-text-muted-light dark:text-text-muted-dark mb-10"
       >
-        Verify your phone number or email before creating your account
+        Verify your email before creating your account. You can switch to phone
+        if needed.
       </Text>
 
       <View className="gap-5">
@@ -421,7 +431,7 @@ export default function SignUpScreen() {
           error={errors.code}
         />
 
-        <Button
+        {/* <Button
           variant="ghost"
           onPress={handleSwitchVerificationChannel}
           loading={resending}
@@ -432,7 +442,7 @@ export default function SignUpScreen() {
           {verificationChannel === "phone"
             ? "Use Email Instead"
             : "Use Phone Instead"}
-        </Button>
+        </Button> */}
 
         <Button
           onPress={handleVerifyAndSignUp}
@@ -454,20 +464,25 @@ export default function SignUpScreen() {
           {otpCooldown.label}
         </Button>
 
-        <Button
-          variant="ghost"
-          onPress={() => {
-            setStep("form");
-            setPendingRegisterData(null);
-            setCode("");
-            setVerificationChannel(DEFAULT_REGISTER_VERIFICATION_CHANNEL);
-            setErrors({});
-          }}
-          size="lg"
-          className={AUTH_BTN}
-        >
-          Edit Information
-        </Button>
+        <View className="flex-row justify-center mt-10">
+          <Text variant="muted" className="text-sm">
+            You want to change your information?{" "}
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              setStep("form");
+              setPendingRegisterData(null);
+              setCode("");
+              setVerificationChannel(DEFAULT_REGISTER_VERIFICATION_CHANNEL);
+              setErrors({});
+            }}
+          >
+            <Text className="text-sm font-semibold text-text-light dark:text-text-dark">
+              Back
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {/* <Text></Text> */}
       </View>
     </>
   );
